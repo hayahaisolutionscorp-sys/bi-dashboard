@@ -1,24 +1,5 @@
 export const AYAHAY_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002"
-
-const LOCAL_CLIENT_API_URL = process.env.NEXT_PUBLIC_CLIENT_API_URL || "http://localhost:3000";
-
-function resolveClientApiBaseUrl(): string {
-  if (typeof window === "undefined") {
-    return LOCAL_CLIENT_API_URL;
-  }
-
-  const hostname = window.location.hostname;
-  const isLocalOrigin =
-    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
-
-  if (isLocalOrigin) {
-    return LOCAL_CLIENT_API_URL;
-  }
-
-  return localStorage.getItem("selectedBaseUrl") || LOCAL_CLIENT_API_URL;
-}
-
-export const AYAHAY_CLIENT_API = resolveClientApiBaseUrl();
+export const AYAHAY_CLIENT_API = typeof window !== "undefined" ? localStorage.getItem("seletedBaseUrl") || process.env.NEXT_PUBLIC_CLIENT_API_URL : "http://localhost:3000"
 
 export const API_ENDPOINTS = {
 	AUTH: "/bi/auth",
@@ -37,6 +18,8 @@ export const API_ENDPOINTS = {
 	ADVANCE_BOOKING: "/bi/advance-booking",
 	ROUTE_MAP: "/bi/route-map",
 	COMPARISON_TREND: "/bi/comparison-trend",
+	REVENUE_PER_BOOKINGS: "/bi/sales-report/revenue-per-bookings",
+	SALES_REPORT_CHARTS: "/bi/sales-report/charts",
 	REVENUE_PER_BOOKINGS: "/bi/sales-report/revenue-per-bookings",
 	SALES_REPORT_CHARTS: "/bi/sales-report/charts",
 } as const

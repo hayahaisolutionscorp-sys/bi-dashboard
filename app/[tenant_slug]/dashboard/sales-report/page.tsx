@@ -2,6 +2,9 @@
 import { ChangeEvent, useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { format } from "date-fns";
+import { ChangeEvent, useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { format } from "date-fns";
 import { downloadTemplate } from "@/lib/export-utils";
 import { SimpleKpiCard } from "@/components/charts/simple-kpi-card";
 import { CalendarDays, FilterX, FileInput, FileOutput, Download, Route, Banknote, TrendingUp, Ticket } from "lucide-react";
@@ -16,9 +19,11 @@ import { ShadcnPieChartLabelList } from "@/components/charts/shadcn-pie-chart-la
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
 import { ComparisonTrendChart } from "@/components/charts/comparison-trend-chart";
 import { SalesKpiResponse } from "@/types/sales";
+import { SalesKpiResponse } from "@/types/sales";
 
 // Services & Types
 import { salesService } from "@/services/sales.service";
+import { SalesReportRoute, RevenueTrendItem } from "@/types/sales";
 import { SalesReportRoute, RevenueTrendItem } from "@/types/sales";
 
 const createDefaultDateRange = (): DateRange => {
@@ -56,13 +61,50 @@ export default function SalesReportPage() {
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }, [router, pathname, searchParams]);
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // ── Date Range (URL Synced) ────────────────────────────────────────────────
+  const dateRange = useMemo(() => {
+    const fromStr = searchParams.get("startDate");
+    const toStr = searchParams.get("endDate");
+    if (fromStr && toStr) {
+      const from = new Date(fromStr);
+      const to = new Date(toStr);
+      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) return { from, to };
+    }
+    return createDefaultDateRange();
+  }, [searchParams]);
+
+  const setDateRange = useCallback((newRange: DateRange | undefined) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newRange?.from && newRange?.to) {
+      params.set("startDate", newRange.from.toISOString());
+      params.set("endDate", newRange.to.toISOString());
+    } else {
+      params.delete("startDate");
+      params.delete("endDate");
+    }
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [router, pathname, searchParams]);
+
   const [isExporting, setIsExporting] = useState(false);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
 
   // ── Routes (URL Synced) ──────────────────────────────────────────────────
+  // ── Routes (URL Synced) ──────────────────────────────────────────────────
   const [routeNames, setRouteNames] = useState<string[]>([]);
   const selectedRouteName = searchParams.get("route") || "";
+  const selectedRouteName = searchParams.get("route") || "";
   const [isRoutesLoading, setIsRoutesLoading] = useState(true);
+
+  const setSelectedRouteName = useCallback((name: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (name) params.set("route", name);
+    else params.delete("route");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [router, pathname, searchParams]);
 
   const setSelectedRouteName = useCallback((name: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -93,6 +135,22 @@ export default function SalesReportPage() {
   const [routePage, setRoutePage] = useState(0);
   const [vesselPage, setVesselPage] = useState(0);
 
+  // New local KPI data state
+  const [kpiData, setKpiData] = useState<SalesKpiResponse["data"] | null>(null);
+  const [isKpisLoading, setIsKpisLoading] = useState(false);
+
+  // New Revenue vs Booking Trend state
+  const [revenueTrend, setRevenueTrend] = useState<any[]>([]);
+  const [isTrendLoading, setIsTrendLoading] = useState(false);
+
+  // New Breakdown states
+  const [salesByRoute, setSalesByRoute] = useState<any[]>([]);
+  const [salesByVessel, setSalesByVessel] = useState<any[]>([]);
+  const [isChartsLoading, setIsChartsLoading] = useState(false);
+  const ITEMS_PER_PAGE = 5;
+  const [routePage, setRoutePage] = useState(0);
+  const [vesselPage, setVesselPage] = useState(0);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 1. Fetch routes list once on mount
@@ -102,6 +160,9 @@ export default function SalesReportPage() {
       try {
         const names = await salesService.getRoutes();
         setRouteNames(names);
+        if (names.length > 0 && !selectedRouteName) {
+          setSelectedRouteName(names[0]);
+        }
         if (names.length > 0 && !selectedRouteName) {
           setSelectedRouteName(names[0]);
         }
@@ -124,10 +185,14 @@ export default function SalesReportPage() {
       try {
         // Temporarily disabled while revising KPIs
         /*
+        // Temporarily disabled while revising KPIs
+        /*
         const from = dateRange?.from?.toISOString().split("T")[0];
         const to = dateRange?.to?.toISOString().split("T")[0];
         const data = await salesService.getSalesReport(from, to, selectedRouteName);
         setSelectedRoute(data);
+        */
+        setSelectedRoute(null);
         */
         setSelectedRoute(null);
       } catch (err) {
@@ -266,21 +331,14 @@ export default function SalesReportPage() {
         const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
         const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
         const response = await salesService.getSalesReportCharts(from, to);
-
-        const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
-        
-        setSalesByRoute(response.data.salesByRoute.map((item, index) => ({
+        setSalesByRoute(response.data.salesByRoute.map(item => ({
           ...item,
-          value: Math.max(0, item.value || 0),
-          fill: COLORS[index % COLORS.length]
+          value: Math.max(0, item.value || 0)
         })));
-
-        setSalesByVessel(response.data.salesByVessel.map((item, index) => ({
+        setSalesByVessel(response.data.salesByVessel.map(item => ({
           ...item,
-          value: Math.max(0, item.value || 0),
-          fill: COLORS[index % COLORS.length]
+          value: Math.max(0, item.value || 0)
         })));
-
         setRoutePage(0);
         setVesselPage(0);
       } catch (err) {
@@ -317,8 +375,15 @@ export default function SalesReportPage() {
 
   const handleExport = async () => {
     if (isExporting) return;
+    if (isExporting) return;
     setIsExporting(true);
     try {
+      const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+      const to   = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
+      // Use the selectedRouteName which is already synced with the URL/params
+      await salesService.downloadSalesReportExcel(from, to, selectedRouteName || undefined);
+    } catch (err) {
+      console.error("Export error:", err);
       const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
       const to   = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
       // Use the selectedRouteName which is already synced with the URL/params
@@ -408,6 +473,7 @@ export default function SalesReportPage() {
               type="button"
               onClick={handleExport}
               disabled={isExporting}
+              disabled={isExporting}
               className="inline-flex h-9 w-full sm:w-auto justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 disabled:opacity-50"
             >
               {isExporting ? (
@@ -415,6 +481,7 @@ export default function SalesReportPage() {
               ) : (
                 <FileOutput className="h-4 w-4 shrink-0 text-sky-500" />
               )}
+              <span className="truncate">{isExporting ? "Export" : "Export"}</span>
               <span className="truncate">{isExporting ? "Export" : "Export"}</span>
             </button>
             <button
@@ -429,6 +496,7 @@ export default function SalesReportPage() {
               ) : (
                 <Download className="h-4 w-4 shrink-0 text-slate-400" />
               )}
+              <span className="truncate">{isDownloadingTemplate ? "Template" : "Template"}</span>
               <span className="truncate">{isDownloadingTemplate ? "Template" : "Template"}</span>
             </button>
           </div>
@@ -452,6 +520,7 @@ export default function SalesReportPage() {
           )}
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {isInitialLoad || isKpisLoading ? (
+            {isInitialLoad || isKpisLoading ? (
               <>
                 {[...Array(3)].map((_, i) => (
                   <Skeleton key={i} className="h-24 w-full rounded-xl" />
@@ -462,6 +531,8 @@ export default function SalesReportPage() {
                 <SimpleKpiCard
                   label={kpiData?.totalSales.label || "Total Sales"}
                   value={formatCurrency(kpiData?.totalSales.value)}
+                  label={kpiData?.totalSales.label || "Total Sales"}
+                  value={formatCurrency(kpiData?.totalSales.value)}
                   icon={Banknote}
                   colorClass="text-blue-500"
                   subtext="Before deductions"
@@ -469,11 +540,15 @@ export default function SalesReportPage() {
                 <SimpleKpiCard
                   label={kpiData?.grossRevenue.label || "Gross Revenue"}
                   value={formatCurrency(kpiData?.grossRevenue.value)}
+                  label={kpiData?.grossRevenue.label || "Gross Revenue"}
+                  value={formatCurrency(kpiData?.grossRevenue.value)}
                   icon={TrendingUp}
                   colorClass="text-green-500"
                   subtext="After deductions"
                 />
                 <SimpleKpiCard
+                  label={kpiData?.totalBookings.label || "Total Bookings"}
+                  value={(kpiData?.totalBookings.value ?? 0).toLocaleString()}
                   label={kpiData?.totalBookings.label || "Total Bookings"}
                   value={(kpiData?.totalBookings.value ?? 0).toLocaleString()}
                   icon={Ticket}
@@ -488,16 +563,22 @@ export default function SalesReportPage() {
         {/* Trend Chart */}
         <div className="relative rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950">
           {(isLoading || isTrendLoading) && !isInitialLoad && (
+          {(isLoading || isTrendLoading) && !isInitialLoad && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px]">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
             </div>
           )}
           {isInitialLoad || isTrendLoading ? (
+          {isInitialLoad || isTrendLoading ? (
             <Skeleton className="h-[300px] w-full rounded-xl" />
+          ) : isChartEmpty(revenueTrend) ? (
           ) : isChartEmpty(revenueTrend) ? (
             <NoDataPlaceholder height="300px" />
           ) : (
             <ShadcnLineChartMultiple
+              title="Revenue per Bookings Source"
+              description="Daily performance by booking source channel"
+              data={revenueTrend}
               title="Revenue per Bookings Source"
               description="Daily performance by booking source channel"
               data={revenueTrend}
@@ -512,8 +593,22 @@ export default function SalesReportPage() {
                 travel_agency: { label: "Travel Agency",  color: "#8b5cf6" },
                 walk_in:       { label: "Walk-in",        color: "#0ea5e9" },
                 website:       { label: "Website",        color: "#ec4899" },
+                api_v2:        { label: "API v2",         color: "#10b981" },
+                mobile_app:    { label: "Mobile App",     color: "#f43f5e" },
+                online:        { label: "Online",         color: "#6366f1" },
+                otc:           { label: "OTC",            color: "#f97316" },
+                travel_agency: { label: "Travel Agency",  color: "#8b5cf6" },
+                walk_in:       { label: "Walk-in",        color: "#0ea5e9" },
+                website:       { label: "Website",        color: "#ec4899" },
               }}
               series={[
+                { dataKey: "api_v2",        color: "#10b981", name: "API v2" },
+                { dataKey: "mobile_app",    color: "#f43f5e", name: "Mobile App" },
+                { dataKey: "online",        color: "#6366f1", name: "Online" },
+                { dataKey: "otc",           color: "#f97316", name: "OTC" },
+                { dataKey: "travel_agency", color: "#8b5cf6", name: "Travel Agency" },
+                { dataKey: "walk_in",        color: "#0ea5e9", name: "Walk-in" },
+                { dataKey: "website",       color: "#ec4899", name: "Website" },
                 { dataKey: "api_v2",        color: "#10b981", name: "API v2" },
                 { dataKey: "mobile_app",    color: "#f43f5e", name: "Mobile App" },
                 { dataKey: "online",        color: "#6366f1", name: "Online" },
@@ -532,20 +627,30 @@ export default function SalesReportPage() {
           dateRange={dateRange} 
           selectedRouteName={selectedRouteName}
         />
+        {/* Comparison Trend Chart */}
+        <ComparisonTrendChart 
+          dateRange={dateRange} 
+          selectedRouteName={selectedRouteName}
+        />
 
         {/* Breakdown Charts */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Sales by Route */}
+          {/* Sales by Route */}
           <div className="relative rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
+            {(isLoading || isChartsLoading) && !isInitialLoad && (
             {(isLoading || isChartsLoading) && !isInitialLoad && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px]">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
               </div>
             )}
             {isInitialLoad || isChartsLoading ? (
+            {isInitialLoad || isChartsLoading ? (
               <Skeleton className="h-[300px] w-full rounded-xl" />
             ) : isChartEmpty(salesByRoute) ? (
+            ) : isChartEmpty(salesByRoute) ? (
               <div className="pt-4 px-4">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sales by Route</p>
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sales by Route</p>
                 <NoDataPlaceholder height="270px" />
               </div>
@@ -556,9 +661,14 @@ export default function SalesReportPage() {
                 data={salesByRoute.slice(routePage * ITEMS_PER_PAGE, (routePage + 1) * ITEMS_PER_PAGE)}
                 dataKey="value"
                 labelKey="label"
+                title="Sales by Route"
+                description="Revenue breakdown by geographical route"
+                data={salesByRoute.slice(routePage * ITEMS_PER_PAGE, (routePage + 1) * ITEMS_PER_PAGE)}
+                dataKey="value"
+                labelKey="label"
                 hideYAxis={false}
                 config={{
-                  value: { label: "Revenue" },
+                  value: { label: "Revenue", color: "#0ea5e9" },
                 }}
                 pagination={{
                   currentPage: routePage,
@@ -571,16 +681,21 @@ export default function SalesReportPage() {
           </div>
 
           {/* Sales per Vessel */}
+          {/* Sales per Vessel */}
           <div className="relative rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
+            {(isLoading || isChartsLoading) && !isInitialLoad && (
             {(isLoading || isChartsLoading) && !isInitialLoad && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px]">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
               </div>
             )}
             {isInitialLoad || isChartsLoading ? (
+            {isInitialLoad || isChartsLoading ? (
               <Skeleton className="h-[300px] w-full rounded-xl" />
             ) : isChartEmpty(salesByVessel) ? (
+            ) : isChartEmpty(salesByVessel) ? (
               <div className="pt-4 px-4">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sales per Vessel</p>
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sales per Vessel</p>
                 <NoDataPlaceholder height="270px" />
               </div>
@@ -593,7 +708,7 @@ export default function SalesReportPage() {
                 labelKey="label"
                 hideYAxis={false}
                 config={{
-                  value: { label: "Revenue" },
+                  value: { label: "Revenue", color: "#2563eb" },
                 }}
                 pagination={{
                   currentPage: vesselPage,
