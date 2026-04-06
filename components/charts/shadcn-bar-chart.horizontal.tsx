@@ -126,11 +126,27 @@ export function ShadcnBarChartHorizontal({
             />
             <Bar
               dataKey={dataKey}
-              fill={`var(--color-${dataKey})`}
-              radius={0}
-              barSize={32}
+              radius={4}
+              barSize={20}
               minPointSize={4}
             >
+              {data.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={entry.fill || config[dataKey]?.color || `var(--chart-1)`} 
+                />
+              ))}
+              <LabelList
+                dataKey={dataKey}
+                position="right"
+                offset={8}
+                className="fill-slate-500 dark:fill-slate-400 font-medium text-[10px]"
+                formatter={(value: number) => {
+                  if (value >= 1000000) return `(${(value / 1000000).toFixed(1)}M)`;
+                  if (value >= 1000) return `(${(value / 1000).toFixed(0)}k)`;
+                  return `(${value})`;
+                }}
+              />
               {hideYAxis && (
                 <LabelList
                   dataKey={labelKey}

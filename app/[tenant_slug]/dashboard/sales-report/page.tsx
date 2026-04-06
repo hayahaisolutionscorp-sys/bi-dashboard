@@ -331,14 +331,21 @@ export default function SalesReportPage() {
         const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
         const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
         const response = await salesService.getSalesReportCharts(from, to);
-        setSalesByRoute(response.data.salesByRoute.map(item => ({
+
+        const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
+        
+        setSalesByRoute(response.data.salesByRoute.map((item, index) => ({
           ...item,
-          value: Math.max(0, item.value || 0)
+          value: Math.max(0, item.value || 0),
+          fill: COLORS[index % COLORS.length]
         })));
-        setSalesByVessel(response.data.salesByVessel.map(item => ({
+
+        setSalesByVessel(response.data.salesByVessel.map((item, index) => ({
           ...item,
-          value: Math.max(0, item.value || 0)
+          value: Math.max(0, item.value || 0),
+          fill: COLORS[index % COLORS.length]
         })));
+
         setRoutePage(0);
         setVesselPage(0);
       } catch (err) {
@@ -668,7 +675,7 @@ export default function SalesReportPage() {
                 labelKey="label"
                 hideYAxis={false}
                 config={{
-                  value: { label: "Revenue", color: "#0ea5e9" },
+                  value: { label: "Revenue" },
                 }}
                 pagination={{
                   currentPage: routePage,
@@ -708,7 +715,7 @@ export default function SalesReportPage() {
                 labelKey="label"
                 hideYAxis={false}
                 config={{
-                  value: { label: "Revenue", color: "#2563eb" },
+                  value: { label: "Revenue" },
                 }}
                 pagination={{
                   currentPage: vesselPage,
