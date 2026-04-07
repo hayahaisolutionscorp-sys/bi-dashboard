@@ -104,7 +104,7 @@ export function Heatmap({ title, description, data, dateRange }: HeatmapProps) {
                   : "text-slate-600 hover:text-slate-800 dark:text-slate-400"
               )}
             >
-              Completion Trip
+              Completed Trips
             </button>
             <button
               onClick={() => {
@@ -118,7 +118,7 @@ export function Heatmap({ title, description, data, dateRange }: HeatmapProps) {
                   : "text-slate-600 hover:text-slate-800 dark:text-slate-400"
               )}
             >
-              Cancelled Trip
+              Cancelled Trips
             </button>
           </div>
 
@@ -183,7 +183,7 @@ export function Heatmap({ title, description, data, dateRange }: HeatmapProps) {
                             </div>
                           </TooltipTrigger>
                           <TooltipContent className="bg-slate-900 text-white text-xs">
-                            {vesselObj.vessel_name}: {count} trips on {format(day, "MMM d")}
+                            {vesselObj.vessel_name}: {count} {viewMode === "successful" ? "completed" : "cancelled"} trips on {format(day, "MMM d")}
                           </TooltipContent>
                         </Tooltip>
                       </td>

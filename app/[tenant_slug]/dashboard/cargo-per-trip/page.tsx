@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { format, parseISO } from "date-fns";
 import { useParams } from "next/navigation";
 import { CalendarDays, FilterX, Box, Banknote, TrendingUp, BarChart3, Container, Star, Activity } from "lucide-react";
 import { SimpleKpiCard } from "@/components/charts/simple-kpi-card";
@@ -9,7 +10,7 @@ import { DateRange } from "react-day-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
 
-import { ShadcnBarChartMultiple } from "@/components/charts/shadcn-bar-chart-multiple";
+import { ShadcnLineChartMultipleCargo } from "@/components/charts/shadcn-line-chart-multiple-cargo";
 import { ShadcnPieChartLegend } from "@/components/charts/shadcn-pie-chart-legend";
 
 import { cargoService } from "@/services/cargo.service";
@@ -30,6 +31,7 @@ export default function CargoPerTripPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cargoType, setCargoType] = useState<"rolling" | "loose">("rolling");
 
   useEffect(() => {
     async function fetchData() {
@@ -110,33 +112,62 @@ export default function CargoPerTripPage() {
     );
   }
 
-  const getBarData = () => {
-    if (!data?.volumeVsRevenueData) return { mappedData: [], config: {} };
-    const { xAxis, series } = data.volumeVsRevenueData;
+  const lineData = useMemo(() => {
+    if (!data?.revenuepercargotrend || !dateRange?.from || !dateRange?.to) return { mappedData: [], config: {} };
+
+    const rawSeries = data.revenuepercargotrend;
     
-    const mappedData = xAxis.map((x, i) => {
-      const item: any = { date: x };
-      series.forEach(s => {
-        item[s.name] = s.data[i];
-      });
-      return item;
+    // Aggregate unique class names based on selected cargo type
+    const classNames = new Set<string>();
+    rawSeries.forEach(day => {
+       const key = cargoType === "rolling" ? "cargo-type-rolling" : "cargo-type-loose";
+       day[key]?.forEach(c => classNames.add(c.class));
     });
 
+    const colors = ["#2563eb", "#8b5cf6", "#f43f5e", "#10b981", "#f59e0b", "#14b8a6", "#eab308", "#db2777", "#6366f1"];
     const config: any = {};
-    const fallbackColors = ["#2563eb", "#10b981", "#f59e0b", "#8b5cf6"];
-    series.forEach((s, i) => {
-      let color = fallbackColors[i % fallbackColors.length];
-      const nameLower = s.name.toLowerCase();
-      if (nameLower.includes("revenue")) {
-        color = "#10b981"; // Green for Revenue
-      } else if (nameLower.includes("volume") || nameLower.includes("weight")) {
-        color = "#3b82f6"; // Blue for Volume
-      }
-      config[s.name] = { label: s.name, color };
+    Array.from(classNames).forEach((name, i) => {
+      config[name] = { label: name, color: colors[i % colors.length] };
     });
+
+    // Map formatted date strings to their payload objects
+    const dataMap = new Map<string, Record<string, number>>();
+    rawSeries.forEach(item => {
+      try {
+        const d = item.date.includes("-") ? parseISO(item.date) : new Date(item.date);
+        const normalized = format(d, "yyyy-MM-dd");
+        
+        const revMap: Record<string, number> = {};
+        const key = cargoType === "rolling" ? "cargo-type-rolling" : "cargo-type-loose";
+        item[key]?.forEach(c => { revMap[c.class] = Number(c.revenue || 0) });
+        
+        dataMap.set(normalized, revMap);
+      } catch (e) {
+        console.warn("Invalid date in revenuepercargotrend:", item.date);
+      }
+    });
+
+    const mappedData: any[] = [];
+    const current = new Date(dateRange.from);
+    current.setHours(0, 0, 0, 0);
+    const end = new Date(dateRange.to);
+    end.setHours(0, 0, 0, 0);
+
+    while (current <= end) {
+      const dateStr = format(current, "yyyy-MM-dd");
+      const entry: any = { date: dateStr };
+      const revMap = dataMap.get(dateStr) || {};
+      
+      Array.from(classNames).forEach(name => {
+        entry[name] = revMap[name] || 0;
+      });
+      
+      mappedData.push(entry);
+      current.setDate(current.getDate() + 1);
+    }
 
     return { mappedData, config };
-  };
+  }, [data, dateRange, cargoType]);
 
   const getMapData = (sourceArray: any[]) => {
     if (!sourceArray || sourceArray.length === 0) return { mappedData: [], config: {} };
@@ -156,27 +187,20 @@ export default function CargoPerTripPage() {
     <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
         {/* Toolbar */}
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2 text-sm w-full sm:w-auto">
-              <CalendarDays className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
-              <span className="hidden sm:inline-block shrink-0 text-slate-600 dark:text-slate-300">Date Range:</span>
-              <div className="w-full sm:w-auto">
-                <DateRangePicker date={dateRange} onDateChange={setDateRange} />
-              </div>
-            </div>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+          <div className="flex items-center gap-2 text-sm">
+            <CalendarDays className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            <span className="text-slate-600 dark:text-slate-300">Date Range:</span>
+            <DateRangePicker date={dateRange} onDateChange={setDateRange} />
           </div>
-
-          <div className="grid grid-cols-1 sm:flex sm:flex-row sm:items-center sm:gap-2">
-            <button
-              type="button"
-              className="inline-flex h-9 w-full sm:w-auto justify-center items-center gap-1.5 rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-600"
-              onClick={handleClearFilter}
-            >
-              <FilterX className="h-4 w-4 shrink-0" />
-              <span className="truncate">Clear Filter</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleClearFilter}
+            className="inline-flex h-9 items-center gap-1.5 self-start rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-600 md:self-auto"
+          >
+            <FilterX className="h-4 w-4" />
+            Clear Filter
+          </button>
         </div>
 
         {/* KPIs */}
@@ -211,25 +235,27 @@ export default function CargoPerTripPage() {
         <section className="col-span-1">
           <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
              {isLoading || !data ? (
-               <Skeleton className="h-[320px] w-full rounded-xl" />
-             ) : getBarData().mappedData.length === 0 ? (
-               <NoDataPlaceholder height="320px" />
+                <Skeleton className="h-[320px] w-full rounded-xl" />
+             ) : lineData.mappedData.length === 0 ? (
+                <NoDataPlaceholder height="320px" />
              ) : (
-               <ShadcnBarChartMultiple
-                 title="Volume vs Revenue Trend"
-                 description="Correlation between Weight and Revenue"
-                 data={getBarData().mappedData}
-                 config={getBarData().config}
-                 labelKey="date"
-                 height="340px"
-                 dateRange={dateRange}
-               />
+                <ShadcnLineChartMultipleCargo
+                  title={`Revenue by ${cargoType.charAt(0).toUpperCase() + cargoType.slice(1)} Cargo Trend`}
+                  description={`Daily revenue split across ${cargoType} cargo classes`}
+                  data={lineData.mappedData}
+                  config={lineData.config}
+                  labelKey="date"
+                  height="340px"
+                  dateRange={dateRange}
+                  cargoType={cargoType}
+                  onCargoTypeChange={setCargoType}
+                />
              )}
           </div>
         </section>
 
         {/* Pies / Donuts */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
              {isLoading || !data ? (
                <Skeleton className="h-[320px] w-full rounded-xl" />
@@ -265,7 +291,7 @@ export default function CargoPerTripPage() {
                />
              )}
           </div>
-        </section>
+        </section> */}
 
       </div>
     </div>

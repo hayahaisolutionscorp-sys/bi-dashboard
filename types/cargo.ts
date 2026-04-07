@@ -13,16 +13,15 @@ export interface ChartSeriesData {
   percentage?: number;
 }
 
-export interface VolumeVsRevenueSeries {
-  name: string;
-  type: string;
-  data: number[];
-  yAxisIndex?: number;
+export interface CargoClassRevenue {
+  class: string;
+  revenue: number;
 }
 
-export interface VolumeVsRevenueData {
-  xAxis: string[];
-  series: VolumeVsRevenueSeries[];
+export interface RevenuePerCargoTrendItem {
+  date: string;
+  "cargo-type-rolling": CargoClassRevenue[];
+  "cargo-type-loose": CargoClassRevenue[];
 }
 
 export interface CargoReportResponse {
@@ -30,7 +29,7 @@ export interface CargoReportResponse {
     kpiData: KpiDataRow[];
     cargoClassesData: ChartSeriesData[];
     revenueContributionData: ChartSeriesData[];
-    volumeVsRevenueData: VolumeVsRevenueData;
+    revenuepercargotrend: RevenuePerCargoTrendItem[];
     sourceDistributionData: ChartSeriesData[];
   };
 }

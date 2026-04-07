@@ -11,6 +11,7 @@ import { Route, Ship, MapPin, ChevronDown, Check } from "lucide-react";
 
 interface ComparisonTrendChartProps {
   dateRange?: DateRange;
+  selectedRouteName?: string;
 }
 
 const SERIES_COLORS = [
@@ -26,7 +27,7 @@ const SERIES_COLORS = [
   "#6366f1", // indigo-500
 ];
 
-export function ComparisonTrendChart({ dateRange }: ComparisonTrendChartProps) {
+export function ComparisonTrendChart({ dateRange, selectedRouteName }: ComparisonTrendChartProps) {
   const [compareBy, setCompareBy] = useState<"route" | "vessel" | "trip">("route");
   const [metric, setMetric] = useState<"totalSales" | "totalBookings" | "totalPassengers">("totalSales");
   
@@ -65,7 +66,13 @@ export function ComparisonTrendChart({ dateRange }: ComparisonTrendChartProps) {
     const from = dateRange.from.toISOString().split("T")[0];
     const to = dateRange.to.toISOString().split("T")[0];
     
-    const currentIds = overrideEntityIds !== undefined ? overrideEntityIds : entityIds;
+    // Combine manual selections with the globally selected route (if comparing by route)
+    let currentIds = overrideEntityIds !== undefined ? overrideEntityIds : entityIds;
+    
+    const isPinnedRouteActive = compareBy === "route" && selectedRouteName;
+    if (isPinnedRouteActive && !currentIds.includes(selectedRouteName as string)) {
+      currentIds = [...currentIds, selectedRouteName as string];
+    }
 
     try {
       const data = await salesService.getComparisonTrend({
@@ -74,14 +81,6 @@ export function ComparisonTrendChart({ dateRange }: ComparisonTrendChartProps) {
         compareBy,
         entityIds: currentIds.length > 0 ? currentIds : undefined
       });
-
-      // If the frontend currently had no entities selected (fetching "All" for dimension),
-      // we auto-fill the UI and save the full list into availableEntities for the dropdown options.
-      // The user specially requested not to pre-select, so we skip setting entityIds.
-      if (currentIds.length === 0 && data.series && data.series.length > 0) {
-        const fetchedIds = data.series.map(s => s.id);
-        setAvailableEntities(fetchedIds);
-      }
 
       setTrendData(data);
     } catch (err) {
@@ -92,25 +91,48 @@ export function ComparisonTrendChart({ dateRange }: ComparisonTrendChartProps) {
     }
   };
 
+  // 2. Separate logic to fetch available options for the dropdown
+  const fetchAvailableEntities = async () => {
+    try {
+      let fetchedIds: string[] = [];
+      if (compareBy === "route") {
+        fetchedIds = await salesService.getRoutes();
+      } else {
+        // For vessels/trips, we might fallback to generic series if no specialized discovery exists
+        const data = await salesService.getComparisonTrend({
+          from: dateRange?.from?.toISOString().split("T")[0]!,
+          to: dateRange?.to?.toISOString().split("T")[0]!,
+          compareBy
+        });
+        fetchedIds = data.series.map(s => s.id);
+      }
+
+      // Filter out the globally selected route so it doesn't show in the dropdown
+      if (compareBy === "route" && selectedRouteName) {
+        fetchedIds = fetchedIds.filter(id => id !== selectedRouteName);
+      }
+      setAvailableEntities(fetchedIds);
+    } catch (err) {
+      console.error("Discovery fetch error:", err);
+    }
+  };
+
   useEffect(() => {
-    // We intentionally reset selection locally when dimension changes to fetch "All" for that new dimension
+    // Reset local selection when dimension changes
     setEntityIds([]);
     setAvailableEntities([]);
     setTrendData(null);
     
-    // Always fetch API immediately when dimension or date changes.
-    // It will pass empty entityIds, effectively asking backend for "All".
-    fetchTrend([]); 
+    fetchTrend([]);
+    fetchAvailableEntities();
     
-    // Exclude entityIds from dependencies to avoid infinite re-fetching loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compareBy, dateRange]);
+  }, [compareBy, dateRange, selectedRouteName]);
 
   const handleToggleEntity = (name: string) => {
     const isSelected = entityIds.includes(name);
     const newIds = isSelected ? entityIds.filter(r => r !== name) : [...entityIds, name];
     setEntityIds(newIds);
-    // Explicitly trigger a data fetch when user applies new filters
     fetchTrend(newIds);
   };
 
@@ -154,7 +176,7 @@ export function ComparisonTrendChart({ dateRange }: ComparisonTrendChartProps) {
 
   return (
     <div className="relative rounded-xl border border-slate-300 bg-gray-100 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950 mt-4">
-      <h3 className="text-base font-semibold mb-3 px-1">Comparison Trend</h3>
+      <h3 className="text-base font-semibold mb-3 px-1 text-slate-800 dark:text-slate-100">Comparison Trend</h3>
       <div className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center w-full">
           {/* Compare By */}
@@ -220,7 +242,7 @@ export function ComparisonTrendChart({ dateRange }: ComparisonTrendChartProps) {
 
           {/* Entities Dropdown */}
           <div className="flex flex-col gap-1.5 w-full sm:w-[280px] relative">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400">Active Selection</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400">Compare With</span>
             <div 
               className="relative" 
               ref={dropdownRef}
@@ -231,8 +253,8 @@ export function ComparisonTrendChart({ dateRange }: ComparisonTrendChartProps) {
               >
                 <span className="truncate pr-2">
                   {entityIds.length === 0 
-                    ? `Select ${compareBy}s...` 
-                    : `${entityIds.length} ${compareBy}${entityIds.length > 1 ? "s" : ""} selected`}
+                    ? `Compare with ${compareBy}s...` 
+                    : `${entityIds.length} added for comparison`}
                 </span>
                 <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </div>

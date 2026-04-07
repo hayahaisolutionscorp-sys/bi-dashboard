@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ayahay Admin",
-  description: "Ayahay admin",
+  title: "Hayahai BI",
+  description: "Hayahai BI Dashboard",
 };
 
 export const viewport: Viewport = {

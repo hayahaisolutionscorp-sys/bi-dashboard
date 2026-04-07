@@ -154,32 +154,30 @@ export default function StatusPage() {
           </button>
         </div>
 
-        {/* KPI Grid */}
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 md:auto-rows-fr">
+        {/* KPI Row - Flexible layout that fills available width */}
+        <section className="flex flex-wrap gap-4">
           {isInitialLoad || !data ? (
              <>
-               <Skeleton className="h-24 w-full rounded-xl" />
-               <Skeleton className="h-24 w-full rounded-xl" />
-               <Skeleton className="h-24 w-full rounded-xl" />
-               <Skeleton className="h-24 w-full rounded-xl" />
-               <Skeleton className="h-24 w-full rounded-xl" />
+               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
+               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
+               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
+               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
+               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
              </>
           ) : (
-            kpis.map((kpi, index) => {
-              const colors = ["text-blue-500", "text-green-500", "text-orange-500", "text-purple-500", "text-yellow-500", "text-red-500"];
-              return (
+            kpis.map((kpi, index) => (
+              <div key={index} className="flex-1 min-w-[280px]">
                 <SimpleKpiCard
-                  key={index}
                   label={kpi.label}
                   value={String(kpi.value)}
                   icon={kpi.icon as any}
-                  colorClass={colors[index % colors.length]}
                   indicatorText={kpi.indicatorText}
                   indicatorDirection={kpi.indicatorDirection}
                   subtext={kpi.indicatorSubtext}
+                  colorClass={kpi.colorClass}
                 />
-              );
-            })
+              </div>
+            ))
           )}
         </section>
 
@@ -206,8 +204,8 @@ export default function StatusPage() {
         </section>
 
         {/* Charts & Distribution */}
-        <section className="grid grid-cols-1 gap-3">
-          {/* Passenger Class Distribution */}
+        {/* <section className="grid grid-cols-1 gap-3">
+         
           <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
             {isLoading || !data ? (
               <Skeleton className="h-[320px] w-full rounded-xl" />
@@ -224,7 +222,7 @@ export default function StatusPage() {
               />
             )}
           </div>
-        </section>
+        </section> */}
 
         {/* Operational Monitoring Section */}
         <section className="grid grid-cols-1 lg:grid-cols-1 gap-3">

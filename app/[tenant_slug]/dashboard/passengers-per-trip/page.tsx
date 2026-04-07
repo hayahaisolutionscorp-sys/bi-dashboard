@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { format, parseISO } from "date-fns";
 import { useParams } from "next/navigation";
 import { CalendarDays, FilterX, Users, Wallet, TrendingUp, User, MapPin, AlertCircle, Activity } from "lucide-react";
 import { SimpleKpiCard } from "@/components/charts/simple-kpi-card";
@@ -8,6 +9,7 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
+import { ServerError } from "@/components/ui/server-error";
 
 import { ShadcnLineChartRegular } from "@/components/charts/shadcn-line-chart-regular";
 import { ShadcnBarChartMultiple } from "@/components/charts/shadcn-bar-chart-multiple";
@@ -37,8 +39,8 @@ export default function PassengersPerTripPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const from = dateRange?.from?.toISOString().split("T")[0];
-        const to = dateRange?.to?.toISOString().split("T")[0];
+        const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+        const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
         const result = await passengersService.getPassengersReport(tenantSlug, from, to);
         setData(result);
         if (isInitialLoad) {
@@ -91,7 +93,11 @@ export default function PassengersPerTripPage() {
     return "text-[#1890ff]";
   };
 
-  const kpiCount = data?.kpiData.length || 0;
+  const filteredKpiData = data?.kpiData?.filter(
+    (kpi) => !["Best Route", "Least Route", "Load Factor"].some(hidden => kpi.title.includes(hidden))
+  ) || [];
+
+  const kpiCount = filteredKpiData.length;
   const kpiGridClass =
     kpiCount >= 5
       ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
@@ -99,42 +105,37 @@ export default function PassengersPerTripPage() {
         ? "grid-cols-1 sm:grid-cols-2"
         : "grid-cols-[repeat(auto-fit,minmax(210px,1fr))]";
 
-  if (error) {
-    return (
-      <div className="flex h-[400px] items-center justify-center text-rose-500">
-        <p className="font-medium text-lg">{error}</p>
-      </div>
-    );
-  }
+  const lineData = useMemo(() => {
+    if (!data?.trendData || !dateRange?.from || !dateRange?.to) return [];
 
-  const getLineData = () => {
-    if (!data?.trendData) return [];
-    return data.trendData.xAxis.map((x, i) => ({
-      date: x,
-      revenue: data.trendData.series[i]
-    }));
-  };
+    const filled: { date: string; count: number }[] = [];
+    const current = new Date(dateRange.from);
+    current.setHours(0, 0, 0, 0);
+    const end = new Date(dateRange.to);
+    end.setHours(0, 0, 0, 0);
 
-  const getBarData = () => {
-    if (!data?.bookingChannelTrendData) return { mappedData: [], config: {} };
-    const { xAxis, series } = data.bookingChannelTrendData;
-    
-    const mappedData = xAxis.map((x, i) => {
-      const item: any = { date: x };
-      series.forEach(s => {
-        item[s.name] = s.data[i];
+    const dataMap = new Map();
+    data.trendData.forEach(item => {
+      try {
+        const d = item.date.includes("-") ? parseISO(item.date) : new Date(item.date);
+        const normalized = format(d, "yyyy-MM-dd");
+        dataMap.set(normalized, Number(item["passenger-count"] || 0));
+      } catch (e) {
+        console.warn("Invalid date in trendData:", item.date);
+      }
+    });
+
+    while (current <= end) {
+      const dateStr = format(current, "yyyy-MM-dd");
+      filled.push({
+        date: dateStr,
+        count: dataMap.get(dateStr) ?? 0
       });
-      return item;
-    });
+      current.setDate(current.getDate() + 1);
+    }
+    return filled;
+  }, [data, dateRange]);
 
-    const config: any = {};
-    const colors = ["#8b5cf6", "#f43f5e", "#10b981", "#f59e0b"];
-    series.forEach((s, i) => {
-      config[s.name] = { label: s.name, color: colors[i % colors.length] };
-    });
-
-    return { mappedData, config };
-  };
 
   const getPieData = () => {
     if (!data?.discountDemographicsData) return { mappedData: [], config: {} };
@@ -146,6 +147,34 @@ export default function PassengersPerTripPage() {
     });
     return { mappedData, config };
   };
+
+  const getBookingChannelPieData = () => {
+    if (!data?.bookingChannelTrendData) return { mappedData: [], config: {} };
+    const { series } = data.bookingChannelTrendData;
+    
+    const mappedData = series.map(s => ({
+      name: s.name,
+      value: s.data.reduce((acc, curr) => acc + (curr || 0), 0)
+    }));
+
+    const config: any = {};
+    const colors = ["#8b5cf6", "#f43f5e", "#10b981", "#f59e0b", "#2563eb"];
+    mappedData.forEach((d, i) => {
+      config[d.name] = { label: d.name, color: colors[i % colors.length] };
+    });
+    
+    return { mappedData, config };
+  };
+
+  if (error) {
+    return (
+      <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 min-h-[calc(100vh-200px)]">
+        <div className="mx-auto w-full max-w-[1120px] p-4 lg:p-6">
+          <ServerError message={error} onRetry={() => window.location.reload()} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
@@ -174,17 +203,21 @@ export default function PassengersPerTripPage() {
               <Skeleton className="h-[120px] w-full rounded-xl" />
             </>
           ) : (
-            data.kpiData.map((kpi, index) => {
+            filteredKpiData.map((kpi, index) => {
               const colors = ["text-blue-500", "text-green-500", "text-orange-500", "text-purple-500", "text-yellow-500", "text-red-500"];
               return (
                 <SimpleKpiCard
                   key={index}
-                  label={kpi.title}
+                  label={
+                    kpi.title === "Avg Pax/Trip" ? "Average Passenger per Trip" :
+                    kpi.title === "Rev / Passenger" ? "Revenue per Passenger" :
+                    kpi.title
+                  }
                   value={String(kpi.value)}
                   icon={getSimpleIconName(kpi.icon)}
                   colorClass={colors[index % colors.length]}
                   indicatorText={kpi.change}
-                  subtext={kpi.description}
+                  subtext={"for selected period"}
                 />
               );
             })
@@ -195,20 +228,21 @@ export default function PassengersPerTripPage() {
           <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
             {isLoading || !data ? (
               <Skeleton className="h-[320px] w-full rounded-xl" />
-            ) : getLineData().length === 0 ? (
+            ) : lineData.length === 0 ? (
               <NoDataPlaceholder height="320px" />
             ) : (
               <ShadcnLineChartRegular
-                title="Passenger Trend Revenue"
-                description="Daily revenue driven by passengers"
-                data={getLineData()}
-                dataKey="revenue"
+                title="Passenger Count Trend"
+                description="Daily trend of passengers"
+                data={lineData}
+                dataKey="count"
                 labelKey="date"
                 color="#3b82f6"
                 height="320px"
                 dateRange={dateRange}
+                isCurrency={false}
                 config={{
-                  revenue: { label: "Revenue (₱)", color: "#3b82f6" }
+                  count: { label: "Passenger Count", color: "#3b82f6" }
                 }}
               />
             )}
@@ -219,17 +253,17 @@ export default function PassengersPerTripPage() {
           <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
             {isLoading || !data ? (
               <Skeleton className="h-[320px] w-full rounded-xl" />
-            ) : getBarData().mappedData.length === 0 ? (
+            ) : getBookingChannelPieData().mappedData.length === 0 ? (
               <NoDataPlaceholder height="320px" />
             ) : (
-              <ShadcnBarChartMultiple
+              <ShadcnPieChartLegend
                 title="Booking Channels"
-                description="Ticket volume by booking channel"
-                data={getBarData().mappedData}
-                config={getBarData().config}
-                labelKey="date"
+                description="Ticket volume distribution"
+                data={getBookingChannelPieData().mappedData}
+                config={getBookingChannelPieData().config}
+                dataKey="value"
+                nameKey="name"
                 height="320px"
-                dateRange={dateRange}
               />
             )}
           </div>

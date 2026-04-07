@@ -14,6 +14,7 @@ import { Ship, TrendingUp, Users, Banknote, Wrench, Compass } from "lucide-react
 // Shadcn Charts
 import { ShadcnBarChartHorizontal } from "@/components/charts/shadcn-bar-chart.horizontal";
 import { ShadcnBarChartMultiple } from "@/components/charts/shadcn-bar-chart-multiple";
+import { ShadcnBarChartVertical } from "@/components/charts/shadcn-bar-chart-vertical";
 import { ShadcnLineChartRegular } from "@/components/charts/shadcn-line-chart-regular";
 import { Heatmap } from "@/components/charts/heatmap";
 import { ChartConfig } from "@/components/ui/chart";
@@ -32,6 +33,9 @@ export default function VesselsPage() {
     threeMonthsAgo.setMonth(now.getMonth() - 2);
     return { from: threeMonthsAgo, to: now };
   });
+
+  const [fleetPage, setFleetPage] = useState(0);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,6 +86,17 @@ export default function VesselsPage() {
 
     return Object.values(aggregated).sort((a, b) => a.date.localeCompare(b.date));
   };
+
+  const getPaginatedFleetData = () => {
+    if (!data?.fleetLoadFactor) return [];
+    const sorted = [...data.fleetLoadFactor].sort((a, b) => 
+      a.vessel_name.localeCompare(b.vessel_name)
+    );
+    const start = fleetPage * itemsPerPage;
+    return sorted.slice(start, start + itemsPerPage);
+  };
+
+  const totalFleetPages = data?.fleetLoadFactor ? Math.ceil(data.fleetLoadFactor.length / itemsPerPage) : 0;
 
 
   if (error) {
@@ -141,29 +156,36 @@ export default function VesselsPage() {
         {/* Charts Section */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           
-          {/* Fleet Load Factor Breakdown */}
-          <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[400px]">
+          <div className="lg:col-span-2 rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-4">
             {isLoading ? (
-              <Skeleton className="h-[380px] w-full rounded-xl" />
+              <Skeleton className="h-[500px] w-full rounded-xl" />
             ) : !data || !data.fleetLoadFactor || data.fleetLoadFactor.length === 0 ? (
-              <NoDataPlaceholder height="380px" />
+              <NoDataPlaceholder height="500px" />
             ) : (
-              <ShadcnBarChartMultiple
-                title="Fleet Load Factor"
-                description="Pax vs Cargo utilization per vessel"
-                data={data.fleetLoadFactor}
-                labelKey="vessel_name"
-                dateRange={dateRange}
-                config={{
-                  pax_utilization: { label: "Passenger %", color: "#3b82f6" },
-                  cargo_utilization: { label: "Cargo %", color: "#10b981" },
-                }}
-              />
+              <div className="flex h-[500px] min-h-0 flex-col">
+                <ShadcnBarChartVertical
+                  title="Fleet Load Factor"
+                  description="Passenger utilization per vessel"
+                  data={getPaginatedFleetData()}
+                  labelKey="vessel_name"
+                  dataKey="pax_utilization"
+                  config={{
+                    pax_utilization: { label: "Passenger %", color: "#3b82f6" }
+                  }}
+                  minPointSize={5}
+                  pagination={{
+                    currentPage: fleetPage,
+                    totalPages: totalFleetPages,
+                    onNext: () => setFleetPage(p => Math.min(totalFleetPages - 1, p + 1)),
+                    onPrev: () => setFleetPage(p => Math.max(0, p - 1)),
+                  }}
+                />
+              </div>
             )}
           </div>
           
           {/* Trip Efficiency (Revenue per Trip) */}
-          <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[400px]">
+          {/* <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[400px]">
             {isLoading ? (
               <Skeleton className="h-[380px] w-full rounded-xl" />
             ) : !data || !data.tripEfficiency || data.tripEfficiency.length === 0 ? (
@@ -181,7 +203,7 @@ export default function VesselsPage() {
                 }}
               />
             )}
-          </div>
+          </div> */}
 
           {/* Trip Density Heatmap */}
           <div className="grid grid-cols-1 lg:col-span-2 gap-4 mt-4">

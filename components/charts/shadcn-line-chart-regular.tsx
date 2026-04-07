@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
-import { format, parseISO, differenceInDays, startOfWeek, startOfMonth } from "date-fns"
+import { format, parseISO, differenceInDays, startOfWeek, endOfWeek, startOfMonth } from "date-fns"
 import { DateRange } from "react-day-picker"
 
 import {
@@ -9,6 +9,7 @@ import {
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig,
 } from "@/components/ui/chart"
+import { cn } from "@/lib/utils"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 export interface ShadcnLineChartRegularProps {
@@ -22,6 +23,7 @@ export interface ShadcnLineChartRegularProps {
   height?: string
   color?: string
   dateRange?: DateRange
+  isCurrency?: boolean
 }
 
 type Granularity = "daily" | "weekly" | "monthly"
@@ -35,7 +37,8 @@ export function ShadcnLineChartRegular({
   dataKey,
   height = "280px",
   color = "#ef4444",
-  dateRange
+  dateRange,
+  isCurrency = true
 }: ShadcnLineChartRegularProps) {
   const [granularity, setGranularity] = useState<Granularity>("daily")
 
@@ -87,8 +90,16 @@ export function ShadcnLineChartRegular({
     )
   }, [data, granularity, labelKey, dataKey, showToggle])
 
+  const heightFillsCard =
+    typeof height === "string" && height.trim().endsWith("%")
+
   return (
-    <Card className="flex flex-col h-full border-none pt-2 shadow-none bg-transparent font-sans">
+    <Card
+      className={cn(
+        "flex h-full flex-col border-none pt-2 shadow-none bg-transparent font-sans",
+        heightFillsCard && "min-h-0"
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div className="grid gap-1">
           <CardTitle className="text-base font-semibold">{title}</CardTitle>
@@ -116,8 +127,20 @@ export function ShadcnLineChartRegular({
           </ToggleGroup>
         )}
       </CardHeader>
-      <CardContent className="p-4 pt-0" style={{ height }}>
-        <ChartContainer config={config} className="h-full w-full">
+      <CardContent
+        className={cn(
+          "p-4 pt-0",
+          heightFillsCard && "flex min-h-0 flex-1 flex-col"
+        )}
+        style={heightFillsCard ? undefined : { height }}
+      >
+        <ChartContainer
+          config={config}
+          className={cn(
+            "min-h-0 w-full",
+            heightFillsCard ? "h-full flex-1" : "h-full"
+          )}
+        >
           <LineChart
             accessibilityLayer
             data={chartData}
@@ -142,7 +165,11 @@ export function ShadcnLineChartRegular({
                   const date = value.includes("-") ? parseISO(value) : new Date(value)
                   if (!isNaN(date.getTime())) {
                     if (granularity === "monthly") return format(date, "MMM yyyy")
-                    if (granularity === "weekly") return `Wk ${format(date, "w, MMM d")}`
+                    if (granularity === "weekly") {
+                      const start = startOfWeek(date)
+                      const end = endOfWeek(date)
+                      return `${format(start, "MMM d")} - ${format(end, "MMM d")}`
+                    }
                     return format(date, "MMM d")
                   }
                 } catch { /* noop */ }
@@ -155,6 +182,7 @@ export function ShadcnLineChartRegular({
               tickMargin={8}
               fontSize={10}
               tickFormatter={(value) => {
+                if (!isCurrency) return value.toLocaleString();
                 if (value >= 1_000_000) return `₱${(value / 1_000_000).toFixed(1)}M`
                 if (value >= 1_000) return `₱${(value / 1_000).toFixed(0)}K`
                 return `₱${value}`

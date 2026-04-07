@@ -100,3 +100,45 @@ export interface ComparisonTrendData {
 export interface ComparisonTrendApiResponse {
   data: ComparisonTrendData;
 }
+
+// New KPI Endpoint Types — Simplified
+export interface SalesKpiItem {
+  value: number;
+  label: string;
+}
+
+export interface SalesKpiResponse {
+  data: {
+    totalSales: SalesKpiItem;
+    grossRevenue: SalesKpiItem;
+    totalBookings: SalesKpiItem;
+  };
+}
+
+export interface RevenueTrendItem {
+  date: string;
+  grossRevenue: number;
+  sources: {
+    api_v2: number;
+    mobile_app: number;
+    online: number;
+    otc: number;
+    travel_agency: number;
+    walk_in: number;
+    website: number;
+    total?: number; // Optional, can be calculated on the fly
+  };
+}
+
+export interface RevenueVsBookingTrendsResponse {
+  data: {
+    revenueTrends: RevenueTrendItem[];
+  };
+}
+
+export interface SalesChartsResponse {
+  data: {
+    salesByRoute: { label: string; value: number }[];
+    salesByVessel: { label: string; value: number }[];
+  };
+}

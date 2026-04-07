@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef, ChangeEvent } from "react";
+import { useState, useEffect, useRef, ChangeEvent, useMemo } from "react";
+import { format } from "date-fns";
 import { SimpleKpiCard } from "@/components/charts/simple-kpi-card";
 import { CalendarDays, FilterX, FileOutput, FileInput, Download, Wallet, LayoutGrid, Route, ReceiptText } from "lucide-react";
 import { downloadTemplate } from "@/lib/export-utils";
 
 import { ShadcnLineChartRegular } from "@/components/charts/shadcn-line-chart-regular";
 import { ShadcnPieChartInteractive } from "@/components/charts/shadcn-pie-chart-interactive";
+import { ShadcnPieChartLegend } from "@/components/charts/shadcn-pie-chart-legend";
 import { ShadcnBarChartHorizontal } from "@/components/charts/shadcn-bar-chart.horizontal";
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
 
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { DateRange } from "react-day-picker";
+import { DateRange } from   "react-day-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { expensesService } from "@/services/expenses.service";
@@ -46,8 +48,9 @@ export default function ExpensesReportPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const from = dateRange!.from!.toISOString().split("T")[0];
-        const to = dateRange!.to!.toISOString().split("T")[0];
+        const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+        const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
+        if (!from || !to) return;
         const result = await expensesService.getExpensesReport(from, to);
         setData(result);
         if (isInitialLoad) {
@@ -88,8 +91,8 @@ export default function ExpensesReportPage() {
     if (!data || isExporting) return;
     setIsExporting(true);
     try {
-      const from = dateRange?.from?.toISOString().split("T")[0];
-      const to   = dateRange?.to?.toISOString().split("T")[0];
+      const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+      const to   = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
       await expensesService.downloadExpensesReportExcel(from, to);
     } catch {
       window.alert("Export failed. Please try again.");
@@ -98,20 +101,64 @@ export default function ExpensesReportPage() {
     }
   };
 
-  // ── Derived data for charts ─────────────────────────────────────────────────
-  // Trend: zip xAxisData + seriesData into recharts-friendly objects
-  const trendData =
-    data?.charts.trend.xAxisData.map((date, i) => ({
-      date,
-      expense: data.charts.trend.seriesData[i] ?? 0,
-    })) ?? [];
+  // Trend: zip xAxisData + seriesData into recharts-friendly objects, filling missing dates
+  const trendData = useMemo(() => {
+    if (!data?.charts.trend || !dateRange?.from || !dateRange?.to) return [];
 
-  // Payees: zip names + values
-  const payeeData =
-    data?.charts.payees.payeeNames.map((name, i) => ({
+    const filled: { date: string; expense: number }[] = [];
+    const current = new Date(dateRange.from);
+    current.setHours(0, 0, 0, 0); // start of day
+
+    const end = new Date(dateRange.to);
+    end.setHours(0, 0, 0, 0);
+
+    const { xAxisData, seriesData } = data.charts.trend;
+    const dataMap = new Map(xAxisData.map((d, i) => [d, seriesData[i]]));
+
+    while (current <= end) {
+      const dateStr = format(current, "yyyy-MM-dd");
+      const val = dataMap.get(dateStr) ?? 0;
+      filled.push({
+        date: dateStr,
+        expense: Math.max(0, val), // Disregard negative values
+      });
+      current.setDate(current.getDate() + 1);
+    }
+
+    return filled;
+  }, [data, dateRange]);
+
+  // Payees: zip names + values with categorical coloring
+  const payeeData = useMemo(() => {
+    if (!data?.charts.payees) return [];
+    
+    const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
+    const getFill = (name: string) => {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      return COLORS[Math.abs(hash) % COLORS.length];
+    };
+
+    return data.charts.payees.payeeNames.map((name, i) => ({
       name,
-      amount: data.charts.payees.payeeValues[i] ?? 0,
-    })) ?? [];
+      amount: Math.max(0, data.charts.payees.payeeValues[i] ?? 0),
+      fill: getFill(name)
+    }));
+  }, [data]);
+
+  // Category Pie Data for ShadcnPieChartLegend
+  const categoryPieData = useMemo(() => {
+    if (!data?.charts.category) return { mappedData: [], config: {} };
+    const mappedData = data.charts.category;
+    const config: any = {};
+    const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
+    
+    mappedData.forEach((d, i) => {
+      config[d.name] = { label: d.name, color: COLORS[i % COLORS.length] };
+    });
+    
+    return { mappedData, config };
+  }, [data]);
 
   // KPI display helpers
   const kpiStr = (val: number | undefined) =>
@@ -269,10 +316,13 @@ export default function ExpensesReportPage() {
                 <NoDataPlaceholder height="280px" />
               </div>
             ) : (
-              <ShadcnPieChartInteractive
+              <ShadcnPieChartLegend
                 title="Expenses by Category"
                 description="Distribution across expense categories"
-                data={data!.charts.category}
+                data={categoryPieData.mappedData}
+                config={categoryPieData.config}
+                dataKey="value"
+                nameKey="name"
                 height="320px"
               />
             )}
@@ -296,7 +346,7 @@ export default function ExpensesReportPage() {
                 labelKey="name"
                 hideYAxis={false}
                 config={{
-                  amount: { label: "Paid Amount", color: "#f59e0b" },
+                  amount: { label: "Paid Amount" },
                 }}
               />
             )}

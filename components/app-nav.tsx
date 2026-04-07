@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { authService } from "@/services/auth.service";
 import { User } from "@/types/auth";
 import { ChevronsUpDown, LogOut } from "lucide-react";
@@ -36,6 +36,7 @@ interface AppNavProps {
 
 export function AppNav({ isMobile }: AppNavProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const tenantSlug = pathname.split("/")[1] || "tenant-1";
   const router = useRouter();
   const { isCollapsed } = useMobileMenu();
@@ -86,7 +87,8 @@ export function AppNav({ isMobile }: AppNavProps) {
       {/* Navigation */}
       <nav className="flex-1 px-2 lg:px-4 space-y-1 py-4">
         {NAV_ITEMS.map((item) => {
-          const fullHref = `/${tenantSlug}${item.href}`;
+          const queryString = searchParams.toString();
+          const fullHref = `/${tenantSlug}${item.href}${queryString ? `?${queryString}` : ""}`;
           const isActive = item.href === "/dashboard" 
             ? pathname === `/${tenantSlug}/dashboard`
             : pathname.startsWith(`/${tenantSlug}${item.href}`);

@@ -41,11 +41,13 @@ export interface ShadcnLineChartMultipleProps {
   height?: string
   dateRange?: DateRange
   valueFormatter?: (value: number | string) => string | React.ReactNode
+  cargoType?: "rolling" | "loose"
+  onCargoTypeChange?: (type: "rolling" | "loose") => void
 }
 
 type Granularity = "daily" | "weekly" | "monthly"
 
-export function ShadcnLineChartMultiple({
+export function ShadcnLineChartMultipleCargo({
   data,
   config,
   title,
@@ -56,7 +58,9 @@ export function ShadcnLineChartMultiple({
   series: seriesProp,
   height = "300px",
   dateRange,
-  valueFormatter
+  valueFormatter,
+  cargoType,
+  onCargoTypeChange,
 }: ShadcnLineChartMultipleProps) {
   const [granularity, setGranularity] = useState<Granularity>("daily")
 
@@ -128,24 +132,42 @@ export function ShadcnLineChartMultiple({
           <div />
         )}
         
-        {showToggle && (
-          <ToggleGroup 
-            type="single" 
-            value={granularity} 
-            onValueChange={(value) => value && setGranularity(value as Granularity)}
-            className="border rounded-md p-1 bg-white/50 dark:bg-slate-900/50"
-          >
-            <ToggleGroupItem value="daily" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
-              Daily
-            </ToggleGroupItem>
-            <ToggleGroupItem value="weekly" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
-              Weekly
-            </ToggleGroupItem>
-            <ToggleGroupItem value="monthly" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
-              Monthly
-            </ToggleGroupItem>
-          </ToggleGroup>
-        )}
+        <div className="flex items-center gap-2">
+          {cargoType && onCargoTypeChange && (
+            <ToggleGroup 
+              type="single" 
+              value={cargoType} 
+              onValueChange={(value) => value && onCargoTypeChange(value as "rolling" | "loose")}
+              className="border rounded-md p-1 bg-white/50 dark:bg-slate-900/50"
+            >
+              <ToggleGroupItem value="rolling" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
+                Rolling
+              </ToggleGroupItem>
+              <ToggleGroupItem value="loose" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
+                Loose
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
+
+          {showToggle && (
+            <ToggleGroup 
+              type="single" 
+              value={granularity} 
+              onValueChange={(value) => value && setGranularity(value as Granularity)}
+              className="border rounded-md p-1 bg-white/50 dark:bg-slate-900/50"
+            >
+              <ToggleGroupItem value="daily" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
+                Daily
+              </ToggleGroupItem>
+              <ToggleGroupItem value="weekly" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
+                Weekly
+              </ToggleGroupItem>
+              <ToggleGroupItem value="monthly" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
+                Monthly
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
+        </div>
       </CardHeader>
       
       <CardContent

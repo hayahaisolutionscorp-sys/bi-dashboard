@@ -7,10 +7,12 @@ export interface KpiDataRow {
   icon: string;
 }
 
-export interface TrendData {
-  xAxis: string[];
-  series: number[];
+export interface TrendDataItem {
+  date: string;
+  "passenger-count": number;
 }
+
+export type TrendData = TrendDataItem[];
 
 export interface ChartSeriesData {
   name: string;

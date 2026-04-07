@@ -6,9 +6,58 @@ import {
   ComparisonTrendParams,
   ComparisonTrendData,
   ComparisonTrendApiResponse,
+  SalesKpiResponse,
+  RevenueVsBookingTrendsResponse,
+  SalesChartsResponse,
 } from "@/types/sales";
 
 export const salesService = {
+  /** Fetch trends for Revenue vs Booking. */
+  getRevenueVsBookingTrends: async (from?: string, to?: string): Promise<RevenueVsBookingTrendsResponse> => {
+    try {
+      const url = new URL(API_ENDPOINTS.REVENUE_PER_BOOKINGS, AYAHAY_CLIENT_API);
+      if (from) url.searchParams.append("from", from);
+      if (to) url.searchParams.append("to", to);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch trend records (${response.status})`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Revenue vs Booking trend fetch error:", error);
+      throw error;
+    }
+  },
+
+  /** Fetch breakdown charts for the Sales Report. */
+  getSalesReportCharts: async (from?: string, to?: string): Promise<SalesChartsResponse> => {
+    try {
+      const url = new URL(API_ENDPOINTS.SALES_REPORT_CHARTS, AYAHAY_CLIENT_API);
+      if (from) url.searchParams.append("from", from);
+      if (to) url.searchParams.append("to", to);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch breakdown charts (${response.status})`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Sales charts fetch error:", error);
+      throw error;
+    }
+  },
+
   /** Fetch only the list of route names (no KPI/chart data). */
   getRoutes: async (): Promise<string[]> => {
     try {
@@ -188,5 +237,31 @@ export const salesService = {
     a.click();
     a.remove();
     window.URL.revokeObjectURL(downloadUrl);
+  },
+
+  /** 
+   * Fetch top-level KPIs for the sales report from the local /bi endpoint.
+   * Requested by user: http://localhost:3000/bi/sales-report/kpi
+   */
+  getKpis: async (from?: string, to?: string): Promise<SalesKpiResponse> => {
+    try {
+      const url = new URL("/bi/sales-report/kpi", AYAHAY_CLIENT_API);
+      if (from) url.searchParams.append("from", from);
+      if (to) url.searchParams.append("to", to);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch local KPIs (${response.status})`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Local KPI fetch error:", error);
+      throw error
+    }
   },
 };

@@ -25,15 +25,22 @@ export interface ShadcnBarChartVerticalProps {
   description?: string
   footerLabel?: string
   trendValue?: string
-  dataKey: string
   labelKey: string
-  colorKey?: string
+  // Optional: if provided, only these keys will be shown
+  series?: {
+    dataKey: string
+    color: string
+    name?: string
+  }[]
+  // Legacy support for single dataKey
+  dataKey?: string
   pagination?: {
     currentPage: number
     totalPages: number
     onNext: () => void
     onPrev: () => void
   }
+  minPointSize?: number
 }
 
 const VerticalTick = (props: any) => {
@@ -68,13 +75,20 @@ export function ShadcnBarChartVertical({
   trendValue,
   dataKey,
   labelKey, 
-  colorKey,
+  series: seriesProp,
   pagination,
+  minPointSize,
 }: ShadcnBarChartVerticalProps) {
+  // Derive series from config if not provided
+  const series = seriesProp || (dataKey ? [{ dataKey, color: (config[dataKey]?.color as string) || "var(--chart-1)" }] : Object.keys(config).map((key, idx) => ({
+    dataKey: key,
+    color: (config[key]?.color as string) || `var(--chart-${idx + 1})`
+  })));
+
   return (
     <Card className="flex flex-col h-full border-none pt-2 shadow-none bg-transparent">
-      <CardHeader className="grid-cols-2 items-start justify-between space-y-0">
-        <div className="grid">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
+        <div className="grid gap-1">
           <CardTitle className="text-base font-semibold">{title}</CardTitle>
           {description && <CardDescription className="text-xs">{description}</CardDescription>}
         </div>
@@ -87,7 +101,7 @@ export function ShadcnBarChartVertical({
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="text-[10px] font-medium text-muted-foreground w-8 text-center">
+            <span className="text-[10px] font-medium text-muted-foreground w-12 text-center">
               {pagination.totalPages > 0 ? pagination.currentPage + 1 : 0} / {pagination.totalPages}
             </span>
             <button
@@ -100,16 +114,16 @@ export function ShadcnBarChartVertical({
           </div>
         )}
       </CardHeader>
-      <CardContent className="flex-1 p-4 pt-0 min-h-[300px]">
+      <CardContent className="flex-1 p-4 pt-0 min-h-[350px]">
         <ChartContainer config={config} className="h-full w-full aspect-auto">
           <BarChart
             accessibilityLayer
             data={data}
             margin={{
-              left: 32,
+              left: 12,
               right: 12,
               top: 10,
-              bottom: 100,
+              bottom: 80,
             }}
           >
             <CartesianGrid
@@ -138,13 +152,18 @@ export function ShadcnBarChartVertical({
             />
             <ChartTooltip
               cursor={{ fill: "rgba(0,0,0,0.05)" }}
-              content={<ChartTooltipContent hideLabel />}
+              content={<ChartTooltipContent />}
             />
-            <Bar 
-              dataKey={dataKey} 
-              radius={[0, 0, 0, 0]} 
-              barSize={24}
-            />
+            {series.map((s) => (
+              <Bar 
+                key={s.dataKey}
+                dataKey={s.dataKey} 
+                fill={s.color}
+                radius={[2, 2, 0, 0]} 
+                barSize={Math.min(28, Math.max(8, Math.round(300 / Math.max(1, data.length * series.length))))}
+                minPointSize={minPointSize ?? 0}
+              />
+            ))}
           </BarChart>
         </ChartContainer>
       </CardContent>

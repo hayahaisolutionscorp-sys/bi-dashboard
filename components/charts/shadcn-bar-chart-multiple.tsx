@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { TrendingUp } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { format, parseISO, differenceInDays, startOfWeek, startOfMonth } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { DateRange } from "react-day-picker"
 
 import {
@@ -12,13 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { cn } from "@/lib/utils"
 
 export interface ShadcnBarChartMultipleProps {
   data: any[]
@@ -36,9 +37,9 @@ export interface ShadcnBarChartMultipleProps {
   }[]
   height?: string
   dateRange?: DateRange
+  /** Bars (or x categories) per page when data length exceeds this value. */
+  itemsPerPage?: number
 }
-
-type Granularity = "daily" | "weekly" | "monthly"
 
 export function ShadcnBarChartMultiple({
   data,
@@ -50,9 +51,10 @@ export function ShadcnBarChartMultiple({
   labelKey,
   series: seriesProp,
   height = "300px",
-  dateRange
+  dateRange,
+  itemsPerPage = 12,
 }: ShadcnBarChartMultipleProps) {
-  const [granularity, setGranularity] = useState<Granularity>("daily")
+  const [page, setPage] = useState(1)
 
   // Fallback: if series is not provided, derive it from config keys
   const series = useMemo(() => {
@@ -63,86 +65,97 @@ export function ShadcnBarChartMultiple({
     }));
   }, [seriesProp, config]);
 
-  const daysDiff = useMemo(() => {
-    if (!dateRange?.from || !dateRange?.to) return 0
-    return differenceInDays(dateRange.to, dateRange.from)
-  }, [dateRange])
+  const sortedFullData = useMemo(() => {
+    return [...data].sort((a, b) =>
+      String(a[labelKey] ?? "").localeCompare(String(b[labelKey] ?? ""))
+    )
+  }, [data, labelKey])
 
-  const showToggle = daysDiff > 31
+  const usePagination = sortedFullData.length > itemsPerPage
+
+  const totalPages = useMemo(() => {
+    if (!usePagination) return 1
+    return Math.max(1, Math.ceil(sortedFullData.length / itemsPerPage))
+  }, [usePagination, sortedFullData.length, itemsPerPage])
+
+  useEffect(() => {
+    setPage(1)
+  }, [data, dateRange?.from, dateRange?.to, itemsPerPage])
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
 
   const chartData = useMemo(() => {
-    if (!showToggle || granularity === "daily") return data
+    if (!usePagination) return data
+    const start = (page - 1) * itemsPerPage
+    return sortedFullData.slice(start, start + itemsPerPage)
+  }, [data, usePagination, sortedFullData, page, itemsPerPage])
 
-    const aggregated: Record<string, any> = {}
-    let skipAggregation = false;
-
-    data.forEach((item) => {
-      if (skipAggregation) return;
-      
-      const dateString = item[labelKey]
-      if (!dateString) return;
-      
-      const date = (typeof dateString === 'string' && dateString.includes("-")) ? parseISO(dateString) : new Date(dateString)
-      
-      if (isNaN(date.getTime())) {
-        skipAggregation = true;
-        return;
-      }
-      
-      let key = ""
-      
-      if (granularity === "weekly") {
-        key = format(startOfWeek(date), "yyyy-MM-dd")
-      } else if (granularity === "monthly") {
-        key = format(startOfMonth(date), "yyyy-MM")
-      }
-
-      if (!aggregated[key]) {
-        aggregated[key] = { [labelKey]: key }
-        series.forEach(s => { aggregated[key][s.dataKey] = 0 })
-      }
-
-      series.forEach(s => {
-        aggregated[key][s.dataKey] += (item[s.dataKey] || 0)
-      })
-    })
-
-    if (skipAggregation) return data;
-
-    return Object.values(aggregated).sort((a, b) => 
-      a[labelKey].localeCompare(b[labelKey])
-    )
-  }, [data, granularity, labelKey, series, showToggle])
+  const heightFillsCard =
+    typeof height === "string" && height.trim().endsWith("%")
 
   return (
-    <Card className="flex flex-col h-full border-none pt-2 shadow-none bg-transparent">
+    <Card
+      className={cn(
+        "flex h-full flex-col border-none pt-2 shadow-none bg-transparent",
+        heightFillsCard && "min-h-0"
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div className="grid gap-1">
           <CardTitle className="text-base font-semibold">{title}</CardTitle>
           {description && <CardDescription className="text-xs">{description}</CardDescription>}
         </div>
 
-        {showToggle && (
-          <ToggleGroup 
-            type="single" 
-            value={granularity} 
-            onValueChange={(value) => value && setGranularity(value as Granularity)}
-            className="border rounded-md p-1 bg-white/50 dark:bg-slate-900/50"
+        {usePagination && (
+          <div
+            className="flex items-center gap-0.5 rounded-md border border-slate-200 bg-white/50 px-0.5 py-0.5 dark:border-slate-700 dark:bg-slate-900/50"
+            role="navigation"
+            aria-label="Chart pages"
           >
-            <ToggleGroupItem value="daily" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
-              Daily
-            </ToggleGroupItem>
-            <ToggleGroupItem value="weekly" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
-              Weekly
-            </ToggleGroupItem>
-            <ToggleGroupItem value="monthly" className="px-2 py-1 h-7 text-[10px] data-[state=on]:bg-sky-100 data-[state=on]:text-sky-700 dark:data-[state=on]:bg-sky-900/40 dark:data-[state=on]:text-sky-400">
-              Monthly
-            </ToggleGroupItem>
-          </ToggleGroup>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0 font-mono text-sm leading-none text-slate-700 dark:text-slate-200"
+              disabled={page <= 1}
+              aria-label="Previous page"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              {"<"}
+            </Button>
+            <span className="min-w-[3.5rem] px-0.5 text-center text-[10px] font-medium tabular-nums text-slate-600 dark:text-slate-300">
+              {page} / {totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0 font-mono text-sm leading-none text-slate-700 dark:text-slate-200"
+              disabled={page >= totalPages}
+              aria-label="Next page"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              {">"}
+            </Button>
+          </div>
         )}
       </CardHeader>
-      <CardContent className="p-4 pt-0" style={{ height }}>
-        <ChartContainer config={config} className="h-full w-full">
+      <CardContent
+        className={cn(
+          "p-4 pt-0",
+          heightFillsCard && "flex min-h-0 flex-1 flex-col"
+        )}
+        style={heightFillsCard ? undefined : { height }}
+      >
+        <ChartContainer
+          config={config}
+          className={cn(
+            "min-h-0 w-full",
+            heightFillsCard ? "h-full flex-1" : "h-full"
+          )}
+        >
           <BarChart
             accessibilityLayer
             data={chartData}
@@ -170,14 +183,12 @@ export function ShadcnBarChartMultiple({
                 try {
                   const date = value.includes("-") ? parseISO(value) : new Date(value)
                   if (!isNaN(date.getTime())) {
-                    if (granularity === "monthly") return format(date, "MMM yyyy")
-                    if (granularity === "weekly") return `Wk ${format(date, "w, MMM d")}`
                     return format(date, "MMM d")
                   }
-                } catch(e) {
-                  return value;
+                } catch {
+                  return String(value)
                 }
-                return value || '';
+                return String(value || "")
               }}
             />
             <YAxis 
@@ -201,7 +212,7 @@ export function ShadcnBarChartMultiple({
                  dataKey={s.dataKey} 
                  fill={s.color} 
                  radius={[2, 2, 0, 0]} 
-                 barSize={granularity === "daily" ? 12 : granularity === "weekly" ? 20 : 30}
+                 barSize={Math.min(28, Math.max(8, Math.round(220 / Math.max(1, chartData.length))))}
                />
             ))}
           </BarChart>
