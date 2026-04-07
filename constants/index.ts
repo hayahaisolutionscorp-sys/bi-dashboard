@@ -11,6 +11,8 @@ export const API_ENDPOINTS = {
 	EXPENSES_REPORT: "/bi/expenses-report",
 	EXPENSES_REPORT_EXPORT: "/bi/expenses-report/export",
 	EXPENSES_REPORT_TEMPLATE: "/bi/expenses-report/template",
+	EXPENSES_REPORT_IMPORT_PREVIEW: "/bi/expenses-report/import/preview",
+	EXPENSES_REPORT_IMPORT_CONFIRM: "/bi/expenses-report/import/confirm",
 	PASSENGERS_PER_TRIP: "/bi/passengers-per-trip",
 	CARGO_PER_TRIP: "/bi/cargo-per-trip",
 	STATUS_REPORT: "/bi/status-report",

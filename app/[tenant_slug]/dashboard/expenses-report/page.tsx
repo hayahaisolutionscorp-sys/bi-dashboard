@@ -18,6 +18,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { expensesService } from "@/services/expenses.service";
 import { ExpensesReportData } from "@/types/expenses";
+import { ExpensesImportPreviewModal } from "@/components/expenses-import-preview-modal";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (val: number) => {
@@ -39,6 +42,12 @@ export default function ExpensesReportPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<any>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,7 +73,7 @@ export default function ExpensesReportPage() {
       }
     }
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, refreshKey]);
 
   const handleClearFilter = () => {
     const now = new Date();
@@ -73,7 +82,34 @@ export default function ExpensesReportPage() {
 
   const handleImportClick = () => fileInputRef.current?.click();
 
-  const handleImportChange = async (_event: ChangeEvent<HTMLInputElement>) => {};
+  const handleImportChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    setIsImporting(true);
+    
+    try {
+      const preview = await expensesService.previewExpensesImport(file);
+      setImportPreview(preview);
+      setIsPreviewOpen(true);
+    } catch (err: any) {
+      toast.error("Import Preview Failed", {
+        description: err?.message || "Could not parse the Excel file. Please ensure it follows the correct template.",
+      });
+      setSelectedFile(null);
+    } finally {
+      setIsImporting(false);
+      // Reset input so name change isn't needed for same file re-upload
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleImportSuccess = () => {
+    setRefreshKey(prev => prev + 1);
+    setSelectedFile(null);
+    setImportPreview(null);
+  };
 
   const handleDownloadTemplate = async () => {
     if (isDownloadingTemplate) return;
@@ -202,9 +238,15 @@ export default function ExpensesReportPage() {
             <button
               type="button"
               onClick={handleImportClick}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              disabled={isImporting}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
             >
-              <FileInput className="h-4 w-4" /> Import
+              {isImporting ? (
+                <Loader2 className="h-4 w-4 animate-spin text-sky-500" />
+              ) : (
+                <FileInput className="h-4 w-4 text-sky-500" />
+              )}
+              {isImporting ? "Reading File..." : "Import"}
             </button>
             <button
               type="button"
@@ -353,6 +395,14 @@ export default function ExpensesReportPage() {
           </div>
         </section>
       </div>
+
+      <ExpensesImportPreviewModal
+        isOpen={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        file={selectedFile}
+        preview={importPreview}
+        onSuccess={handleImportSuccess}
+      />
     </div>
   );
 }

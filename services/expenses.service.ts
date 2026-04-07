@@ -90,4 +90,56 @@ export const expensesService = {
     a.remove();
     window.URL.revokeObjectURL(downloadUrl);
   },
+
+  previewExpensesImport: async (file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.EXPENSES_REPORT_IMPORT_PREVIEW}`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to preview expenses import");
+    }
+
+    return response.json();
+  },
+
+  confirmExpensesImport: async (file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.EXPENSES_REPORT_IMPORT_CONFIRM}`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to confirm expenses import");
+    }
+
+    return response.json();
+  },
+
+  previewExpensesImportJson: async (rows: any[]): Promise<any> => {
+    const response = await fetch(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.EXPENSES_REPORT_IMPORT_PREVIEW}-json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows }),
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to re-validate expenses import");
+    }
+
+    return response.json();
+  },
 };
