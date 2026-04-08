@@ -1,5 +1,5 @@
-export const AYAHAY_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002"
-export const AYAHAY_CLIENT_API = typeof window !== "undefined" ? localStorage.getItem("seletedBaseUrl") || process.env.NEXT_PUBLIC_CLIENT_API_URL : "http://localhost:3000"
+export const AYAHAY_API_URL = process.env.NEXT_PUBLIC_API_V2_URL
+export const AYAHAY_CLIENT_API = localStorage.getItem("selectedBaseUrl")
 
 export const API_ENDPOINTS = {
 	AUTH: "/bi/auth",
