@@ -166,7 +166,7 @@ export default function LoginPage() {
                             disabled={isLoading}
                             className="w-full h-14 bg-gradient-to-r from-primary to-[#3f68e4] hover:brightness-110 active:scale-[0.98] transition-all text-white font-bold text-lg rounded-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            <span>{isLoading ? "Loging In..." : "Login In"}</span>
+                            <span>{isLoading ? "Logging In..." : "Login In"}</span>
                             {/* <LogIn className="size-5" /> */}
                         </button>
                     </form>

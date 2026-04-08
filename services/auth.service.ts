@@ -106,11 +106,12 @@ export const authService = {
             }).catch(() => {}); // Ignore error on logout call
         } finally {
             if (typeof window !== 'undefined') {
-                localStorage.removeItem('accessToken')
-                localStorage.removeItem('user')
-                localStorage.removeItem('tenants')
+                localStorage.removeItem('selectedBaseUrl')
+                localStorage.removeItem('selectedCompanyName')
+                localStorage.removeItem('selectedServiceKey')
                 localStorage.removeItem('selectedTenantId')
-                localStorage.removeItem('companyName')
+                localStorage.removeItem('tenants')
+                localStorage.removeItem('user')
             }
         }
     },
