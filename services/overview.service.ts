@@ -1,15 +1,16 @@
-import { API_ENDPOINTS, AYAHAY_CLIENT_API } from "@/constants"
+import { API_ENDPOINTS } from "@/constants"
 import { OverviewData, OverviewApiResponse } from "@/types/overview"
 
 export const overviewService = {
-    getOverview: async (period: 'today' | 'mtd' | 'ytd'): Promise<OverviewData> => {
+    getOverview: async (baseUrl: string, period: 'today' | 'mtd' | 'ytd', serviceKey?: string): Promise<OverviewData> => {
         try {
-            const url = `${AYAHAY_CLIENT_API}${API_ENDPOINTS.OVERVIEW}/${period}`
+            const url = `${baseUrl}${API_ENDPOINTS.OVERVIEW}/${period}`
 
             const response = await fetch(url, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
+                    ...(serviceKey ? { "x-service-key": serviceKey } : {})
                 },
                 credentials: 'include',
             })

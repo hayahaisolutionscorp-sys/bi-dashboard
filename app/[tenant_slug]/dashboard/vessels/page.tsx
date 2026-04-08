@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
 import { Ship, TrendingUp, Users, Banknote, Wrench, Compass } from "lucide-react";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 // Shadcn Charts
 import { ShadcnBarChartHorizontal } from "@/components/charts/shadcn-bar-chart.horizontal";
@@ -20,6 +21,7 @@ import { Heatmap } from "@/components/charts/heatmap";
 import { ChartConfig } from "@/components/ui/chart";
 
 export default function VesselsPage() {
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const params = useParams();
   const tenant_slug = params.tenant_slug as string;
 
@@ -39,10 +41,16 @@ export default function VesselsPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!activeTenant?.api_base_url) return;
       setIsLoading(true);
       setError(null);
       try {
-        const response = await VesselsService.getVesselsDashboard(tenant_slug, dateRange);
+        const response = await VesselsService.getVesselsDashboard(
+          activeTenant.api_base_url, 
+          tenant_slug, 
+          dateRange, 
+          activeTenant.service_key
+        );
         setData(response.data);
         if (isInitialLoad) {
           setTimeout(() => setIsInitialLoad(false), 500);
@@ -55,7 +63,7 @@ export default function VesselsPage() {
       }
     };
     if (tenant_slug) fetchData();
-  }, [tenant_slug, dateRange]);
+  }, [tenant_slug, dateRange, activeTenant]);
 
   const handleClearFilter = () => {
     const now = new Date();

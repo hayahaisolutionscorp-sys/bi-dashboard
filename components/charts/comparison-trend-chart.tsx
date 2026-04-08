@@ -8,6 +8,7 @@ import { DateRange } from "react-day-picker";
 import { salesService } from "@/services/sales.service";
 import { ComparisonTrendData } from "@/types/sales";
 import { Route, Ship, MapPin, ChevronDown, Check } from "lucide-react";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 interface ComparisonTrendChartProps {
   dateRange?: DateRange;
@@ -28,6 +29,7 @@ const SERIES_COLORS = [
 ];
 
 export function ComparisonTrendChart({ dateRange, selectedRouteName }: ComparisonTrendChartProps) {
+  const { activeTenant } = useTenant();
   const [compareBy, setCompareBy] = useState<"route" | "vessel" | "trip">("route");
   const [metric, setMetric] = useState<"totalSales" | "totalBookings" | "totalPassengers">("totalSales");
   
@@ -75,12 +77,13 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
     }
 
     try {
-      const data = await salesService.getComparisonTrend({
+      if (!activeTenant?.api_base_url) return;
+      const data = await salesService.getComparisonTrend(activeTenant.api_base_url, {
         from,
         to,
         compareBy,
         entityIds: currentIds.length > 0 ? currentIds : undefined
-      });
+      }, activeTenant.service_key);
 
       setTrendData(data);
     } catch (err) {
@@ -95,15 +98,16 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
   const fetchAvailableEntities = async () => {
     try {
       let fetchedIds: string[] = [];
+      if (!activeTenant?.api_base_url) return;
       if (compareBy === "route") {
-        fetchedIds = await salesService.getRoutes();
+        fetchedIds = await salesService.getRoutes(activeTenant.api_base_url, activeTenant.service_key);
       } else {
         // For vessels/trips, we might fallback to generic series if no specialized discovery exists
-        const data = await salesService.getComparisonTrend({
+        const data = await salesService.getComparisonTrend(activeTenant.api_base_url, {
           from: dateRange?.from?.toISOString().split("T")[0]!,
           to: dateRange?.to?.toISOString().split("T")[0]!,
           compareBy
-        });
+        }, activeTenant.service_key);
         fetchedIds = data.series.map(s => s.id);
       }
 

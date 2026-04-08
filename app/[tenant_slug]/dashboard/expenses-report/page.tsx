@@ -21,6 +21,7 @@ import { ExpensesReportData } from "@/types/expenses";
 import { ExpensesImportPreviewModal } from "@/components/expenses-import-preview-modal";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (val: number) => {
@@ -31,6 +32,7 @@ const fmt = (val: number) => {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function ExpensesReportPage() {
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     const now = new Date();
     return { from: new Date(now.getFullYear(), 0, 1), to: now };
@@ -54,13 +56,19 @@ export default function ExpensesReportPage() {
   useEffect(() => {
     if (!dateRange?.from || !dateRange?.to) return;
     async function fetchData() {
+      if (!activeTenant?.api_base_url) return;
       setIsLoading(true);
       setError(null);
       try {
         const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
         const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
         if (!from || !to) return;
-        const result = await expensesService.getExpensesReport(from, to);
+        const result = await expensesService.getExpensesReport(
+          activeTenant.api_base_url, 
+          from, 
+          to, 
+          activeTenant.service_key
+        );
         setData(result);
         if (isInitialLoad) {
           setTimeout(() => setIsInitialLoad(false), 500);
@@ -73,7 +81,7 @@ export default function ExpensesReportPage() {
       }
     }
     fetchData();
-  }, [dateRange, refreshKey]);
+  }, [dateRange, refreshKey, activeTenant]);
 
   const handleClearFilter = () => {
     const now = new Date();
@@ -90,7 +98,12 @@ export default function ExpensesReportPage() {
     setIsImporting(true);
     
     try {
-      const preview = await expensesService.previewExpensesImport(file);
+      if (!activeTenant?.api_base_url) return;
+      const preview = await expensesService.previewExpensesImport(
+        activeTenant.api_base_url, 
+        file, 
+        activeTenant.service_key
+      );
       setImportPreview(preview);
       setIsPreviewOpen(true);
     } catch (err: any) {
@@ -112,10 +125,10 @@ export default function ExpensesReportPage() {
   };
 
   const handleDownloadTemplate = async () => {
-    if (isDownloadingTemplate) return;
+    if (isDownloadingTemplate || !activeTenant?.api_base_url) return;
     setIsDownloadingTemplate(true);
     try {
-      await expensesService.downloadExpensesReportTemplateExcel();
+      await expensesService.downloadExpensesReportTemplateExcel(activeTenant.api_base_url, activeTenant.service_key);
     } catch {
       window.alert("Failed to download template. Please try again.");
     } finally {
@@ -124,12 +137,17 @@ export default function ExpensesReportPage() {
   };
 
   const handleExport = async () => {
-    if (!data || isExporting) return;
+    if (!data || isExporting || !activeTenant?.api_base_url) return;
     setIsExporting(true);
     try {
       const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
       const to   = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
-      await expensesService.downloadExpensesReportExcel(from, to);
+      await expensesService.downloadExpensesReportExcel(
+        activeTenant.api_base_url, 
+        from, 
+        to, 
+        activeTenant.service_key
+      );
     } catch {
       window.alert("Export failed. Please try again.");
     } finally {

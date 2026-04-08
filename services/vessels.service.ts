@@ -1,11 +1,11 @@
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { VesselsResponse } from "../types/vessels";
-import { API_ENDPOINTS, AYAHAY_CLIENT_API } from "@/constants";
+import { API_ENDPOINTS } from "@/constants";
 
 export class VesselsService {
-  static async getVesselsDashboard(tenant: string, dateRange?: DateRange): Promise<VesselsResponse> {
-    const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.VESSELS_REPORT}`);
+  static async getVesselsDashboard(baseUrl: string, tenant: string, dateRange?: DateRange, serviceKey?: string): Promise<VesselsResponse> {
+    const url = new URL(`${baseUrl}${API_ENDPOINTS.VESSELS_REPORT}`);
 
     const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
     const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
@@ -15,7 +15,10 @@ export class VesselsService {
 
     const response = await fetch(url.toString(), {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        ...(serviceKey ? { "x-service-key": serviceKey } : {})
+      },
       credentials: 'include',
     });
 
@@ -27,4 +30,3 @@ export class VesselsService {
     return await response.json() as VesselsResponse;
   }
 }
-

@@ -1,9 +1,9 @@
 import { DateRange } from "react-day-picker";
 import { AdvanceBookingResponse } from "../types/advance-booking";
-import { API_ENDPOINTS, AYAHAY_CLIENT_API } from "@/constants";
+import { API_ENDPOINTS } from "@/constants";
 
 export const AdvanceBookingService = {
-  getAdvanceDashboard: async (tenant_slug: string, dateRange: DateRange | undefined): Promise<AdvanceBookingResponse> => {
+  getAdvanceDashboard: async (baseUrl: string, tenant_slug: string, dateRange: DateRange | undefined, serviceKey?: string): Promise<AdvanceBookingResponse> => {
     const queryParams = new URLSearchParams();
     
     if (dateRange?.from) {
@@ -15,13 +15,13 @@ export const AdvanceBookingService = {
     }
 
     try {
-      const response = await fetch(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.ADVANCE_BOOKING}?${queryParams.toString()}`, {
+      const response = await fetch(`${baseUrl}${API_ENDPOINTS.ADVANCE_BOOKING}?${queryParams.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          // Authentication: BI session/cookie authorization is usually handled by the browser
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
         },
-        credentials: 'include', // equivalent to withCredentials: true
+        credentials: 'include',
       });
 
       if (!response.ok) {

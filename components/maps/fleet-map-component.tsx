@@ -13,6 +13,7 @@ import * as turf from '@turf/turf';
 import { Ship } from "lucide-react";
 import { VesselCreator } from "@/components/maps/vessel-creator";
 import { RouteMapService, RouteMapTrip } from "@/services/route-map.service";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 // Mock Data
 
@@ -54,6 +55,7 @@ const ROUTE_LIST = SERVICE_ROUTES.map(r => ({ id: r.id, name: r.name, vessels: r
 
 
 export function FleetMapComponent() {
+  const { activeTenant } = useTenant();
   const mapRef = useRef<MapRef>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<number>(1); // Default to Cebu-Manila
   const [showAllRoutes, setShowAllRoutes] = useState<boolean>(false);
@@ -81,8 +83,9 @@ export function FleetMapComponent() {
   // Fetch API Data
   React.useEffect(() => {
     const fetchRoutes = async () => {
+      if (!activeTenant?.api_base_url) return;
       try {
-        const response = await RouteMapService.getRouteMapData();
+        const response = await RouteMapService.getRouteMapData(activeTenant.api_base_url, activeTenant.service_key);
         setApiTrips(response.trips);
       } catch (error) {
         console.error("Failed to fetch route map data:", error);
@@ -95,7 +98,7 @@ export function FleetMapComponent() {
     // Optional polling for real-time updates
     const intervalId = setInterval(fetchRoutes, 60000); // 1 minute refresh
     return () => clearInterval(intervalId);
-  }, []);
+  }, [activeTenant]);
 
   // Map API Data to Component Structure
   const { DEFINED_ROUTES, ROUTE_LIST, apiVessels } = useMemo(() => {

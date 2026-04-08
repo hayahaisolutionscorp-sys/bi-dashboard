@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, AYAHAY_CLIENT_API } from "@/constants";
+import { API_ENDPOINTS } from "@/constants";
 import {
   SalesReportApiResponse,
   SalesReportRoute,
@@ -13,15 +13,19 @@ import {
 
 export const salesService = {
   /** Fetch trends for Revenue vs Booking. */
-  getRevenueVsBookingTrends: async (from?: string, to?: string): Promise<RevenueVsBookingTrendsResponse> => {
+  getRevenueVsBookingTrends: async (baseUrl: string, from?: string, to?: string, serviceKey?: string): Promise<RevenueVsBookingTrendsResponse> => {
     try {
-      const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.REVENUE_PER_BOOKINGS}`);
+      const url = new URL(`${baseUrl}${API_ENDPOINTS.REVENUE_PER_BOOKINGS}`);
       if (from) url.searchParams.append("from", from);
       if (to) url.searchParams.append("to", to);
 
       const response = await fetch(url.toString(), {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
+        },
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -36,15 +40,19 @@ export const salesService = {
   },
 
   /** Fetch breakdown charts for the Sales Report. */
-  getSalesReportCharts: async (from?: string, to?: string): Promise<SalesChartsResponse> => {
+  getSalesReportCharts: async (baseUrl: string, from?: string, to?: string, serviceKey?: string): Promise<SalesChartsResponse> => {
     try {
-      const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.SALES_REPORT_CHARTS}`);
+      const url = new URL(`${baseUrl}${API_ENDPOINTS.SALES_REPORT_CHARTS}`);
       if (from) url.searchParams.append("from", from);
       if (to) url.searchParams.append("to", to);
 
       const response = await fetch(url.toString(), {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
+        },
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -59,12 +67,15 @@ export const salesService = {
   },
 
   /** Fetch only the list of route names (no KPI/chart data). */
-  getRoutes: async (): Promise<string[]> => {
+  getRoutes: async (baseUrl: string, serviceKey?: string): Promise<string[]> => {
     try {
-      const url = `${AYAHAY_CLIENT_API}${API_ENDPOINTS.SALES_REPORT_ROUTES}`;
+      const url = `${baseUrl}${API_ENDPOINTS.SALES_REPORT_ROUTES}`;
       const response = await fetch(url, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
+        },
         credentials: "include",
       });
 
@@ -89,19 +100,24 @@ export const salesService = {
    * Returns the first (and only) route entry from the response.
    */
   getSalesReport: async (
+    baseUrl: string,
     from?: string,
     to?: string,
-    routeName?: string
+    routeName?: string,
+    serviceKey?: string
   ): Promise<SalesReportRoute | null> => {
     try {
-      const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.SALES_REPORT}`);
+      const url = new URL(`${baseUrl}${API_ENDPOINTS.SALES_REPORT}`);
       if (from) url.searchParams.append("from", from);
       if (to) url.searchParams.append("to", to);
       if (routeName) url.searchParams.append("route_name", routeName);
 
       const response = await fetch(url.toString(), {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
+        },
         credentials: "include",
       });
 
@@ -123,10 +139,12 @@ export const salesService = {
 
   /** Fetch comparison trend data for the Dashboard. */
   getComparisonTrend: async (
-    params: ComparisonTrendParams
+    baseUrl: string,
+    params: ComparisonTrendParams,
+    serviceKey?: string
   ): Promise<ComparisonTrendData> => {
     try {
-      const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.COMPARISON_TREND}`);
+      const url = new URL(`${baseUrl}${API_ENDPOINTS.COMPARISON_TREND}`);
       if (params.from) url.searchParams.append("from", params.from);
       if (params.to) url.searchParams.append("to", params.to);
       if (params.compareBy) url.searchParams.append("compareBy", params.compareBy);
@@ -139,7 +157,10 @@ export const salesService = {
 
       const response = await fetch(url.toString(), {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
+        },
         credentials: "include",
       });
 
@@ -167,17 +188,22 @@ export const salesService = {
    *  3. Mount hidden <a>, click, revoke
    */
   downloadSalesReportExcel: async (
+    baseUrl: string,
     from?: string,
     to?: string,
     routeName?: string,
+    serviceKey?: string,
   ): Promise<void> => {
-    const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.SALES_REPORT_EXPORT}`);
+    const url = new URL(`${baseUrl}${API_ENDPOINTS.SALES_REPORT_EXPORT}`);
     if (from)      url.searchParams.append("from",       from);
     if (to)        url.searchParams.append("to",         to);
     if (routeName) url.searchParams.append("route_name", routeName);
 
     const response = await fetch(url.toString(), {
       method: "GET",
+      headers: {
+        ...(serviceKey ? { "x-service-key": serviceKey } : {})
+      },
       credentials: "include",
     });
 
@@ -208,11 +234,14 @@ export const salesService = {
   /**
    * Downloads an empty structural .xlsx template of the Sales Report.
    */
-  downloadSalesReportTemplateExcel: async (): Promise<void> => {
-    const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.SALES_REPORT_TEMPLATE}`);
+  downloadSalesReportTemplateExcel: async (baseUrl: string, serviceKey?: string): Promise<void> => {
+    const url = new URL(`${baseUrl}${API_ENDPOINTS.SALES_REPORT_TEMPLATE}`);
 
     const response = await fetch(url.toString(), {
       method: "GET",
+      headers: {
+        ...(serviceKey ? { "x-service-key": serviceKey } : {})
+      },
       credentials: "include",
     });
 
@@ -243,15 +272,19 @@ export const salesService = {
    * Fetch top-level KPIs for the sales report from the local /bi endpoint.
    * Requested by user: http://localhost:3000/bi/sales-report/kpi
    */
-  getKpis: async (from?: string, to?: string): Promise<SalesKpiResponse> => {
+  getKpis: async (baseUrl: string, from?: string, to?: string, serviceKey?: string): Promise<SalesKpiResponse> => {
     try {
-      const url = new URL(`${AYAHAY_CLIENT_API}/bi/sales-report/kpi`);
+      const url = new URL(`${baseUrl}/bi/sales-report/kpi`);
       if (from) url.searchParams.append("from", from);
       if (to) url.searchParams.append("to", to);
 
       const response = await fetch(url.toString(), {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
+        },
+        credentials: "include",
       });
 
       if (!response.ok) {

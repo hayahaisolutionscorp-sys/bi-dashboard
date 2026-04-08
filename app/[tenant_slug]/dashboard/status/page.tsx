@@ -18,11 +18,13 @@ import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 import { statusService } from "@/services/status.service";
 import { StatusReportResponse } from "@/types/status";
 
 export default function StatusPage() {
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     return { 
       from: new Date("2026-01-01"), 
@@ -37,12 +39,19 @@ export default function StatusPage() {
 
   useEffect(() => {
     async function fetchData() {
+      if (!activeTenant?.api_base_url) return;
       setIsLoading(true);
       setError(null);
       try {
         const from = dateRange?.from?.toISOString().split("T")[0];
         const to = dateRange?.to?.toISOString().split("T")[0];
-        const result = await statusService.getStatusReport(from, to, undefined);
+        const result = await statusService.getStatusReport(
+          activeTenant.api_base_url, 
+          from, 
+          to, 
+          undefined,
+          activeTenant.service_key
+        );
         setData(result);
         if (isInitialLoad) {
           setTimeout(() => setIsInitialLoad(false), 500);
@@ -58,7 +67,7 @@ export default function StatusPage() {
     if (dateRange?.from && dateRange?.to) {
       fetchData();
     }
-  }, [dateRange]);
+  }, [dateRange, activeTenant]);
 
   const handleClearFilter = () => {
     setDateRange({ 

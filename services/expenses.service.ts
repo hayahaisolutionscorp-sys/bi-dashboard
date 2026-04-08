@@ -1,16 +1,19 @@
-import { API_ENDPOINTS, AYAHAY_CLIENT_API } from "@/constants";
+import { API_ENDPOINTS } from "@/constants";
 import { ExpensesReportApiResponse, ExpensesReportData } from "@/types/expenses";
 
 export const expensesService = {
-  getExpensesReport: async (from?: string, to?: string): Promise<ExpensesReportData> => {
+  getExpensesReport: async (baseUrl: string, from?: string, to?: string, serviceKey?: string): Promise<ExpensesReportData> => {
     try {
-      const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.EXPENSES_REPORT}`);
+      const url = new URL(`${baseUrl}${API_ENDPOINTS.EXPENSES_REPORT}`);
       if (from) url.searchParams.append("from", from);
       if (to) url.searchParams.append("to", to);
 
       const response = await fetch(url.toString(), {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
+        },
         credentials: 'include',
       });
 
@@ -27,13 +30,16 @@ export const expensesService = {
     }
   },
 
-  downloadExpensesReportExcel: async (from?: string, to?: string): Promise<void> => {
-    const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.EXPENSES_REPORT_EXPORT}`);
+  downloadExpensesReportExcel: async (baseUrl: string, from?: string, to?: string, serviceKey?: string): Promise<void> => {
+    const url = new URL(`${baseUrl}${API_ENDPOINTS.EXPENSES_REPORT_EXPORT}`);
     if (from) url.searchParams.append("from", from);
     if (to) url.searchParams.append("to", to);
 
     const response = await fetch(url.toString(), {
       method: "GET",
+      headers: {
+        ...(serviceKey ? { "x-service-key": serviceKey } : {})
+      },
       credentials: "include",
     });
 
@@ -60,11 +66,14 @@ export const expensesService = {
     window.URL.revokeObjectURL(downloadUrl);
   },
 
-  downloadExpensesReportTemplateExcel: async (): Promise<void> => {
-    const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.EXPENSES_REPORT_TEMPLATE}`);
+  downloadExpensesReportTemplateExcel: async (baseUrl: string, serviceKey?: string): Promise<void> => {
+    const url = new URL(`${baseUrl}${API_ENDPOINTS.EXPENSES_REPORT_TEMPLATE}`);
 
     const response = await fetch(url.toString(), {
       method: "GET",
+      headers: {
+        ...(serviceKey ? { "x-service-key": serviceKey } : {})
+      },
       credentials: "include",
     });
 
@@ -91,13 +100,16 @@ export const expensesService = {
     window.URL.revokeObjectURL(downloadUrl);
   },
 
-  previewExpensesImport: async (file: File): Promise<any> => {
+  previewExpensesImport: async (baseUrl: string, file: File, serviceKey?: string): Promise<any> => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.EXPENSES_REPORT_IMPORT_PREVIEW}`, {
+    const response = await fetch(`${baseUrl}${API_ENDPOINTS.EXPENSES_REPORT_IMPORT_PREVIEW}`, {
       method: "POST",
       body: formData,
+      headers: {
+        ...(serviceKey ? { "x-service-key": serviceKey } : {})
+      },
       credentials: "include",
     });
 
@@ -109,13 +121,16 @@ export const expensesService = {
     return response.json();
   },
 
-  confirmExpensesImport: async (file: File): Promise<any> => {
+  confirmExpensesImport: async (baseUrl: string, file: File, serviceKey?: string): Promise<any> => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.EXPENSES_REPORT_IMPORT_CONFIRM}`, {
+    const response = await fetch(`${baseUrl}${API_ENDPOINTS.EXPENSES_REPORT_IMPORT_CONFIRM}`, {
       method: "POST",
       body: formData,
+      headers: {
+        ...(serviceKey ? { "x-service-key": serviceKey } : {})
+      },
       credentials: "include",
     });
 
@@ -127,10 +142,13 @@ export const expensesService = {
     return response.json();
   },
 
-  previewExpensesImportJson: async (rows: any[]): Promise<any> => {
-    const response = await fetch(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.EXPENSES_REPORT_IMPORT_PREVIEW}-json`, {
+  previewExpensesImportJson: async (baseUrl: string, rows: any[], serviceKey?: string): Promise<any> => {
+    const response = await fetch(`${baseUrl}${API_ENDPOINTS.EXPENSES_REPORT_IMPORT_PREVIEW}-json`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        ...(serviceKey ? { "x-service-key": serviceKey } : {})
+      },
       body: JSON.stringify({ rows }),
       credentials: "include",
     });

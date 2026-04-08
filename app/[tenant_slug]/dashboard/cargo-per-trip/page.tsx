@@ -9,6 +9,7 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 import { ShadcnLineChartMultipleCargo } from "@/components/charts/shadcn-line-chart-multiple-cargo";
 import { ShadcnPieChartLegend } from "@/components/charts/shadcn-pie-chart-legend";
@@ -17,6 +18,7 @@ import { cargoService } from "@/services/cargo.service";
 import { CargoReportResponse } from "@/types/cargo";
 
 export default function CargoPerTripPage() {
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const params = useParams();
   const tenantSlug = params.tenant_slug as string;
 
@@ -35,14 +37,21 @@ export default function CargoPerTripPage() {
 
   useEffect(() => {
     async function fetchData() {
-      if (!tenantSlug) return;
+      if (!activeTenant?.api_base_url) return;
 
       setIsLoading(true);
       setError(null);
       try {
         const from = dateRange?.from?.toISOString().split("T")[0];
         const to = dateRange?.to?.toISOString().split("T")[0];
-        const result = await cargoService.getCargoReport(tenantSlug, from, to);
+        const result = await cargoService.getCargoReport(
+          activeTenant.api_base_url, 
+          tenantSlug, 
+          from, 
+          to, 
+          undefined,
+          activeTenant.service_key
+        );
         setData(result);
         if (isInitialLoad) {
           setTimeout(() => setIsInitialLoad(false), 500);
@@ -58,7 +67,7 @@ export default function CargoPerTripPage() {
     if (dateRange?.from && dateRange?.to && tenantSlug) {
       fetchData();
     }
-  }, [dateRange, tenantSlug]);
+  }, [dateRange, tenantSlug, activeTenant]);
 
   const handleClearFilter = () => {
     const now = new Date();

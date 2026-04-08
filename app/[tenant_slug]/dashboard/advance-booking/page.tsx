@@ -26,8 +26,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 export default function AdvanceBookingPage() {
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const params = useParams();
   const tenant_slug = params.tenant_slug as string;
 
@@ -45,8 +47,14 @@ export default function AdvanceBookingPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!activeTenant?.api_base_url) return;
       setLoading(true);
-      const response = await AdvanceBookingService.getAdvanceDashboard(tenant_slug, dateRange);
+      const response = await AdvanceBookingService.getAdvanceDashboard(
+        activeTenant.api_base_url, 
+        tenant_slug, 
+        dateRange, 
+        activeTenant.service_key
+      );
       setData(response);
       if (isInitialLoad) {
         setTimeout(() => setIsInitialLoad(false), 500);
@@ -54,7 +62,7 @@ export default function AdvanceBookingPage() {
       setLoading(false);
     };
     fetchData();
-  }, [tenant_slug, dateRange]);
+  }, [tenant_slug, dateRange, activeTenant]);
 
   const resetFilter = () => {
     const from = new Date("2026-03-01");

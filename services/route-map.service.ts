@@ -1,4 +1,4 @@
-import { AYAHAY_CLIENT_API, API_ENDPOINTS } from "@/constants";
+import { API_ENDPOINTS } from "@/constants";
 
 export interface RouteMapTrip {
   trip_id: string;               // Use this as your React key prop
@@ -25,12 +25,13 @@ export interface RouteMapResponse {
 }
 
 export const RouteMapService = {
-  getRouteMapData: async (): Promise<RouteMapResponse> => {
+  getRouteMapData: async (baseUrl: string, serviceKey?: string): Promise<RouteMapResponse> => {
     try {
-      const response = await fetch(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.ROUTE_MAP}`, {
+      const response = await fetch(`${baseUrl}${API_ENDPOINTS.ROUTE_MAP}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
           // Authentication: BI session/cookie authorization is handled by the browser
         },
         credentials: 'include', // equivalent to withCredentials: true

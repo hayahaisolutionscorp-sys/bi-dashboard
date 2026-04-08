@@ -1,21 +1,26 @@
-import { API_ENDPOINTS, AYAHAY_CLIENT_API } from "@/constants";
+import { API_ENDPOINTS } from "@/constants";
 import { PassengersReportResponse } from "@/types/passengers";
 
 export const passengersService = {
   getPassengersReport: async (
+    baseUrl: string,
     tenantSlug: string,
     from?: string,
-    to?: string
+    to?: string,
+    serviceKey?: string
   ): Promise<PassengersReportResponse["data"]> => {
     try {
-      const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.PASSENGERS_PER_TRIP}`);
+      const url = new URL(`${baseUrl}${API_ENDPOINTS.PASSENGERS_PER_TRIP}`);
       
       if (from) url.searchParams.append("from", from);
       if (to) url.searchParams.append("to", to);
 
       const response = await fetch(url.toString(), {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(serviceKey ? { "x-service-key": serviceKey } : {})
+        },
         credentials: 'include',
       });
 

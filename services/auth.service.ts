@@ -87,8 +87,6 @@ export const authService = {
                     if (!localStorage.getItem('selectedTenantId')) {
                         localStorage.setItem('selectedTenantId', String(defaultTenant.id ?? 0));
                         localStorage.setItem('selectedCompanyName', defaultTenant.name);
-                        localStorage.setItem('selectedServiceKey', defaultTenant.service_key);
-                        localStorage.setItem('selectedBaseUrl', defaultTenant.api_base_url)
                     }
                 }
             } catch (e) {
@@ -106,9 +104,7 @@ export const authService = {
             }).catch(() => {}); // Ignore error on logout call
         } finally {
             if (typeof window !== 'undefined') {
-                localStorage.removeItem('selectedBaseUrl')
                 localStorage.removeItem('selectedCompanyName')
-                localStorage.removeItem('selectedServiceKey')
                 localStorage.removeItem('selectedTenantId')
                 localStorage.removeItem('tenants')
                 localStorage.removeItem('user')

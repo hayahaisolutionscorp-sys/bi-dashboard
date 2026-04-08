@@ -24,8 +24,10 @@ import { ShadcnOverviewBarChartVertical } from "@/components/charts/shadcn-overv
 import { ShadcnOverviewRegularLineChart } from "@/components/charts/shadcn-overview-regular-line-chart";
 import { ShadnOverviewStackedPieChart } from "@/components/charts/shadn-overview-stacked-pie-chart";
 import { ChartConfig } from "@/components/ui/chart";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 export default function DashboardPage() {
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const [period, setPeriod] = useState<"today" | "mtd" | "ytd">("today");
   const [data, setData] = useState<OverviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,12 +44,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchData() {
+      if (!activeTenant?.api_base_url) return;
       setIsLoading(true);
       setError(null);
       setRoutePage(0); // Reset page on period change
       setVesselPage(0); // Reset vessel page on period change
       try {
-        const overview = await overviewService.getOverview(period);
+        const overview = await overviewService.getOverview(
+          activeTenant.api_base_url, 
+          period, 
+          activeTenant.service_key
+        );
         setData(overview);
 
         // Update persistent totals based on incoming data
@@ -64,7 +71,7 @@ export default function DashboardPage() {
       }
     }
     fetchData();
-  }, [period]);
+  }, [period, activeTenant]);
 
   if (error) {
     return (

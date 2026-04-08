@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useMobileMenu } from "@/components/mobile-menu-provider";
+import { useTenant } from "@/components/providers/tenant-provider";
 import {
   Select,
   SelectContent,
@@ -16,8 +17,7 @@ import { Tenant, User } from "@/types/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function DashboardHeader() {
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [shippingLine, setShippingLine] = useState<string>("");
+  const { activeTenant, tenants, setTenant } = useTenant();
   const [user, setUser] = useState<User | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
@@ -25,44 +25,14 @@ export function DashboardHeader() {
 
   useEffect(() => {
     setIsMounted(true);
-    authService.syncFromCookies();
-    
-    const loadedTenants = authService.getTenants();
     const currentUser = authService.getCurrentUser();
-    
-    setTenants(loadedTenants);
-    
-    const selectedCompanyName = localStorage.getItem("selectedCompanyName");
-    if (selectedCompanyName) {
-      setShippingLine(selectedCompanyName);
-    } else if (loadedTenants && loadedTenants.length > 0) {
-      setShippingLine(loadedTenants[0].name);
-    }
     setUser(currentUser);
   }, []);
 
   const handleTenantChange = (value: string) => {
-    setShippingLine(value);
     const tenant = tenants.find(t => t.name === value);
     if (tenant) {
-      localStorage.setItem('selectedCompanyName', tenant.name);
-      localStorage.setItem('selectedBaseUrl', tenant.api_base_url);
-      document.cookie = "service_key=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-      document.cookie = `service_key=${tenant.service_key}; path=/;`
-      if (tenant.id !== undefined) {
-        authService.setSelectedTenant(tenant.id);
-      }
-      
-      let slug = (tenant as any).slug;
-      if (!slug && tenant.name) {
-          slug = tenant.name
-              .toLowerCase()
-              .trim()
-              .replace(/[^\w\s-]/g, '') 
-              .replace(/\s+/g, '-')      
-              .replace(/-+/g, '-');      
-      }
-      window.location.href = `/${slug}/dashboard`;
+      setTenant(tenant);
     }
   };
   
@@ -108,7 +78,7 @@ export function DashboardHeader() {
       <div className="flex shrink-0 items-center gap-2 md:gap-4">
         <div className="hidden sm:block">
           {isMounted ? (
-            <Select value={shippingLine} onValueChange={handleTenantChange}>
+            <Select value={activeTenant?.name || ""} onValueChange={handleTenantChange}>
               <SelectTrigger className="w-auto min-w-[200px] max-w-[280px] h-9 bg-slate-50 border-slate-200 text-slate-700 font-medium focus:ring-blue-500">
                 <div className="flex items-center gap-2 overflow-hidden">
                   <Ship className="h-4 w-4 shrink-0 text-blue-600" />

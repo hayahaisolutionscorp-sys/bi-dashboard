@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Loader2, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 interface ExpensesImportRow {
   vessel: string;
@@ -57,6 +58,7 @@ export function ExpensesImportPreviewModal({
   preview: initialPreview,
   onSuccess,
 }: ExpensesImportPreviewModalProps) {
+  const { activeTenant } = useTenant();
   const [isConfirming, setIsConfirming] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [rows, setRows] = useState<ExpensesImportRow[]>([]);
@@ -72,9 +74,14 @@ export function ExpensesImportPreviewModal({
   if (!initialPreview || !file) return null;
 
   const handleConfirm = async () => {
+    if (!activeTenant?.api_base_url || !file) return;
     setIsConfirming(true);
     try {
-      const result = await expensesService.confirmExpensesImport(file);
+      const result = await expensesService.confirmExpensesImport(
+        activeTenant.api_base_url, 
+        file, 
+        activeTenant.service_key
+      );
       toast.success("Import successful", {
         description: `${result.created} expenses recorded successfully.`,
       });
@@ -90,9 +97,14 @@ export function ExpensesImportPreviewModal({
   };
 
   const revalidate = async (updatedRows: ExpensesImportRow[]) => {
+    if (!activeTenant?.api_base_url) return;
     setIsValidating(true);
     try {
-      const result = await expensesService.previewExpensesImportJson(updatedRows);
+      const result = await expensesService.previewExpensesImportJson(
+        activeTenant.api_base_url, 
+        updatedRows, 
+        activeTenant.service_key
+      );
       setRows(result.rows);
     } catch (error: any) {
       toast.error("Validation failed", {

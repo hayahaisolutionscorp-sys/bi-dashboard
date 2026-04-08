@@ -1,5 +1,6 @@
 import { PWAPrompt } from "@/components/pwa-prompt";
 import { Toaster } from "@/components/ui/sonner";
+import { TenantProvider } from "@/components/providers/tenant-provider";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -40,7 +41,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <TenantProvider>
+          {children}
+        </TenantProvider>
         <Toaster />
         <PWAPrompt />
       </body>

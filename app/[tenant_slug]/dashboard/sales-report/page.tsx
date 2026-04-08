@@ -13,6 +13,7 @@ import { ShadcnLineChartMultiple } from "@/components/charts/shadcn-line-chart-m
 import { ShadcnBarChartHorizontal } from "@/components/charts/shadcn-bar-chart.horizontal";
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
 import { ComparisonTrendChart } from "@/components/charts/comparison-trend-chart";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 // Services & Types
 import { salesService } from "@/services/sales.service";
@@ -25,6 +26,7 @@ const createDefaultDateRange = (): DateRange => {
 };
 
 export default function SalesReportPage() {
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -93,9 +95,10 @@ export default function SalesReportPage() {
   // 1. Fetch routes list once on mount
   useEffect(() => {
     async function fetchRoutes() {
+      if (!activeTenant?.api_base_url) return;
       setIsRoutesLoading(true);
       try {
-        const names = await salesService.getRoutes();
+        const names = await salesService.getRoutes(activeTenant.api_base_url, activeTenant.service_key);
         setRouteNames(names);
         if (names.length > 0 && !selectedRouteName) {
           setSelectedRouteName(names[0]);
@@ -108,7 +111,7 @@ export default function SalesReportPage() {
       }
     }
     fetchRoutes();
-  }, []);
+  }, [activeTenant]);
 
   // 2. Clear state when route changes
   useEffect(() => {
@@ -119,11 +122,17 @@ export default function SalesReportPage() {
   // 3. Fetch KPI data
   useEffect(() => {
     async function fetchKpis() {
+      if (!activeTenant?.api_base_url) return;
       setIsKpisLoading(true);
       try {
         const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
         const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
-        const response = await salesService.getKpis(from, to);
+        const response = await salesService.getKpis(
+          activeTenant.api_base_url, 
+          from, 
+          to, 
+          activeTenant.service_key
+        );
         setKpiData(response.data);
       } catch (err) {
         console.error("Local KPI fetch error:", err);
@@ -132,16 +141,22 @@ export default function SalesReportPage() {
       }
     }
     fetchKpis();
-  }, [dateRange]);
+  }, [dateRange, activeTenant]);
 
   // 4. Fetch Revenue Trends
   useEffect(() => {
     async function fetchTrends() {
+      if (!activeTenant?.api_base_url) return;
       setIsTrendLoading(true);
       try {
         const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
         const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
-        const response = await salesService.getRevenueVsBookingTrends(from, to);
+        const response = await salesService.getRevenueVsBookingTrends(
+          activeTenant.api_base_url, 
+          from, 
+          to, 
+          activeTenant.service_key
+        );
         
         const data = response?.data?.revenueTrends || [];
         const filled: any[] = [];
@@ -199,16 +214,22 @@ export default function SalesReportPage() {
       }
     }
     fetchTrends();
-  }, [dateRange]);
+  }, [dateRange, activeTenant]);
 
   // 5. Fetch breakdown charts
   useEffect(() => {
     async function fetchCharts() {
+      if (!activeTenant?.api_base_url) return;
       setIsChartsLoading(true);
       try {
         const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
         const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
-        const response = await salesService.getSalesReportCharts(from, to);
+        const response = await salesService.getSalesReportCharts(
+          activeTenant.api_base_url, 
+          from, 
+          to, 
+          activeTenant.service_key
+        );
 
         const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
         
@@ -233,16 +254,16 @@ export default function SalesReportPage() {
       }
     }
     fetchCharts();
-  }, [dateRange]);
+  }, [dateRange, activeTenant]);
 
   const handleClearFilter = () => setDateRange(undefined);
   const handleImportClick = () => fileInputRef.current?.click();
 
   const handleDownloadTemplate = async () => {
-    if (isDownloadingTemplate) return;
+    if (isDownloadingTemplate || !activeTenant?.api_base_url) return;
     setIsDownloadingTemplate(true);
     try {
-      await salesService.downloadSalesReportTemplateExcel();
+      await salesService.downloadSalesReportTemplateExcel(activeTenant.api_base_url, activeTenant.service_key);
     } catch {
       window.alert("Failed to download template. Please try again.");
     } finally {
@@ -251,12 +272,18 @@ export default function SalesReportPage() {
   };
 
   const handleExport = async () => {
-    if (isExporting) return;
+    if (isExporting || !activeTenant?.api_base_url) return;
     setIsExporting(true);
     try {
       const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
       const to   = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
-      await salesService.downloadSalesReportExcel(from, to, selectedRouteName || undefined);
+      await salesService.downloadSalesReportExcel(
+        activeTenant.api_base_url, 
+        from, 
+        to, 
+        selectedRouteName || undefined, 
+        activeTenant.service_key
+      );
     } catch (err) {
       console.error("Export error:", err);
       window.alert("Export failed. Please try again.");

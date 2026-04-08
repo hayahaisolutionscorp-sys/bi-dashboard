@@ -10,6 +10,7 @@ import { DateRange } from "react-day-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
 import { ServerError } from "@/components/ui/server-error";
+import { useTenant } from "@/components/providers/tenant-provider";
 
 import { ShadcnLineChartRegular } from "@/components/charts/shadcn-line-chart-regular";
 import { ShadcnBarChartMultiple } from "@/components/charts/shadcn-bar-chart-multiple";
@@ -19,6 +20,7 @@ import { passengersService } from "@/services/passengers.service";
 import { PassengersReportResponse } from "@/types/passengers";
 
 export default function PassengersPerTripPage() {
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const params = useParams();
   const tenantSlug = params.tenant_slug as string;
 
@@ -34,14 +36,20 @@ export default function PassengersPerTripPage() {
 
   useEffect(() => {
     async function fetchData() {
-      if (!tenantSlug) return;
+      if (!activeTenant?.api_base_url) return;
       
       setIsLoading(true);
       setError(null);
       try {
         const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
         const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
-        const result = await passengersService.getPassengersReport(tenantSlug, from, to);
+        const result = await passengersService.getPassengersReport(
+          activeTenant.api_base_url, 
+          tenantSlug, 
+          from, 
+          to, 
+          activeTenant.service_key
+        );
         setData(result);
         if (isInitialLoad) {
           setTimeout(() => setIsInitialLoad(false), 500);
@@ -54,10 +62,10 @@ export default function PassengersPerTripPage() {
       }
     }
     
-    if (dateRange?.from && dateRange?.to && tenantSlug) {
+    if (dateRange?.from && dateRange?.to && activeTenant?.api_base_url) {
       fetchData();
     }
-  }, [dateRange, tenantSlug]);
+  }, [dateRange, tenantSlug, activeTenant]);
 
   const handleClearFilter = () => {
     const now = new Date();
