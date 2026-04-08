@@ -15,7 +15,7 @@ export const salesService = {
   /** Fetch trends for Revenue vs Booking. */
   getRevenueVsBookingTrends: async (from?: string, to?: string): Promise<RevenueVsBookingTrendsResponse> => {
     try {
-      const url = new URL(API_ENDPOINTS.REVENUE_PER_BOOKINGS, AYAHAY_CLIENT_API);
+      const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.REVENUE_PER_BOOKINGS}`);
       if (from) url.searchParams.append("from", from);
       if (to) url.searchParams.append("to", to);
 
@@ -38,7 +38,7 @@ export const salesService = {
   /** Fetch breakdown charts for the Sales Report. */
   getSalesReportCharts: async (from?: string, to?: string): Promise<SalesChartsResponse> => {
     try {
-      const url = new URL(API_ENDPOINTS.SALES_REPORT_CHARTS, AYAHAY_CLIENT_API);
+      const url = new URL(`${AYAHAY_CLIENT_API}${API_ENDPOINTS.SALES_REPORT_CHARTS}`);
       if (from) url.searchParams.append("from", from);
       if (to) url.searchParams.append("to", to);
 
@@ -245,7 +245,7 @@ export const salesService = {
    */
   getKpis: async (from?: string, to?: string): Promise<SalesKpiResponse> => {
     try {
-      const url = new URL("/bi/sales-report/kpi", AYAHAY_CLIENT_API);
+      const url = new URL(`${AYAHAY_CLIENT_API}/bi/sales-report/kpi`);
       if (from) url.searchParams.append("from", from);
       if (to) url.searchParams.append("to", to);
 

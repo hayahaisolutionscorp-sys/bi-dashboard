@@ -2,10 +2,6 @@
 import { ChangeEvent, useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { format } from "date-fns";
-import { ChangeEvent, useRef, useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { format } from "date-fns";
-import { downloadTemplate } from "@/lib/export-utils";
 import { SimpleKpiCard } from "@/components/charts/simple-kpi-card";
 import { CalendarDays, FilterX, FileInput, FileOutput, Download, Route, Banknote, TrendingUp, Ticket } from "lucide-react";
 
@@ -15,16 +11,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { ShadcnLineChartMultiple } from "@/components/charts/shadcn-line-chart-multiple";
 import { ShadcnBarChartHorizontal } from "@/components/charts/shadcn-bar-chart.horizontal";
-import { ShadcnPieChartLabelList } from "@/components/charts/shadcn-pie-chart-label-list";
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
 import { ComparisonTrendChart } from "@/components/charts/comparison-trend-chart";
-import { SalesKpiResponse } from "@/types/sales";
-import { SalesKpiResponse } from "@/types/sales";
 
 // Services & Types
 import { salesService } from "@/services/sales.service";
-import { SalesReportRoute, RevenueTrendItem } from "@/types/sales";
-import { SalesReportRoute, RevenueTrendItem } from "@/types/sales";
+import { SalesReportRoute, SalesKpiResponse } from "@/types/sales";
 
 const createDefaultDateRange = (): DateRange => {
   const now = new Date();
@@ -37,33 +29,7 @@ export default function SalesReportPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // ── Date Range (URL Synced) ────────────────────────────────────────────────
-  const dateRange = useMemo(() => {
-    const fromStr = searchParams.get("startDate");
-    const toStr = searchParams.get("endDate");
-    if (fromStr && toStr) {
-      const from = new Date(fromStr);
-      const to = new Date(toStr);
-      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) return { from, to };
-    }
-    return createDefaultDateRange();
-  }, [searchParams]);
-
-  const setDateRange = useCallback((newRange: DateRange | undefined) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (newRange?.from && newRange?.to) {
-      params.set("startDate", newRange.from.toISOString());
-      params.set("endDate", newRange.to.toISOString());
-    } else {
-      params.delete("startDate");
-      params.delete("endDate");
-    }
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [router, pathname, searchParams]);
-
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Date Range (URL Synced) ────────────────────────────────────────────────
   const dateRange = useMemo(() => {
@@ -93,9 +59,7 @@ export default function SalesReportPage() {
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
 
   // ── Routes (URL Synced) ──────────────────────────────────────────────────
-  // ── Routes (URL Synced) ──────────────────────────────────────────────────
   const [routeNames, setRouteNames] = useState<string[]>([]);
-  const selectedRouteName = searchParams.get("route") || "";
   const selectedRouteName = searchParams.get("route") || "";
   const [isRoutesLoading, setIsRoutesLoading] = useState(true);
 
@@ -106,52 +70,25 @@ export default function SalesReportPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [router, pathname, searchParams]);
 
-  const setSelectedRouteName = useCallback((name: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (name) params.set("route", name);
-    else params.delete("route");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [router, pathname, searchParams]);
-
-  // Route detail (KPIs + charts)
-  const [selectedRoute, setSelectedRoute] = useState<SalesReportRoute | null>(null);
+  // UI State
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true); // true until first data arrives
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // New local KPI data state
+  // Data States
   const [kpiData, setKpiData] = useState<SalesKpiResponse["data"] | null>(null);
   const [isKpisLoading, setIsKpisLoading] = useState(false);
 
-  // New Revenue vs Booking Trend state
   const [revenueTrend, setRevenueTrend] = useState<any[]>([]);
   const [isTrendLoading, setIsTrendLoading] = useState(false);
 
-  // New Breakdown states
   const [salesByRoute, setSalesByRoute] = useState<any[]>([]);
   const [salesByVessel, setSalesByVessel] = useState<any[]>([]);
   const [isChartsLoading, setIsChartsLoading] = useState(false);
+
   const ITEMS_PER_PAGE = 5;
   const [routePage, setRoutePage] = useState(0);
   const [vesselPage, setVesselPage] = useState(0);
-
-  // New local KPI data state
-  const [kpiData, setKpiData] = useState<SalesKpiResponse["data"] | null>(null);
-  const [isKpisLoading, setIsKpisLoading] = useState(false);
-
-  // New Revenue vs Booking Trend state
-  const [revenueTrend, setRevenueTrend] = useState<any[]>([]);
-  const [isTrendLoading, setIsTrendLoading] = useState(false);
-
-  // New Breakdown states
-  const [salesByRoute, setSalesByRoute] = useState<any[]>([]);
-  const [salesByVessel, setSalesByVessel] = useState<any[]>([]);
-  const [isChartsLoading, setIsChartsLoading] = useState(false);
-  const ITEMS_PER_PAGE = 5;
-  const [routePage, setRoutePage] = useState(0);
-  const [vesselPage, setVesselPage] = useState(0);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 1. Fetch routes list once on mount
   useEffect(() => {
@@ -160,9 +97,6 @@ export default function SalesReportPage() {
       try {
         const names = await salesService.getRoutes();
         setRouteNames(names);
-        if (names.length > 0 && !selectedRouteName) {
-          setSelectedRouteName(names[0]);
-        }
         if (names.length > 0 && !selectedRouteName) {
           setSelectedRouteName(names[0]);
         }
@@ -176,37 +110,13 @@ export default function SalesReportPage() {
     fetchRoutes();
   }, []);
 
-  // 2. Fetch route detail whenever route or date range changes
+  // 2. Clear state when route changes
   useEffect(() => {
     if (!selectedRouteName) return;
-    async function fetchData() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // Temporarily disabled while revising KPIs
-        /*
-        // Temporarily disabled while revising KPIs
-        /*
-        const from = dateRange?.from?.toISOString().split("T")[0];
-        const to = dateRange?.to?.toISOString().split("T")[0];
-        const data = await salesService.getSalesReport(from, to, selectedRouteName);
-        setSelectedRoute(data);
-        */
-        setSelectedRoute(null);
-        */
-        setSelectedRoute(null);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load sales report. Please try again later.");
-      } finally {
-        setIsLoading(false);
-        setIsInitialLoad(false);
-      }
-    }
-    fetchData();
-  }, [selectedRouteName, dateRange]);
+    setIsInitialLoad(false);
+  }, [selectedRouteName]);
 
-  // 3. Fetch KPI data separately from the local endpoint
+  // 3. Fetch KPI data
   useEffect(() => {
     async function fetchKpis() {
       setIsKpisLoading(true);
@@ -224,7 +134,7 @@ export default function SalesReportPage() {
     fetchKpis();
   }, [dateRange]);
 
-  // 4. Fetch Revenue vs Booking Trends separately
+  // 4. Fetch Revenue Trends
   useEffect(() => {
     async function fetchTrends() {
       setIsTrendLoading(true);
@@ -233,7 +143,6 @@ export default function SalesReportPage() {
         const to = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
         const response = await salesService.getRevenueVsBookingTrends(from, to);
         
-        // Fill missing dates logic
         const data = response?.data?.revenueTrends || [];
         const filled: any[] = [];
         const start = dateRange?.from ? new Date(dateRange.from) : null;
@@ -276,43 +185,12 @@ export default function SalesReportPage() {
             } else {
               filled.push({
                 transaction_date: dateStr,
-                gross_revenue: 0,
-                total: 0,
-                api_v2: 0,
-                mobile_app: 0,
-                online: 0,
-                otc: 0,
-                travel_agency: 0,
-                walk_in: 0,
-                website: 0,
+                gross_revenue: 0, total: 0, api_v2: 0, mobile_app: 0, online: 0, otc: 0, travel_agency: 0, walk_in: 0, website: 0
               });
             }
             current.setDate(current.getDate() + 1);
           }
           setRevenueTrend(filled);
-        } else {
-          setRevenueTrend(data.map(item => {
-            const api2 = Math.max(0, item.sources.api_v2 || 0);
-            const moba = Math.max(0, item.sources.mobile_app || 0);
-            const onl  = Math.max(0, item.sources.online || 0);
-            const otc  = Math.max(0, item.sources.otc || 0);
-            const trag = Math.max(0, item.sources.travel_agency || 0);
-            const walk = Math.max(0, item.sources.walk_in || 0);
-            const webs = Math.max(0, item.sources.website || 0);
-            const total = Math.max(0, item.sources.total ?? (api2 + moba + onl + otc + trag + walk + webs));
-            return {
-              transaction_date: item.date,
-              gross_revenue: Math.max(0, item.grossRevenue || 0),
-              total,
-              api_v2: api2,
-              mobile_app: moba,
-              online: onl,
-              otc: otc,
-              travel_agency: trag,
-              walk_in: walk,
-              website: webs,
-            };
-          }));
         }
       } catch (err) {
         console.error("Trend fetch error:", err);
@@ -323,7 +201,7 @@ export default function SalesReportPage() {
     fetchTrends();
   }, [dateRange]);
 
-  // 5. Fetch breakdown charts separately (Sales by Route & Sales per Vessel)
+  // 5. Fetch breakdown charts
   useEffect(() => {
     async function fetchCharts() {
       setIsChartsLoading(true);
@@ -358,13 +236,7 @@ export default function SalesReportPage() {
   }, [dateRange]);
 
   const handleClearFilter = () => setDateRange(undefined);
-
   const handleImportClick = () => fileInputRef.current?.click();
-
-  const handleImportChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-  };
 
   const handleDownloadTemplate = async () => {
     if (isDownloadingTemplate) return;
@@ -378,22 +250,12 @@ export default function SalesReportPage() {
     }
   };
 
-  const formatCurrency = (val?: number | null) => `₱${(val ?? 0).toLocaleString()}`;
-
   const handleExport = async () => {
-    if (isExporting) return;
     if (isExporting) return;
     setIsExporting(true);
     try {
       const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
       const to   = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
-      // Use the selectedRouteName which is already synced with the URL/params
-      await salesService.downloadSalesReportExcel(from, to, selectedRouteName || undefined);
-    } catch (err) {
-      console.error("Export error:", err);
-      const from = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
-      const to   = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
-      // Use the selectedRouteName which is already synced with the URL/params
       await salesService.downloadSalesReportExcel(from, to, selectedRouteName || undefined);
     } catch (err) {
       console.error("Export error:", err);
@@ -403,6 +265,9 @@ export default function SalesReportPage() {
     }
   };
 
+  const formatCurrency = (val?: number | null) => `₱${(val ?? 0).toLocaleString()}`;
+  const isChartEmpty = (arr: any[]) => !arr || arr.length === 0;
+
   if (error) {
     return (
       <div className="flex h-[400px] items-center justify-center text-rose-500">
@@ -411,25 +276,13 @@ export default function SalesReportPage() {
     );
   }
 
-  // Helpers
-  const noData = !selectedRoute;
-  const kpiValue = (val: number | null | undefined) =>
-    isLoading ? "—" : (val ?? 0) === 0 ? "—" : formatCurrency(val);
-  const kpiCount = (val: number | null | undefined) =>
-    isLoading ? "—" : (val ?? 0) === 0 ? "—" : (val ?? 0).toLocaleString();
-
-  const isChartEmpty = (arr: any[]) => !arr || arr.length === 0;
-
   return (
     <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
         
         {/* Toolbar */}
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          
-          {/* Filters (Route & Date) */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            {/* Route selector */}
             <div className="flex items-center gap-2 text-sm w-full sm:w-auto">
               <Route className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
               <select
@@ -439,16 +292,13 @@ export default function SalesReportPage() {
                 disabled={isRoutesLoading || routeNames.length === 0}
               >
                 {isRoutesLoading && <option value="">Loading routes...</option>}
-                {!isRoutesLoading && routeNames.length === 0 && (
-                  <option value="">No Routes Available</option>
-                )}
+                {!isRoutesLoading && routeNames.length === 0 && <option value="">No Routes Available</option>}
                 {routeNames.map((name) => (
                   <option key={name} value={name}>{name}</option>
                 ))}
               </select>
             </div>
 
-            {/* Date range */}
             <div className="flex items-center gap-2 text-sm w-full sm:w-auto sm:border-l sm:border-slate-200 sm:pl-3 dark:sm:border-slate-700">
               <CalendarDays className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
               <span className="hidden sm:inline-block shrink-0 text-slate-600 dark:text-slate-300">Date Range:</span>
@@ -458,134 +308,36 @@ export default function SalesReportPage() {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-            <button
-              type="button"
-              onClick={handleClearFilter}
-              className="inline-flex h-9 w-full sm:w-auto justify-center items-center gap-1.5 rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-600"
-            >
-              <FilterX className="h-4 w-4 shrink-0" />
-              <span className="truncate">Reset</span>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:items-center sm:gap-2">
+            <button onClick={handleClearFilter} className="inline-flex h-9 justify-center items-center gap-1.5 rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white hover:bg-sky-600"><FilterX className="h-4 w-4" /> Reset</button>
+            <button onClick={handleImportClick} className="inline-flex h-9 justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"><FileInput className="h-4 w-4" /> Import</button>
+            <button onClick={handleExport} disabled={isExporting} className="inline-flex h-9 justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+              {isExporting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" /> : <FileOutput className="h-4 w-4 text-sky-500" />} Export
             </button>
-            <button
-              type="button"
-              onClick={handleImportClick}
-              className="inline-flex h-9 w-full sm:w-auto justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              <FileInput className="h-4 w-4 shrink-0" />
-              <span className="truncate">Import</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={isExporting}
-              disabled={isExporting}
-              className="inline-flex h-9 w-full sm:w-auto justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 disabled:opacity-50"
-            >
-              {isExporting ? (
-                <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
-              ) : (
-                <FileOutput className="h-4 w-4 shrink-0 text-sky-500" />
-              )}
-              <span className="truncate">{isExporting ? "Export" : "Export"}</span>
-              <span className="truncate">{isExporting ? "Export" : "Export"}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadTemplate}
-              disabled={isDownloadingTemplate}
-              className="inline-flex h-9 w-full sm:w-auto justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 disabled:opacity-50"
-              title="Download Excel Template"
-            >
-              {isDownloadingTemplate ? (
-                <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-              ) : (
-                <Download className="h-4 w-4 shrink-0 text-slate-400" />
-              )}
-              <span className="truncate">{isDownloadingTemplate ? "Template" : "Template"}</span>
-              <span className="truncate">{isDownloadingTemplate ? "Template" : "Template"}</span>
+            <button onClick={handleDownloadTemplate} disabled={isDownloadingTemplate} className="inline-flex h-9 justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              {isDownloadingTemplate ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" /> : <Download className="h-4 w-4 text-slate-400" />} Template
             </button>
           </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx, .xls, .json"
-            className="hidden"
-            onChange={handleImportChange}
-          />
+          <input ref={fileInputRef} type="file" accept=".xlsx, .xls, .json" className="hidden" onChange={() => {}} />
         </div>
 
         {/* KPIs */}
-        <div className="relative">
-          {/* Loading overlay for subsequent fetches */}
-          {isLoading && !isInitialLoad && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px]">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
-            </div>
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {isKpisLoading ? (
+            <Skeleton className="h-24 w-full rounded-xl" />
+          ) : (
+            <>
+              <SimpleKpiCard label="Total Sales" value={formatCurrency(kpiData?.totalSales.value)} icon={Banknote} colorClass="text-blue-500" subtext="Before deductions" />
+              <SimpleKpiCard label="Gross Revenue" value={formatCurrency(kpiData?.grossRevenue.value)} icon={TrendingUp} colorClass="text-green-500" subtext="After deductions" />
+              <SimpleKpiCard label="Total Bookings" value={(kpiData?.totalBookings.value ?? 0).toLocaleString()} icon={Ticket} colorClass="text-orange-500" subtext="Total ticket count" />
+            </>
           )}
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {isInitialLoad || isKpisLoading ? (
-            {isInitialLoad || isKpisLoading ? (
-              <>
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-full rounded-xl" />
-                ))}
-              </>
-            ) : (
-              <>
-                <SimpleKpiCard
-                  label={kpiData?.totalSales.label || "Total Sales"}
-                  value={formatCurrency(kpiData?.totalSales.value)}
-                  label={kpiData?.totalSales.label || "Total Sales"}
-                  value={formatCurrency(kpiData?.totalSales.value)}
-                  icon={Banknote}
-                  colorClass="text-blue-500"
-                  subtext="Before deductions"
-                />
-                <SimpleKpiCard
-                  label={kpiData?.grossRevenue.label || "Gross Revenue"}
-                  value={formatCurrency(kpiData?.grossRevenue.value)}
-                  label={kpiData?.grossRevenue.label || "Gross Revenue"}
-                  value={formatCurrency(kpiData?.grossRevenue.value)}
-                  icon={TrendingUp}
-                  colorClass="text-green-500"
-                  subtext="After deductions"
-                />
-                <SimpleKpiCard
-                  label={kpiData?.totalBookings.label || "Total Bookings"}
-                  value={(kpiData?.totalBookings.value ?? 0).toLocaleString()}
-                  label={kpiData?.totalBookings.label || "Total Bookings"}
-                  value={(kpiData?.totalBookings.value ?? 0).toLocaleString()}
-                  icon={Ticket}
-                  colorClass="text-orange-500"
-                  subtext="Total ticket count"
-                />
-              </>
-            )}
-          </section>
-        </div>
+        </section>
 
         {/* Trend Chart */}
         <div className="relative rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950">
-          {(isLoading || isTrendLoading) && !isInitialLoad && (
-          {(isLoading || isTrendLoading) && !isInitialLoad && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px]">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
-            </div>
-          )}
-          {isInitialLoad || isTrendLoading ? (
-          {isInitialLoad || isTrendLoading ? (
-            <Skeleton className="h-[300px] w-full rounded-xl" />
-          ) : isChartEmpty(revenueTrend) ? (
-          ) : isChartEmpty(revenueTrend) ? (
-            <NoDataPlaceholder height="300px" />
-          ) : (
+          {isTrendLoading ? <Skeleton className="h-[300px] w-full rounded-xl" /> : isChartEmpty(revenueTrend) ? <NoDataPlaceholder height="300px" /> : (
             <ShadcnLineChartMultiple
-              title="Revenue per Bookings Source"
-              description="Daily performance by booking source channel"
-              data={revenueTrend}
               title="Revenue per Bookings Source"
               description="Daily performance by booking source channel"
               data={revenueTrend}
@@ -593,90 +345,40 @@ export default function SalesReportPage() {
               height="300px"
               dateRange={dateRange}
               config={{
-                api_v2:        { label: "API v2",         color: "#10b981" },
-                mobile_app:    { label: "Mobile App",     color: "#f43f5e" },
-                online:        { label: "Online",         color: "#6366f1" },
-                otc:           { label: "OTC",            color: "#f97316" },
-                travel_agency: { label: "Travel Agency",  color: "#8b5cf6" },
-                walk_in:       { label: "Walk-in",        color: "#0ea5e9" },
-                website:       { label: "Website",        color: "#ec4899" },
-                api_v2:        { label: "API v2",         color: "#10b981" },
-                mobile_app:    { label: "Mobile App",     color: "#f43f5e" },
-                online:        { label: "Online",         color: "#6366f1" },
-                otc:           { label: "OTC",            color: "#f97316" },
-                travel_agency: { label: "Travel Agency",  color: "#8b5cf6" },
-                walk_in:       { label: "Walk-in",        color: "#0ea5e9" },
-                website:       { label: "Website",        color: "#ec4899" },
+                api_v2: { label: "API v2", color: "#10b981" },
+                mobile_app: { label: "Mobile App", color: "#f43f5e" },
+                online: { label: "Online", color: "#6366f1" },
+                otc: { label: "OTC", color: "#f97316" },
+                travel_agency: { label: "Travel Agency", color: "#8b5cf6" },
+                walk_in: { label: "Walk-in", color: "#0ea5e9" },
+                website: { label: "Website", color: "#ec4899" },
               }}
               series={[
-                { dataKey: "api_v2",        color: "#10b981", name: "API v2" },
-                { dataKey: "mobile_app",    color: "#f43f5e", name: "Mobile App" },
-                { dataKey: "online",        color: "#6366f1", name: "Online" },
-                { dataKey: "otc",           color: "#f97316", name: "OTC" },
+                { dataKey: "api_v2", color: "#10b981", name: "API v2" },
+                { dataKey: "mobile_app", color: "#f43f5e", name: "Mobile App" },
+                { dataKey: "online", color: "#6366f1", name: "Online" },
+                { dataKey: "otc", color: "#f97316", name: "OTC" },
                 { dataKey: "travel_agency", color: "#8b5cf6", name: "Travel Agency" },
-                { dataKey: "walk_in",        color: "#0ea5e9", name: "Walk-in" },
-                { dataKey: "website",       color: "#ec4899", name: "Website" },
-                { dataKey: "api_v2",        color: "#10b981", name: "API v2" },
-                { dataKey: "mobile_app",    color: "#f43f5e", name: "Mobile App" },
-                { dataKey: "online",        color: "#6366f1", name: "Online" },
-                { dataKey: "otc",           color: "#f97316", name: "OTC" },
-                { dataKey: "travel_agency", color: "#8b5cf6", name: "Travel Agency" },
-                { dataKey: "walk_in",        color: "#0ea5e9", name: "Walk-in" },
-                { dataKey: "website",       color: "#ec4899", name: "Website" },
+                { dataKey: "walk_in", color: "#0ea5e9", name: "Walk-in" },
+                { dataKey: "website", color: "#ec4899", name: "Website" },
               ]}
             />
           )}
         </div>
 
-        {/* Comparison Trend Chart */}
-        {/* Comparison Trend Chart */}
-        <ComparisonTrendChart 
-          dateRange={dateRange} 
-          selectedRouteName={selectedRouteName}
-        />
-        {/* Comparison Trend Chart */}
-        <ComparisonTrendChart 
-          dateRange={dateRange} 
-          selectedRouteName={selectedRouteName}
-        />
+        <ComparisonTrendChart dateRange={dateRange} selectedRouteName={selectedRouteName} />
 
         {/* Breakdown Charts */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Sales by Route */}
-          {/* Sales by Route */}
-          <div className="relative rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
-            {(isLoading || isChartsLoading) && !isInitialLoad && (
-            {(isLoading || isChartsLoading) && !isInitialLoad && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px]">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
-              </div>
-            )}
-            {isInitialLoad || isChartsLoading ? (
-            {isInitialLoad || isChartsLoading ? (
-              <Skeleton className="h-[300px] w-full rounded-xl" />
-            ) : isChartEmpty(salesByRoute) ? (
-            ) : isChartEmpty(salesByRoute) ? (
-              <div className="pt-4 px-4">
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sales by Route</p>
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sales by Route</p>
-                <NoDataPlaceholder height="270px" />
-              </div>
-            ) : (
+          <div className="rounded-xl border border-slate-300 bg-gray-100 p-2 dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
+            {isChartsLoading ? <Skeleton className="h-[300px] w-full" /> : isChartEmpty(salesByRoute) ? <NoDataPlaceholder height="270px" /> : (
               <ShadcnBarChartHorizontal
                 title="Sales by Route"
                 description="Revenue breakdown by geographical route"
                 data={salesByRoute.slice(routePage * ITEMS_PER_PAGE, (routePage + 1) * ITEMS_PER_PAGE)}
                 dataKey="value"
                 labelKey="label"
-                title="Sales by Route"
-                description="Revenue breakdown by geographical route"
-                data={salesByRoute.slice(routePage * ITEMS_PER_PAGE, (routePage + 1) * ITEMS_PER_PAGE)}
-                dataKey="value"
-                labelKey="label"
-                hideYAxis={false}
-                config={{
-                  value: { label: "Revenue" },
-                }}
+                config={{ value: { label: "Revenue" } }}
                 pagination={{
                   currentPage: routePage,
                   totalPages: Math.ceil(salesByRoute.length / ITEMS_PER_PAGE),
@@ -687,36 +389,15 @@ export default function SalesReportPage() {
             )}
           </div>
 
-          {/* Sales per Vessel */}
-          {/* Sales per Vessel */}
-          <div className="relative rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
-            {(isLoading || isChartsLoading) && !isInitialLoad && (
-            {(isLoading || isChartsLoading) && !isInitialLoad && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px]">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
-              </div>
-            )}
-            {isInitialLoad || isChartsLoading ? (
-            {isInitialLoad || isChartsLoading ? (
-              <Skeleton className="h-[300px] w-full rounded-xl" />
-            ) : isChartEmpty(salesByVessel) ? (
-            ) : isChartEmpty(salesByVessel) ? (
-              <div className="pt-4 px-4">
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sales per Vessel</p>
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sales per Vessel</p>
-                <NoDataPlaceholder height="270px" />
-              </div>
-            ) : (
+          <div className="rounded-xl border border-slate-300 bg-gray-100 p-2 dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
+            {isChartsLoading ? <Skeleton className="h-[300px] w-full" /> : isChartEmpty(salesByVessel) ? <NoDataPlaceholder height="270px" /> : (
               <ShadcnBarChartHorizontal
                 title="Sales per Vessel"
                 description="Revenue contribution by individual vessels"
                 data={salesByVessel.slice(vesselPage * ITEMS_PER_PAGE, (vesselPage + 1) * ITEMS_PER_PAGE)}
                 dataKey="value"
                 labelKey="label"
-                hideYAxis={false}
-                config={{
-                  value: { label: "Revenue" },
-                }}
+                config={{ value: { label: "Revenue" } }}
                 pagination={{
                   currentPage: vesselPage,
                   totalPages: Math.ceil(salesByVessel.length / ITEMS_PER_PAGE),
