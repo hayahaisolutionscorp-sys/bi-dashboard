@@ -6,6 +6,7 @@ export interface RouteMapTrip {
   route_name: string;            // Format: "Source Port - Dest Port"
   scheduled_departure: string;   // ISO Date String
   scheduled_arrival: string;     // ISO Date String
+  actual_departure: string | null; // When the trip actually departed (null if not yet departed)
   eta_minutes: number;           // Configured vessel travel time
   status: string;                // e.g., "scheduled", "departed"
   boarded_count: number;         // Real-time scanned passengers
@@ -13,6 +14,10 @@ export interface RouteMapTrip {
   pax_utilization_pct: number;   // Boarded / Total Seats (%)
   trip_revenue: number;          // Total confirmed revenue for this specific trip
   route_ytd_revenue: number;     // Cumulative revenue for this entire route this year
+  src_port_latitude: number | null;
+  src_port_longitude: number | null;
+  dest_port_latitude: number | null;
+  dest_port_longitude: number | null;
 }
 
 export interface RouteMapResponse {
@@ -39,7 +44,7 @@ export const RouteMapService = {
       return result.data as RouteMapResponse;
     } catch (error) {
       console.error("Route Map fetch error:", error);
-      throw error;
+      return { trips: [] };
     }
   }
 };

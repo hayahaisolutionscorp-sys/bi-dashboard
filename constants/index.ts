@@ -1,5 +1,24 @@
 export const AYAHAY_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002"
-export const AYAHAY_CLIENT_API = typeof window !== "undefined" ? localStorage.getItem("seletedBaseUrl") || process.env.NEXT_PUBLIC_CLIENT_API_URL : "http://localhost:3000"
+
+const LOCAL_CLIENT_API_URL = process.env.NEXT_PUBLIC_CLIENT_API_URL || "http://localhost:3000";
+
+function resolveClientApiBaseUrl(): string {
+  if (typeof window === "undefined") {
+    return LOCAL_CLIENT_API_URL;
+  }
+
+  const hostname = window.location.hostname;
+  const isLocalOrigin =
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
+
+  if (isLocalOrigin) {
+    return LOCAL_CLIENT_API_URL;
+  }
+
+  return localStorage.getItem("selectedBaseUrl") || LOCAL_CLIENT_API_URL;
+}
+
+export const AYAHAY_CLIENT_API = resolveClientApiBaseUrl();
 
 export const API_ENDPOINTS = {
 	AUTH: "/bi/auth",

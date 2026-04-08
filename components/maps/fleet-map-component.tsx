@@ -4,9 +4,10 @@ import * as React from 'react';
 import { useState, useRef, useMemo } from 'react';
 import MapGL, { Marker, MapRef, Source, Layer } from 'react-map-gl/maplibre';
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Search, Layers, Plus, Minus, List, Sun, Wind, Waves, Map as MapIcon, TrendingUp, User, Package, Clock } from "lucide-react";
+import { Search, Layers, Plus, Minus, List, Sun, Wind, Waves, Map as MapIcon, TrendingUp, User, Package, Clock, X, Navigation, Anchor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as turf from '@turf/turf';
+// @ts-ignore — no type declarations for searoute-js
 
 
 import { Ship } from "lucide-react";
@@ -67,6 +68,15 @@ export function FleetMapComponent() {
 
   const [apiTrips, setApiTrips] = useState<RouteMapTrip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seaRoutesData, setSeaRoutesData] = useState<Record<string, { coords: number[][]; distance_km: number }> | null>(null);
+
+  // Load pre-computed sea route waypoints
+  React.useEffect(() => {
+    fetch('/sea-routes.json')
+      .then(r => r.json())
+      .then(data => setSeaRoutesData(data))
+      .catch(() => console.warn('sea-routes.json not found, using fallback routing'));
+  }, []);
 
   // Fetch API Data
   React.useEffect(() => {
@@ -101,14 +111,32 @@ export function FleetMapComponent() {
     });
 
     const definedRoutes = Array.from(routeGroups.entries()).map(([routeName, trips], index) => {
-       // Sequentially assign the local mock coordinate data based on the index position
-       const mockIndex = index % SERVICE_ROUTES_RAW.length;
-       const matchingMock = SERVICE_ROUTES_RAW[mockIndex];
-       
-       const coords = matchingMock.coordinates;
+       const firstTrip = trips[0];
+       const srcLat = firstTrip?.src_port_latitude;
+       const srcLng = firstTrip?.src_port_longitude;
+       const destLat = firstTrip?.dest_port_latitude;
+       const destLng = firstTrip?.dest_port_longitude;
+
+       const hasRealCoords = srcLat != null && srcLng != null && destLat != null && destLng != null;
+
+       let coords: number[][];
+
+       // 1. Check pre-computed sea routes (from sea-routes.json loaded via seaRoutesData)
+       const seaRouteMatch = seaRoutesData?.[routeName];
+       if (seaRouteMatch && seaRouteMatch.coords?.length >= 2) {
+         coords = seaRouteMatch.coords;
+       } else if (hasRealCoords) {
+         // 2. Use real port coordinates as straight line fallback
+         coords = [[srcLng!, srcLat!], [destLng!, destLat!]];
+       } else {
+         // 3. Fallback to mock data
+         const mockIndex = index % SERVICE_ROUTES_RAW.length;
+         coords = SERVICE_ROUTES_RAW[mockIndex].coordinates;
+       }
+
        const startPoint = coords[0];
        const endPoint = coords[coords.length - 1];
-       
+
        const parts = routeName.split('-').map(s => s.trim());
        const startName = parts[0] ? `${parts[0]} Port` : "Origin Port";
        const endName = parts[1] ? `${parts[1]} Port` : "Destination Port";
@@ -116,11 +144,27 @@ export function FleetMapComponent() {
        // Aggregate revenue for the route based on the first trip's YTD data
        const ytdRevenue = trips[0]?.route_ytd_revenue || 0;
 
+       // Pre-compute smoothed route for animation
+       let curvedCoords: number[][];
+       try {
+           if (coords.length >= 3) {
+               // Multi-point waypoints (from sea-routes.json or mock) — smooth with Bezier
+               const curved = turf.bezierSpline(turf.lineString(coords), { resolution: 10000, sharpness: 0.85 });
+               curvedCoords = curved.geometry.coordinates;
+           } else {
+               // 2-point straight line — use as-is (shouldn't happen with sea-routes.json)
+               curvedCoords = coords;
+           }
+       } catch {
+           curvedCoords = coords;
+       }
+
        return {
            id: index + 1,
            name: routeName,
            vessels: trips.length,
            coords: coords,
+           curvedCoords: curvedCoords,
            ports: [
                { name: startName, lat: startPoint[1], lng: startPoint[0] },
                { name: endName, lat: endPoint[1], lng: endPoint[0] }
@@ -135,16 +179,37 @@ export function FleetMapComponent() {
 
     const routeList = definedRoutes.map(r => ({ id: r.id, name: r.name, vessels: r.vessels }));
 
-    // Transform trips into initial vessel positions based on real times, but skip already arrived ones
+    // Transform trips into initial vessel positions.
+    // Status rules:
+    //   awaiting / pending  — not yet boarded; vessel sits at origin port (progress = 0)
+    //   onboarded           — passengers boarding; vessel still at origin port (progress = 0)
+    //   departed            — en route; animate from actual/scheduled departure toward destination
+    //   awaiting / pending / onboarded — excluded (vessel docked, not shown on map)
+    //   arrived             — excluded entirely (filtered below)
+    //   cancelled           — excluded entirely (not returned by backend, but guard here too)
     const initialVessels = apiTrips
-      .filter(trip => trip.status !== 'arrived')
+      .filter(trip => trip.status === 'departed')
       .map(trip => {
         const route = definedRoutes.find(r => r.name === trip.route_name)!;
-        const startTimeMs = new Date(trip.scheduled_departure).getTime();
-        const endTimeMs = trip.scheduled_arrival 
-             ? new Date(trip.scheduled_arrival).getTime() 
-             : startTimeMs + (trip.eta_minutes * 60000);
-        const durationMs = endTimeMs - startTimeMs;
+
+        const scheduledDepartureMs = new Date(trip.scheduled_departure).getTime();
+        const scheduledArrivalMs = trip.scheduled_arrival
+          ? new Date(trip.scheduled_arrival).getTime()
+          : scheduledDepartureMs + (trip.eta_minutes * 60000);
+        const durationMs = scheduledArrivalMs - scheduledDepartureMs;
+        const tripDurationMs = durationMs > 0 ? durationMs : (trip.eta_minutes > 0 ? trip.eta_minutes * 60000 : 3600000);
+
+        // Use actual_departure when available (set by TMS when operator marks trip departed).
+        // Fall back to scheduled_departure if actual is missing.
+        // Clamp to Date.now() so elapsed is never negative (guard for future-scheduled trips).
+        // For non-departed trips: far-future startTime keeps elapsed = 0 (pinned at origin).
+        const isDeparted = trip.status === 'departed';
+        const departureBasis = trip.actual_departure
+          ? new Date(trip.actual_departure).getTime()
+          : scheduledDepartureMs;
+        const startTime = isDeparted
+          ? Math.min(departureBasis, Date.now())
+          : (Date.now() + 1e12);
 
         return {
             id: trip.trip_id,
@@ -153,12 +218,13 @@ export function FleetMapComponent() {
             origin: route.ports[0].name,
             destination: route.ports[1].name,
             passengers: `${trip.boarded_count} / ${trip.total_seats}`,
-            cargo: "-", // Missing from MVP API
-            duration: durationMs > 0 ? durationMs : (trip.eta_minutes * 60000), 
-            startTime: startTimeMs,
-            eta: `${trip.eta_minutes} min`,
+            cargo: "-",
+            duration: tripDurationMs,
+            startTime,
+            eta: trip.eta_minutes > 0 ? (trip.eta_minutes >= 60 ? `${Math.floor(trip.eta_minutes / 60)}h ${trip.eta_minutes % 60}m` : `${trip.eta_minutes} min`) : "N/A",
             position: null,
-            isArrived: false
+            isArrived: false,
+            tripStatus: trip.status,
         };
      });
 
@@ -174,19 +240,29 @@ export function FleetMapComponent() {
     });
   }, [apiVessels]);
 
-  // Generate curved routes
+  // Generate curved sea routes — offset midpoint seaward so lines bow into water
   const routeGeoJSON = useMemo(() => {
     try {
-        const routesToShow = showAllRoutes 
-            ? DEFINED_ROUTES 
+        const routesToShow = showAllRoutes
+            ? DEFINED_ROUTES
             : DEFINED_ROUTES.filter(r => r.id === selectedRouteId);
 
         const features = routesToShow.map(route => {
-            const line = turf.lineString(route.coords);
-            const curved = turf.bezierSpline(line, { resolution: 10000, sharpness: 0.75 });
-            return curved;
+            const coords = route.coords;
+            if (coords.length < 2) return turf.lineString(coords);
+
+            try {
+                if (coords.length >= 3) {
+                    // Multi-point waypoints — smooth with Bezier
+                    return turf.bezierSpline(turf.lineString(coords), { resolution: 10000, sharpness: 0.85 });
+                }
+                // 2-point straight line
+                return turf.lineString(coords);
+            } catch {
+                return turf.lineString(coords);
+            }
         });
-        
+
         return {
             type: "FeatureCollection" as const,
             features: features
@@ -202,6 +278,14 @@ export function FleetMapComponent() {
   };
 
   // ANIMATION LOGIC: All Vessels
+  // Status-based positioning rules:
+  //   awaiting  → pinned at origin (0%), label: "Awaiting departure"
+  //   pending   → pinned at origin (0%), label: "Pending departure"
+  //   onboarded → pinned at origin (0%), label: "Boarding passengers"
+  //   departed  → animates along route based on elapsed time since scheduled_departure
+  //               clamped at 99% until TMS sets status to 'arrived'
+  //   arrived   → removed from map immediately
+  //   cancelled → removed from map immediately
   React.useEffect(() => {
     const animate = () => {
         const now = Date.now();
@@ -209,48 +293,101 @@ export function FleetMapComponent() {
         setVessels(prevVessels => {
             return prevVessels
                 .map(v => {
-                    // Initialize start time if needed
-                    if (!v.startTime || v.startTime === 0) {
-                         return { ...v, startTime: now };
-                    }
-
-                    if (v.isArrived) return v;
-
                     const targetRoute = DEFINED_ROUTES.find(r => r.id === v.routeId);
                     if (!targetRoute) return v;
 
-                    const elapsed = now - v.startTime;
-                    let progress = elapsed / (v.duration > 0 ? v.duration : 1);
-                    if (Number.isNaN(progress)) progress = 0;
-                    progress = Math.max(0, Math.min(progress, 1));
-                    
-                    if (progress >= 1) {
-                        return { ...v, isArrived: true, eta: "Arrived" };
+                    const status = v.tripStatus as string;
+
+                    // Non-departed statuses: pin vessel at origin port with slight offset to avoid stacking
+                    if (status === 'awaiting' || status === 'pending' || status === 'onboarded') {
+                        const originCoords = [targetRoute.coords[0][0], targetRoute.coords[0][1]] as [number, number];
+                        const destCoords = [targetRoute.coords[targetRoute.coords.length - 1][0], targetRoute.coords[targetRoute.coords.length - 1][1]] as [number, number];
+                        // Face toward destination even while docked
+                        const dockedBearing = turf.bearing(turf.point(originCoords), turf.point(destCoords));
+                        // Offset docked vessels slightly along their route so they don't stack
+                        const vesselIdx = prevVessels.filter(
+                            pv => pv.routeId === v.routeId && pv.id !== v.id &&
+                            ['awaiting','pending','onboarded'].includes(pv.tripStatus as string)
+                        ).indexOf(v);
+                        const offsetProgress = Math.min(0.03 * (vesselIdx + 1), 0.1);
+                        if (offsetProgress > 0 && targetRoute.curvedCoords?.length > 2) {
+                            try {
+                                const line = turf.lineString(targetRoute.curvedCoords);
+                                const len = turf.length(line);
+                                const pt = turf.along(line, len * offsetProgress);
+                                originCoords[0] = pt.geometry.coordinates[0];
+                                originCoords[1] = pt.geometry.coordinates[1];
+                            } catch {}
+                        }
+                        const etaLabel =
+                            status === 'awaiting' ? 'Awaiting departure' :
+                            status === 'pending'  ? 'Pending departure' :
+                                                    'Boarding passengers';
+                        return {
+                            ...v,
+                            position: originCoords,
+                            bearing: dockedBearing,
+                            eta: etaLabel,
+                            origin: targetRoute.ports[0].name,
+                            destination: targetRoute.ports[1].name,
+                        };
                     }
 
-                    // Calculate ETA
-                    const validDuration = v.duration || 3600000;
-                    const remainingMs = validDuration - elapsed;
-                    const remainingMins = Math.max(0, Math.ceil(remainingMs / 60000));
-                    
-                    // Calculate Position safely
-                    const line = turf.lineString(targetRoute.coords);
-                    const routeLength = turf.length(line);
-                    let currentDistance = routeLength * progress;
-                    if (Number.isNaN(currentDistance)) currentDistance = 0;
-                    
-                    const point = turf.along(line, currentDistance);
-                    const coords = point.geometry.coordinates as [number, number];
-                    
-                    return {
-                        ...v,
-                        position: coords,
-                        eta: `${remainingMins} min`,
-                        origin: targetRoute.ports[0].name,
-                        destination: targetRoute.ports[1].name
-                    };
+                    // departed: animate along route from startTime
+                    if (status === 'departed') {
+                        const elapsed = now - v.startTime;
+                        let progress = elapsed / (v.duration > 0 ? v.duration : 1);
+                        if (Number.isNaN(progress)) progress = 0;
+                        // Cap at 0.99 — vessel waits near destination until TMS confirms arrival
+                        progress = Math.max(0, Math.min(progress, 0.99));
+
+                        const validDuration = v.duration || 3600000;
+                        const remainingMs = validDuration - elapsed;
+                        const remainingMins = Math.max(0, Math.ceil(remainingMs / 60000));
+                        const etaDisplay = remainingMins === 0 ? 'Waiting for arrival confirmation' : (remainingMins >= 60 ? `${Math.floor(remainingMins / 60)}h ${remainingMins % 60}m` : `${remainingMins} min`);
+
+                        // Use curvedCoords so vessels follow the drawn Bezier route, not a straight line
+                        const line = turf.lineString(targetRoute.curvedCoords || targetRoute.coords);
+                        const routeLength = turf.length(line);
+                        let currentDistance = routeLength * progress;
+                        if (Number.isNaN(currentDistance)) currentDistance = 0;
+
+                        const point = turf.along(line, currentDistance);
+                        const coords = point.geometry.coordinates as [number, number];
+
+                        // Calculate bearing so ship icon faces the direction of travel
+                        const lookAheadDist = Math.min(currentDistance + routeLength * 0.02, routeLength);
+                        const nextPoint = turf.along(line, lookAheadDist);
+                        const bearing = turf.bearing(point, nextPoint);
+
+                        return {
+                            ...v,
+                            position: coords,
+                            bearing,
+                            eta: etaDisplay,
+                            origin: targetRoute.ports[0].name,
+                            destination: targetRoute.ports[1].name,
+                        };
+                    }
+
+                    // arrived: dock vessel at destination port, freeze it there
+                    if (status === 'arrived') {
+                        const destCoords = [targetRoute.coords[targetRoute.coords.length - 1][0], targetRoute.coords[targetRoute.coords.length - 1][1]] as [number, number];
+                        return {
+                            ...v,
+                            position: destCoords,
+                            eta: 'Arrived',
+                            isArrived: true,
+                            origin: targetRoute.ports[0].name,
+                            destination: targetRoute.ports[1].name,
+                        };
+                    }
+
+                    // cancelled / unknown → keep state but will be filtered below
+                    return v;
                 })
-                .filter(v => !v.isArrived); // Remove vessels once they have arrived
+                // Only remove cancelled vessels; arrived stays on map docked at destination
+                .filter(v => v.tripStatus !== 'cancelled');
         });
 
         animationRef.current = requestAnimationFrame(animate);
@@ -294,7 +431,7 @@ export function FleetMapComponent() {
                 zoom: 6
             }}
             style={{width: "100%", height: "100%"}}
-            mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+            mapStyle="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
             attributionControl={false}
         >
             {/* ROUTES */}
@@ -323,28 +460,31 @@ export function FleetMapComponent() {
                     latitude={port.lat} 
                     anchor="bottom"
                 >
-                    <div className="flex flex-col items-center">
-                        <div 
-                            className="transition-transform hover:scale-110 relative"
-                            style={{
-                                width: 24, // Smaller marker
-                                height: 24, 
-                            }}
-                        >
-                             {/* Custom Pin Icon */}
-                             {!showAllRoutes && <div className="absolute inset-0 bg-blue-600/20 rounded-full animate-ping" />}
-                             <div className="relative z-10 bg-blue-600 rounded-full p-1.5 text-white shadow-lg shadow-blue-600/40 border border-white">
-                                 <MapIcon className="size-3" />
-                             </div>
-                        </div>
-                        {/* Only show label if singular route selected to avoid clutter */}
-                        {!showAllRoutes && <span className="mt-1 px-2 py-0.5 bg-white/90 backdrop-blur text-[10px] font-bold rounded-md shadow-sm border">{port.name}</span>}
+                    {/* Outer div is exactly the pin icon size so anchor="bottom" aligns the pin tip to the coordinate.
+                        The label floats absolutely above — it does NOT stretch the bounding box downward. */}
+                    <div
+                        className="relative group transition-transform hover:scale-110"
+                        style={{ width: !showAllRoutes ? 32 : 22, height: !showAllRoutes ? 40 : 28 }}
+                    >
+                        {!showAllRoutes && <div className="absolute inset-0 bg-blue-600/20 rounded-full animate-ping" />}
+                        <img
+                            src="/icons/anchor-pinpoint.png"
+                            alt="Port"
+                            width={!showAllRoutes ? 32 : 22}
+                            height={!showAllRoutes ? 40 : 28}
+                            className="relative z-10 drop-shadow-lg"
+                        />
+                        {/* Label floats above the pin — absolutely positioned so it doesn't shift the anchor */}
+                        <span className={cn(
+                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-white/95 backdrop-blur text-[10px] font-bold rounded-md shadow-sm border transition-opacity whitespace-nowrap pointer-events-none",
+                            showAllRoutes ? "opacity-0 group-hover:opacity-100" : "opacity-100"
+                        )}>{port.name}</span>
                     </div>
                 </Marker>
             ))}
 
-            {/* Active Vessels Markers */}
-            {vessels.map((vessel) => (
+            {/* Active Vessels Markers — filtered to selected route unless showing all */}
+            {vessels.filter(v => showAllRoutes || v.routeId === selectedRouteId).map((vessel) => (
                 vessel.position && (
                     <Marker 
                         key={vessel.id}
@@ -352,71 +492,70 @@ export function FleetMapComponent() {
                         latitude={vessel.position[1]}
                         anchor="center"
                     >
-                        <div 
+                        <div
                             className="relative cursor-pointer z-50"
                             onMouseEnter={() => setHoveredVesselId(vessel.id)}
                             onMouseLeave={() => setHoveredVesselId(null)}
                         >
-                            {/* Icon */}
-                            <div className={cn(
-                                "bg-blue-600 text-white p-2 rounded-full shadow-lg border-2 border-white transform transition-transform relative z-20",
-                                hoveredVesselId === vessel.id ? "scale-125" : ""
-                            )}>
-                                <Ship className="size-5 bg-blue-600 fill-current" />
-                            </div>
-                            
-                            {/* Pulse Effect */}
-                            <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-20 -z-10"></div>
+                            {/* Vessel icon — rotated to face direction of travel */}
+                            <img
+                                src="/icons/ship.png"
+                                alt={vessel.name}
+                                width={44}
+                                height={44}
+                                className={cn(
+                                    "relative z-20 transition-transform",
+                                    hoveredVesselId === vessel.id ? "scale-110" : ""
+                                )}
+                                style={{
+                                    transform: `rotate(${(vessel.bearing ?? 0) - 90}deg)`,
+                                    transition: 'transform 1s ease-out',
+                                }}
+                            />
 
-                            {/* Detailed Popover on Hover */}
+                            {/* Status badge — only visible on hover */}
+                            <div className={cn(
+                              "absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wide whitespace-nowrap z-30 border transition-opacity",
+                              hoveredVesselId === vessel.id ? "opacity-100" : "opacity-0 pointer-events-none",
+                              vessel.tripStatus === 'departed'  ? "bg-blue-600 text-white border-blue-700" :
+                              vessel.tripStatus === 'onboarded' ? "bg-amber-500 text-white border-amber-600" :
+                              vessel.tripStatus === 'pending'   ? "bg-slate-500 text-white border-slate-600" :
+                              vessel.tripStatus === 'arrived'   ? "bg-green-400 text-white border-green-500" :
+                                                                  "bg-slate-400 text-white border-slate-500"
+                            )}>
+                              {vessel.tripStatus === 'departed'  ? 'EN ROUTE' :
+                               vessel.tripStatus === 'onboarded' ? 'BOARDING' :
+                               vessel.tripStatus === 'pending'   ? 'PENDING' :
+                               vessel.tripStatus === 'arrived'   ? 'ARRIVED' :
+                                                                   'AWAITING'}
+                            </div>
+
+                            {/* Pulse Effect — color by status */}
+                            <div className={cn(
+                              "absolute inset-2 rounded-full animate-ping opacity-20 -z-10",
+                              vessel.tripStatus === 'departed'  ? "bg-blue-500" :
+                              vessel.tripStatus === 'onboarded' ? "bg-amber-400" :
+                              vessel.tripStatus === 'arrived'   ? "bg-green-400" :
+                                                                  "bg-slate-400"
+                            )}></div>
+
+                            {/* Hover tooltip */}
                             {hoveredVesselId === vessel.id && (
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-72 bg-white rounded-xl shadow-2xl border border-border/50 overflow-hidden z-30 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                                    
-                                    {/* Header */}
-                                    <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-4">
-                                        <div className="flex items-start justify-between mb-1">
-                                            <h4 className="font-bold text-base text-white leading-tight">{vessel.name}</h4>
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/20 backdrop-blur-sm uppercase tracking-wider">On Time</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-blue-100 text-xs">
-                                            <span className="truncate max-w-[100px]">{vessel.origin}</span>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-6 w-64 bg-white rounded-xl shadow-2xl border border-border/50 overflow-hidden z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200 pointer-events-none">
+                                    <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-3">
+                                        <h4 className="font-bold text-sm text-white leading-tight">{vessel.name}</h4>
+                                        <div className="flex items-center gap-1.5 text-blue-100 text-xs mt-0.5">
+                                            <span className="truncate max-w-[90px]">{vessel.origin}</span>
                                             <span className="text-white/50">→</span>
-                                            <span className="truncate max-w-[100px]">{vessel.destination}</span>
+                                            <span className="truncate max-w-[90px]">{vessel.destination}</span>
                                         </div>
                                     </div>
-                                    
-                                    {/* Content */}
-                                    <div className="p-4 space-y-4">
-                                        {/* Stats Grid */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
-                                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                                    <User className="size-4" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Passengers</p>
-                                                    <p className="text-sm font-bold text-slate-900">{vessel.passengers}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
-                                                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                                                    <Package className="size-4" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Cargo</p>
-                                                    <p className="text-sm font-bold text-slate-900">{vessel.cargo}</p>
-                                                </div>
-                                            </div>
+                                    <div className="px-3 py-2 flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                            <User className="size-3 text-muted-foreground" />
+                                            <span className="text-[10px] text-muted-foreground font-medium">{vessel.passengers}</span>
                                         </div>
-                                        
-                                        {/* ETA Banner */}
-                                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                            <div className="flex items-center gap-2">
-                                                <Clock className="size-3.5 text-slate-400" />
-                                                <span className="text-xs font-semibold text-slate-600">Est. Arrival</span>
-                                            </div>
-                                            <span className="text-sm font-black text-blue-600">{vessel.eta}</span>
-                                        </div>
+                                        <span className="text-[10px] font-semibold text-blue-600">{vessel.eta}</span>
                                     </div>
                                 </div>
                             )}
@@ -445,10 +584,6 @@ export function FleetMapComponent() {
 
             {/* Right Side: Map Controls */}
              <div className="pointer-events-auto bg-white/90 backdrop-blur-md p-1.5 rounded-2xl flex gap-1 shadow-sm border border-white/50">
-                 <button className="p-2.5 rounded-xl hover:bg-secondary text-muted-foreground transition-colors" title="Layers">
-                    <Layers className="size-5" />
-                 </button>
-                 <div className="w-px h-6 bg-border my-auto mx-1"></div>
                  <button className="p-2.5 rounded-xl hover:bg-secondary text-muted-foreground transition-colors" onClick={() => mapRef.current?.zoomIn()}>
                     <Plus className="size-5" />
                  </button>
@@ -502,10 +637,10 @@ export function FleetMapComponent() {
                      <div className="flex justify-between items-start">
                          <div className="flex gap-3">
                             <div className={cn(
-                                "p-2 rounded-full h-fit",
-                                isSelected ? "bg-white/20 text-white" : "bg-blue-600/10 text-blue-600"
+                                "p-1.5 rounded-full h-fit flex items-center justify-center",
+                                isSelected ? "bg-white/20" : "bg-blue-600/10"
                             )}>
-                                <MapIcon className="size-4" />
+                                <Ship className={cn("size-4", isSelected ? "text-white fill-white/50" : "text-blue-600 fill-blue-600/30")} />
                             </div>
                             <div>
                                 <p className={cn("text-sm font-bold", isSelected ? "text-white" : "text-foreground")}>{route.name}</p>
@@ -570,6 +705,7 @@ export function FleetMapComponent() {
       </div>
       
       {/* Bottom Left Legend */}
+      {(
       <div className="absolute bottom-6 left-6 z-10 bg-white/90 backdrop-blur-md rounded-2xl p-4 flex flex-col gap-3 shadow-lg border border-white/50">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Map Legend</p>
           <div className="flex flex-col gap-2">
@@ -577,8 +713,25 @@ export function FleetMapComponent() {
                   <span className="w-6 h-1 bg-primary rounded-full"></span>
                   <span className="text-xs font-semibold">Active Route</span>
               </div>
+              <div className="flex items-center gap-3">
+                  <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-blue-600 text-white border border-blue-700">EN ROUTE</span>
+                  <span className="text-xs font-semibold">Departed</span>
+              </div>
+              <div className="flex items-center gap-3">
+                  <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-amber-500 text-white border border-amber-600">BOARDING</span>
+                  <span className="text-xs font-semibold">Onboarded</span>
+              </div>
+              <div className="flex items-center gap-3">
+                  <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-slate-500 text-white border border-slate-600">PENDING</span>
+                  <span className="text-xs font-semibold">Pending</span>
+              </div>
+              <div className="flex items-center gap-3">
+                  <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-slate-400 text-white border border-slate-500">AWAITING</span>
+                  <span className="text-xs font-semibold">Awaiting</span>
+              </div>
           </div>
       </div>
+      )}
     </div>
   );
 }
