@@ -73,7 +73,7 @@ export default function AdvanceBookingPage() {
   if (!isInitialLoad && !data) return null;
 
   return (
-    <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div className="bg-background text-foreground">
       <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
         
         {/* Header & Date Filter */}
@@ -86,7 +86,7 @@ export default function AdvanceBookingPage() {
             </div>
             <button
               onClick={resetFilter}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-600"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary"
             >
               <FilterX className="h-4 w-4" />
               <span>Reset Filter</span>
@@ -157,7 +157,7 @@ export default function AdvanceBookingPage() {
               {/* Yield Projection Chart - Full Width */}
               <div className="lg:col-span-3">
             {new ChartBuilder("yield-projection", "bar")
-              .withClassName("rounded-xl border border-slate-300 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950")
+              .withClassName("rounded-xl border border-border bg-card p-2")
               .withTitle("Forward Yield Projection", "Confirmed Revenue vs Capacity %")
               .withAxis("x", {
                 type: "category",
@@ -225,7 +225,7 @@ export default function AdvanceBookingPage() {
           {/* Booking Window Distribution */}
           <div>
             {new ChartBuilder("booking-window", "bar")
-              .withClassName("rounded-xl border border-slate-300 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950")
+              .withClassName("rounded-xl border border-border bg-card p-2")
               .withTitle("Booking Lead Time", "Days before departure")
               .withAxis("x", {
                 type: "category",
@@ -252,7 +252,7 @@ export default function AdvanceBookingPage() {
         {/* Secondary Insights Row */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Revenue Source Breakdown */}
-          <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+          <div className="rounded-xl border border-border bg-card p-4">
             <h3 className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Users className="h-5 w-5 text-sky-500" />
               Revenue Channel Distribution
@@ -298,8 +298,8 @@ export default function AdvanceBookingPage() {
           </div>
 
           {/* Capacity Sell-out Alerts */}
-          <div className="rounded-xl border border-slate-300 bg-white p-0 shadow-sm dark:border-slate-700 dark:bg-slate-950 overflow-hidden">
-             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="rounded-xl border border-border bg-card p-0 overflow-hidden">
+             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                     {/* <AlertCircle className="h-5 w-5 text-rose-500" /> */}
@@ -335,7 +335,7 @@ export default function AdvanceBookingPage() {
                 {data.capacity_alerts
                   .slice(alertsPage * ALERTS_PAGE_SIZE, (alertsPage + 1) * ALERTS_PAGE_SIZE)
                   .map((alert) => (
-                  <div key={alert.trip_id} className="p-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors flex items-center justify-between">
+                  <div key={alert.trip_id} className="p-4 hover:bg-secondary/50 transition-colors flex items-center justify-between">
                     <div className="space-y-1">
                       <p className="font-bold text-slate-800 dark:text-slate-200">{alert.vessel_name}</p>
                       <p className="text-xs text-slate-500 flex items-center gap-1">

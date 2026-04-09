@@ -297,14 +297,20 @@ export default function SalesReportPage() {
 
   if (error) {
     return (
-      <div className="flex h-[400px] items-center justify-center text-rose-500">
-        <p className="font-medium text-lg">{error}</p>
+      <div className="flex h-[400px] items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
+            <Route className="h-6 w-6 text-rose-500" />
+          </div>
+          <p className="font-semibold text-slate-800 dark:text-slate-200">Failed to load data</p>
+          <p className="text-sm text-slate-500">{error}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div className="bg-background text-foreground">
       <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
         
         {/* Toolbar */}
@@ -315,7 +321,7 @@ export default function SalesReportPage() {
               <select
                 value={selectedRouteName}
                 onChange={(e) => setSelectedRouteName(e.target.value)}
-                className="h-9 w-full sm:w-[240px] truncate rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="h-8 w-full sm:w-[220px] truncate rounded-lg border border-border bg-card px-2.5 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 disabled={isRoutesLoading || routeNames.length === 0}
               >
                 {isRoutesLoading && <option value="">Loading routes...</option>}
@@ -326,7 +332,7 @@ export default function SalesReportPage() {
               </select>
             </div>
 
-            <div className="flex items-center gap-2 text-sm w-full sm:w-auto sm:border-l sm:border-slate-200 sm:pl-3 dark:sm:border-slate-700">
+            <div className="flex items-center gap-2 text-sm w-full sm:w-auto sm:border-l sm:border-l sm:border-border sm:pl-3">
               <CalendarDays className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
               <span className="hidden sm:inline-block shrink-0 text-slate-600 dark:text-slate-300">Date Range:</span>
               <div className="w-full sm:w-auto">
@@ -336,13 +342,13 @@ export default function SalesReportPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:items-center sm:gap-2">
-            <button onClick={handleClearFilter} className="inline-flex h-9 justify-center items-center gap-1.5 rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white hover:bg-sky-600"><FilterX className="h-4 w-4" /> Reset</button>
-            <button onClick={handleImportClick} className="inline-flex h-9 justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"><FileInput className="h-4 w-4" /> Import</button>
-            <button onClick={handleExport} disabled={isExporting} className="inline-flex h-9 justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-              {isExporting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" /> : <FileOutput className="h-4 w-4 text-sky-500" />} Export
+            <button onClick={handleClearFilter} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"><FilterX className="h-3.5 w-3.5" /> Reset</button>
+            <button onClick={handleImportClick} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"><FileInput className="h-3.5 w-3.5" /> Import</button>
+            <button onClick={handleExport} disabled={isExporting} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              {isExporting ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : <FileOutput className="h-3.5 w-3.5 text-primary" />} Export
             </button>
-            <button onClick={handleDownloadTemplate} disabled={isDownloadingTemplate} className="inline-flex h-9 justify-center items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
-              {isDownloadingTemplate ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" /> : <Download className="h-4 w-4 text-slate-400" />} Template
+            <button onClick={handleDownloadTemplate} disabled={isDownloadingTemplate} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              {isDownloadingTemplate ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" /> : <Download className="h-3.5 w-3.5 text-slate-400" />} Template
             </button>
           </div>
           <input ref={fileInputRef} type="file" accept=".xlsx, .xls, .json" className="hidden" onChange={() => {}} />
@@ -362,7 +368,7 @@ export default function SalesReportPage() {
         </section>
 
         {/* Trend Chart */}
-        <div className="relative rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+        <div className="relative rounded-xl border border-border bg-card p-2">
           {isTrendLoading ? <Skeleton className="h-[300px] w-full rounded-xl" /> : isChartEmpty(revenueTrend) ? <NoDataPlaceholder height="300px" /> : (
             <ShadcnLineChartMultiple
               title="Revenue per Bookings Source"
@@ -397,7 +403,7 @@ export default function SalesReportPage() {
 
         {/* Breakdown Charts */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-xl border border-slate-300 bg-gray-100 p-2 dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
+          <div className="rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900 min-h-[350px]">
             {isChartsLoading ? <Skeleton className="h-[300px] w-full" /> : isChartEmpty(salesByRoute) ? <NoDataPlaceholder height="270px" /> : (
               <ShadcnBarChartHorizontal
                 title="Sales by Route"
@@ -416,7 +422,7 @@ export default function SalesReportPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-slate-300 bg-gray-100 p-2 dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
+          <div className="rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900 min-h-[350px]">
             {isChartsLoading ? <Skeleton className="h-[300px] w-full" /> : isChartEmpty(salesByVessel) ? <NoDataPlaceholder height="270px" /> : (
               <ShadcnBarChartHorizontal
                 title="Sales per Vessel"

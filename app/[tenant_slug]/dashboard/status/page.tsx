@@ -137,14 +137,20 @@ export default function StatusPage() {
 
   if (error) {
     return (
-      <div className="flex h-[400px] items-center justify-center text-rose-500">
-        <p className="font-medium text-lg">{error}</p>
+      <div className="flex h-[400px] items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
+            <AlertTriangle className="h-6 w-6 text-rose-500" />
+          </div>
+          <p className="font-semibold text-slate-800 dark:text-slate-200">Failed to load data</p>
+          <p className="text-sm text-slate-500">{error}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div className="bg-background text-foreground">
       <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
         {/* Header Section */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
@@ -156,7 +162,7 @@ export default function StatusPage() {
           <button
             type="button"
             onClick={handleClearFilter}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-600"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary"
           >
             <FilterX className="h-4 w-4" />
             Reset Filter
@@ -192,7 +198,7 @@ export default function StatusPage() {
 
         {/* Booking Trend Chart */}
         <section>
-          <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
             {isLoading || !data ? (
               <Skeleton className="h-[320px] w-full rounded-xl" />
             ) : bookingTrend.mappedData.length === 0 ? (
@@ -215,7 +221,7 @@ export default function StatusPage() {
         {/* Charts & Distribution */}
         {/* <section className="grid grid-cols-1 gap-3">
          
-          <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
             {isLoading || !data ? (
               <Skeleton className="h-[320px] w-full rounded-xl" />
             ) : !data.passengerClassData.length ? (
@@ -236,7 +242,7 @@ export default function StatusPage() {
         {/* Operational Monitoring Section */}
         <section className="grid grid-cols-1 lg:grid-cols-1 gap-3">
           {/* Alerts Card */}
-          {/* <Card className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+          {/* <Card className="rounded-xl border border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <h2 className="text-lg font-semibold">Operational Alerts</h2>
               <AlertTriangle className="h-5 w-5 text-amber-500" />
@@ -247,7 +253,7 @@ export default function StatusPage() {
           </Card> */}
 
           {/* Fleet Pulse Table */}
-          {/* <Card className="lg:col-span-2 rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+          {/* <Card className="lg:col-span-2 rounded-xl border border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <h2 className="text-lg font-semibold">Active Fleet Pulse</h2>
               <Navigation className="h-5 w-5 text-sky-500" />
@@ -256,7 +262,7 @@ export default function StatusPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-slate-500 border-b dark:border-slate-800">
+                    <tr className="text-left text-muted-foreground border-b border-border">
                       <th className="pb-2 font-medium">Vessel</th>
                       <th className="pb-2 font-medium">Route</th>
                       <th className="pb-2 font-medium text-right">Schedule</th>

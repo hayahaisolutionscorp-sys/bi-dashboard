@@ -179,7 +179,7 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
   const isChartEmpty = chartData.length === 0;
 
   return (
-    <div className="relative rounded-xl border border-slate-300 bg-gray-100 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950 mt-4">
+    <div className="relative rounded-xl border border-border bg-card p-4 mt-4">
       <h3 className="text-base font-semibold mb-3 px-1 text-slate-800 dark:text-slate-100">Comparison Trend</h3>
       <div className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center w-full">
@@ -193,7 +193,7 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
                 className={`flex-1 justify-center relative inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-l-md border ${
                   compareBy === "route" 
                     ? "bg-sky-50 text-sky-700 border-sky-200 z-10 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800" 
-                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
                 }`}
               >
                 <Route className="w-3.5 h-3.5 mr-1.5" />
@@ -205,7 +205,7 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
                 className={`flex-1 justify-center relative inline-flex items-center px-3 py-1.5 text-sm font-medium border-t border-b ${
                   compareBy === "vessel" 
                     ? "bg-sky-50 text-sky-700 border-sky-200 z-10 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800" 
-                    : "bg-white text-slate-700 border-slate-300 border-x-0 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"
+                    : "bg-white text-slate-700 border-slate-200 border-x-0 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
                 }`}
               >
                 <Ship className="w-3.5 h-3.5 mr-1.5" />
@@ -217,7 +217,7 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
                 className={`flex-1 justify-center relative inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-r-md border ${
                   compareBy === "trip" 
                     ? "bg-sky-50 text-sky-700 border-sky-200 z-10 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800" 
-                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
                 }`}
               >
                 <MapPin className="w-3.5 h-3.5 mr-1.5" />
@@ -234,7 +234,7 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
             <select
               value={metric}
               onChange={(e) => setMetric(e.target.value as any)}
-              className="h-8 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
             >
               <option value="totalSales">Sales</option>
               <option value="totalBookings">Bookings</option>
@@ -253,7 +253,7 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
             >
               <div 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-between w-full h-8 px-3 rounded-md border border-slate-300 bg-white text-sm text-slate-900 cursor-pointer shadow-sm focus:border-sky-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="flex items-center justify-between w-full h-8 px-3 rounded-lg border border-slate-200 bg-white text-xs text-slate-700 cursor-pointer hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
                 <span className="truncate pr-2">
                   {entityIds.length === 0 
@@ -276,7 +276,7 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
                           onClick={() => handleToggleEntity(name)}
                           className="flex items-center px-3 py-1.5 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-200"
                         >
-                          <div className={`flex items-center justify-center w-4 h-4 mr-2 border rounded ${isSelected ? 'bg-sky-500 border-sky-500' : 'border-slate-300 dark:border-slate-600'}`}>
+                          <div className={`flex items-center justify-center w-4 h-4 mr-2 border rounded ${isSelected ? 'bg-primary border-primary' : 'border-slate-300 dark:border-slate-600'}`}>
                             {isSelected && <Check className="w-3 h-3 text-white" />}
                           </div>
                           <span className="truncate">{name}</span>
@@ -300,11 +300,16 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
         )}
         
         {error ? (
-          <div className="flex h-[300px] items-center justify-center text-rose-500 font-medium">
-            {error}
+          <div className="flex h-[300px] items-center justify-center">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <div className="h-9 w-9 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
+                <MapPin className="h-4 w-4 text-rose-500" />
+              </div>
+              <p className="text-xs font-medium text-slate-500">{error}</p>
+            </div>
           </div>
         ) : entityIds.length === 0 && !isLoading ? (
-          <div className="flex h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50">
+          <div className="flex h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-800/30">
             <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
               Select one or more {compareBy}{compareBy === "trip" ? "s" : "s"} above to compare trends
             </span>

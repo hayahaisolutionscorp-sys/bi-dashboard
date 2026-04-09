@@ -176,7 +176,7 @@ export default function PassengersPerTripPage() {
 
   if (error) {
     return (
-      <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 min-h-[calc(100vh-200px)]">
+      <div className="bg-background text-foreground min-h-[calc(100vh-200px)]">
         <div className="mx-auto w-full max-w-[1120px] p-4 lg:p-6">
           <ServerError message={error} onRetry={() => window.location.reload()} />
         </div>
@@ -185,7 +185,7 @@ export default function PassengersPerTripPage() {
   }
 
   return (
-    <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div className="bg-background text-foreground">
       <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <div className="flex items-center gap-2 text-sm">
@@ -196,7 +196,7 @@ export default function PassengersPerTripPage() {
           <button
             type="button"
             onClick={handleClearFilter}
-            className="inline-flex h-9 items-center gap-1.5 self-start rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-600 md:self-auto"
+            className="inline-flex h-8 items-center gap-1.5 self-start rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary md:self-auto"
           >
             <FilterX className="h-4 w-4" />
             Clear Filter
@@ -233,7 +233,7 @@ export default function PassengersPerTripPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-4">
-          <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
             {isLoading || !data ? (
               <Skeleton className="h-[320px] w-full rounded-xl" />
             ) : lineData.length === 0 ? (
@@ -258,7 +258,7 @@ export default function PassengersPerTripPage() {
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
             {isLoading || !data ? (
               <Skeleton className="h-[320px] w-full rounded-xl" />
             ) : getBookingChannelPieData().mappedData.length === 0 ? (
@@ -276,7 +276,7 @@ export default function PassengersPerTripPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
              {isLoading || !data ? (
                <Skeleton className="h-[320px] w-full rounded-xl" />
              ) : getPieData().mappedData.length === 0 ? (

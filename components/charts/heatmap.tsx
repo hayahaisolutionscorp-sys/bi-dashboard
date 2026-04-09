@@ -77,7 +77,7 @@ export function Heatmap({ title, description, data, dateRange }: HeatmapProps) {
   return (
     <div className="flex flex-col w-full h-full min-h-0 overflow-hidden">
       {/* Header Section */}
-      <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between gap-4 shrink-0">
+      <div className="p-6 border-b border-border flex flex-row items-center justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{title}</h1>
           {description && (
@@ -91,7 +91,7 @@ export function Heatmap({ title, description, data, dateRange }: HeatmapProps) {
         
         <div className="flex flex-row items-center gap-3">
           {/* View Toggle */}
-          <div className="flex h-9 bg-slate-100/80 dark:bg-slate-900/50 p-1 rounded-sm border border-slate-200 dark:border-slate-800 w-full sm:w-[320px] gap-1 shrink-0">
+          <div className="flex h-9 bg-slate-100/80 dark:bg-slate-900/50 p-1 rounded-sm border border-border w-full sm:w-[320px] gap-1 shrink-0">
             <button
               onClick={() => {
                 setViewMode("successful");
@@ -142,11 +142,11 @@ export function Heatmap({ title, description, data, dateRange }: HeatmapProps) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-900/50">
-                <th className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 py-5 px-6 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500 border-b border-slate-100 dark:border-slate-800 min-w-max">
+                <th className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 py-5 px-6 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500 border-b border-border min-w-max">
                   Vessel Name
                 </th>
                 {days.map((day, idx) => (
-                  <th key={idx} className="py-5 px-1 text-center text-[10px] font-bold text-slate-500 border-b border-slate-100 dark:border-slate-800 min-w-[50px]">
+                  <th key={idx} className="py-5 px-1 text-center text-[10px] font-bold text-slate-500 border-b border-border min-w-[50px]">
                     <span className="uppercase">{format(day, "EEE")}</span>
                     <br />
                     <span className="text-sm font-light text-slate-400">{format(day, "dd")}</span>
@@ -165,7 +165,7 @@ export function Heatmap({ title, description, data, dateRange }: HeatmapProps) {
                       : "hover:bg-rose-50/30 dark:hover:bg-rose-950/20"
                   )}
                 >
-                  <td className="sticky left-0 z-10 bg-white dark:bg-slate-950 py-4 px-6 text-sm font-medium text-slate-700 dark:text-slate-200 border-r border-slate-100 dark:border-slate-800 min-w-max whitespace-nowrap">
+                  <td className="sticky left-0 z-10 bg-card py-4 px-6 text-sm font-medium text-slate-700 dark:text-slate-200 border-r border-border min-w-max whitespace-nowrap">
                     {vesselObj.vessel_name}
                   </td>
                   {days.map((day, dIdx) => {
@@ -197,7 +197,7 @@ export function Heatmap({ title, description, data, dateRange }: HeatmapProps) {
       </div>
 
       {/* Footer: Legend & Pagination */}
-      <footer className="p-6 bg-slate-50/30 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="p-6 bg-slate-50/30 dark:bg-slate-900/30 border-t border-border flex flex-col md:flex-row justify-between items-center gap-6">
         {/* Legend */}
         <div className="flex items-center gap-4">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Intensity</span>

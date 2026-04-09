@@ -75,8 +75,14 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-rose-500">
-        <p className="font-medium text-lg">{error}</p>
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
+            <XCircle className="h-6 w-6 text-rose-500" />
+          </div>
+          <p className="font-semibold text-slate-800 dark:text-slate-200">Failed to load data</p>
+          <p className="text-sm text-slate-500">{error}</p>
+        </div>
       </div>
     );
   }
@@ -87,7 +93,7 @@ export default function DashboardPage() {
       title: "Sales Today", 
       icon: Wallet, 
       color: "text-primary", 
-      bg: "bg-sky-50 dark:bg-sky-900/20" 
+      bg: "bg-red-50 dark:bg-red-950/20" 
     },
     { 
       id: "mtd", 
@@ -108,11 +114,9 @@ export default function DashboardPage() {
   const formatCurrency = (val?: number | null) => `₱${(val ?? 0).toLocaleString()}`;
 
   return (
-    <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-      <div className="mx-auto flex h-auto min-h-[calc(100vh-4rem)] lg:h-[calc(100vh-4rem)] w-full max-w-[1120px] min-h-0 flex-col gap-2 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 lg:overflow-hidden lg:px-6 lg:py-5">
-        
-        {/* KPI Section */}
-        <section className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="p-6 space-y-6">
+      {/* KPI Section */}
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {kpis.map((kpi) => {
             const isSelected = period === kpi.id;
             const displayValue = formatCurrency(kpiTotals[kpi.id as keyof typeof kpiTotals]);
@@ -141,8 +145,8 @@ export default function DashboardPage() {
           })}
         </section>
 
-        {/* Charts Section */}
-        <section className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:auto-rows-fr lg:grid-cols-2 [&>*]:min-h-0 [&>*]:flex [&>*]:flex-col">
+      {/* Charts Section */}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {isLoading || !data ? (
             <>
               <Skeleton className="h-[280px] w-full rounded-xl" />
@@ -153,7 +157,7 @@ export default function DashboardPage() {
           ) : (
             <>
               {/* Revenue Trend */}
-              <div className="h-full flex flex-col rounded-xl border border-slate-300 bg-gray-100 shadow-sm dark:border-slate-700 dark:bg-slate-950 overflow-hidden">
+              <div className="h-full flex flex-col rounded-md border border-border bg-card overflow-hidden">
                 <ShadcnOverviewRegularLineChart
                   title="Booking Revenue Trend"
                   description="Revenue performance over time"
@@ -188,7 +192,7 @@ export default function DashboardPage() {
                 } satisfies ChartConfig;
                 
                 return (
-                  <div className="h-full flex flex-col rounded-xl border border-slate-300 bg-gray-100 shadow-sm dark:border-slate-700 dark:bg-slate-950 overflow-hidden ">
+                  <div className="h-full flex flex-col rounded-md border border-border bg-card overflow-hidden">
                     <ShadcnOverviewBarChartHorizontal
                       title="Revenue by Route"
                       description="Performance across different routes"
@@ -227,7 +231,7 @@ export default function DashboardPage() {
                 } satisfies ChartConfig;
 
                 return (
-                  <div className="h-full flex flex-col rounded-xl border border-slate-300 bg-gray-100 shadow-sm dark:border-slate-700 dark:bg-slate-950 overflow-hidden">
+                  <div className="h-full flex flex-col rounded-md border border-border bg-card overflow-hidden">
                     <ShadcnOverviewBarChartVertical
                       title="Revenue per Vessel"
                       description="Performance breakdown by ship"
@@ -325,7 +329,7 @@ export default function DashboardPage() {
                 } satisfies ChartConfig;
 
                 return (
-                  <div className="h-full flex flex-col rounded-xl border border-slate-300 bg-gray-100 shadow-sm dark:border-slate-700 dark:bg-slate-950 overflow-visible">
+                  <div className="h-full flex flex-col rounded-md border border-border bg-card overflow-visible">
                     <ShadnOverviewStackedPieChart
                       title="Revenue Source Breakdown"
                       description="Split between passengers and cargo types"
@@ -342,7 +346,6 @@ export default function DashboardPage() {
             </>
           )}
         </section>
-      </div>
     </div>
   );
 }

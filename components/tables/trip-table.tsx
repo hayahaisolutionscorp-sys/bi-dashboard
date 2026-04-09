@@ -20,66 +20,67 @@ export interface TripTableProps {
 
 export function TripTable({ title, items }: TripTableProps) {
   return (
-    <Card className="rounded-xl shadow-sm overflow-hidden border">
-      <div className="px-6 py-4 border-b flex items-center justify-between bg-card">
-        <h4 className="font-bold text-base">{title}</h4>
+    <Card className="rounded-xl shadow-sm overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <h4 className="font-semibold text-sm text-slate-900 dark:text-white">{title}</h4>
         <div className="flex gap-2">
-          <button className="px-3 py-1.5 text-xs font-bold border rounded-lg hover:bg-secondary transition-colors flex items-center gap-2">
+          <button className="px-3 py-1 text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
             <Filter className="size-3" /> Filter
           </button>
-          <button className="px-3 py-1.5 text-xs font-bold border rounded-lg hover:bg-secondary transition-colors flex items-center gap-2">
+          <button className="px-3 py-1 text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
             <Download className="size-3" /> Export
           </button>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-[#f8fafc] dark:bg-secondary/20 border-b">
+          <thead className="bg-slate-50 dark:bg-slate-800/50">
             <tr>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Vessel ID</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Origin Port</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Next Destination</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Arrival Window</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Risk Level</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</th>
+              <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Vessel ID</th>
+              <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Origin</th>
+              <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Destination</th>
+              <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Arrival Window</th>
+              <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Risk</th>
+              <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
+              <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {items.map((item, i) => (
-              <tr key={i} className="hover:bg-primary/5 transition-colors cursor-pointer">
-                <td className="px-6 py-4 font-bold text-sm">{item.id}</td>
-                <td className="px-6 py-4 text-sm font-medium">{item.origin}</td>
-                <td className="px-6 py-4 text-sm font-medium">{item.destination}</td>
-                <td className="px-6 py-4 text-sm font-medium">{item.window}</td>
-                <td className="px-6 py-4">
-                  <span className={cn("px-2 py-1 rounded-full text-[10px] font-black uppercase", item.riskColor)}>
+              <tr key={i} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors cursor-pointer">
+                <td className="px-5 py-3.5 font-semibold text-xs text-slate-800 dark:text-slate-200">{item.id}</td>
+                <td className="px-5 py-3.5 text-xs text-slate-600 dark:text-slate-400">{item.origin}</td>
+                <td className="px-5 py-3.5 text-xs text-slate-600 dark:text-slate-400">{item.destination}</td>
+                <td className="px-5 py-3.5 text-xs text-slate-500 dark:text-slate-500">{item.window}</td>
+                <td className="px-5 py-3.5">
+                  <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide", item.riskColor)}>
                     {item.risk}
                   </span>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className={cn("size-2 rounded-full", item.statusColor)}></span> {item.status}
+                <td className="px-5 py-3.5">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                    <span className={cn("size-1.5 rounded-full shrink-0", item.statusColor)}></span>
+                    {item.status}
                   </div>
                 </td>
-                <td className="px-6 py-4 text-right">
-                  <MoreVertical className="ml-auto text-muted-foreground size-5 hover:text-primary" />
+                <td className="px-5 py-3.5 text-right">
+                  <MoreVertical className="ml-auto text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 size-4 transition-colors" />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div className="px-6 py-3 bg-[#f8fafc] dark:bg-card border-t flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">Showing {items.length} of 142 trips</span>
+      <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex items-center justify-between">
+        <span className="text-[11px] text-slate-400">Showing {items.length} of 142 trips</span>
         <div className="flex gap-1">
-          <button className="size-8 rounded-lg flex items-center justify-center border bg-card hover:bg-secondary transition-colors">
-            <ChevronLeft className="size-4" />
+          <button className="size-7 rounded-md flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+            <ChevronLeft className="size-3.5 text-slate-500" />
           </button>
-          <button className="size-8 rounded-lg flex items-center justify-center border border-primary bg-primary text-primary-foreground font-bold text-xs">1</button>
-          <button className="size-8 rounded-lg flex items-center justify-center border bg-card hover:bg-secondary transition-colors font-bold text-xs">2</button>
-          <button className="size-8 rounded-lg flex items-center justify-center border bg-card hover:bg-secondary transition-colors">
-            <ChevronRight className="size-4" />
+          <button className="size-7 rounded-md flex items-center justify-center border bg-primary text-white text-[10px] font-bold">1</button>
+          <button className="size-7 rounded-md flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors text-[10px] text-slate-600">2</button>
+          <button className="size-7 rounded-md flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+            <ChevronRight className="size-3.5 text-slate-500" />
           </button>
         </div>
       </div>

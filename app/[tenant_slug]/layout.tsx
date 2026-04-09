@@ -17,7 +17,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Mobile Drawer */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetContent side="left" className="p-0 w-64">
+        <SheetContent side="left" className="p-0 w-64 bg-sidebar border-sidebar-border">
           <AppNav isMobile />
         </SheetContent>
       </Sheet>
@@ -27,7 +27,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <AppNav />
       </div>
 
-      <main className="flex-1 flex flex-col overflow-y-auto bg-slate-50 dark:bg-slate-900">
+      <main className="flex-1 flex flex-col overflow-y-auto bg-background">
         <DashboardHeader />
         {children}
       </main>

@@ -109,15 +109,21 @@ export default function VesselsPage() {
 
   if (error) {
     return (
-      <div className="flex h-[400px] items-center justify-center text-rose-500">
-        <p className="font-medium text-lg">{error}</p>
+      <div className="flex h-[400px] items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
+            <Ship className="h-6 w-6 text-rose-500" />
+          </div>
+          <p className="font-semibold text-slate-800 dark:text-slate-200">Failed to load data</p>
+          <p className="text-sm text-slate-500">{error}</p>
+        </div>
       </div>
     );
   }
 
 
   return (
-    <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div className="bg-background text-foreground">
       <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
         
         {/* Header Section */}
@@ -130,7 +136,7 @@ export default function VesselsPage() {
           <button
             type="button"
             onClick={handleClearFilter}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-600 self-end sm:self-auto"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary self-end sm:self-auto"
           >
             Reset Filter
           </button>
@@ -164,7 +170,7 @@ export default function VesselsPage() {
         {/* Charts Section */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           
-          <div className="lg:col-span-2 rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-4">
+          <div className="lg:col-span-2 rounded-xl border border-border bg-card p-4">
             {isLoading ? (
               <Skeleton className="h-[500px] w-full rounded-xl" />
             ) : !data || !data.fleetLoadFactor || data.fleetLoadFactor.length === 0 ? (
@@ -193,7 +199,7 @@ export default function VesselsPage() {
           </div>
           
           {/* Trip Efficiency (Revenue per Trip) */}
-          {/* <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[400px]">
+          {/* <div className="rounded-xl border border-border bg-card p-2 min-h-[400px]">
             {isLoading ? (
               <Skeleton className="h-[380px] w-full rounded-xl" />
             ) : !data || !data.tripEfficiency || data.tripEfficiency.length === 0 ? (
@@ -215,7 +221,7 @@ export default function VesselsPage() {
 
           {/* Trip Density Heatmap */}
           <div className="grid grid-cols-1 lg:col-span-2 gap-4 mt-4">
-            <div className="rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 p-2 min-h-[400px]">
+            <div className="rounded-xl border border-border bg-card p-2 min-h-[400px]">
               {isLoading ? (
                 <Skeleton className="h-[380px] w-full rounded-xl" />
               ) : !data || !data.successfulTripsCount || data.successfulTripsCount.length === 0 ? (

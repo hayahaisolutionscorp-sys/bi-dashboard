@@ -183,7 +183,7 @@ export function ExpensesImportPreviewModal({
                 <th className="px-4 py-3 text-center font-medium text-slate-500 uppercase tracking-widest last:pr-6 whitespace-nowrap">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 transition-all bg-white dark:bg-slate-950">
+            <tbody className="divide-y divide-slate-100 transition-all bg-white dark:bg-slate-900">
               {rows.map((row, i) => (
                 <tr key={i} className={cn(
                   "hover:bg-slate-50/50 transition-colors group",

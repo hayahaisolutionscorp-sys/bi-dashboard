@@ -229,14 +229,20 @@ export default function ExpensesReportPage() {
 
   if (error) {
     return (
-      <div className="flex h-[400px] items-center justify-center text-rose-500">
-        <p className="font-medium text-lg">{error}</p>
+      <div className="flex h-[400px] items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 text-rose-500" />
+          </div>
+          <p className="font-semibold text-slate-800 dark:text-slate-200">Failed to load data</p>
+          <p className="text-sm text-slate-500">{error}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div className="bg-background text-foreground">
       <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
 
         {/* Toolbar */}
@@ -249,7 +255,7 @@ export default function ExpensesReportPage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleClearFilter}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-sky-300 bg-sky-500 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-600"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary"
             >
               <FilterX className="h-4 w-4" /> Reset
             </button>
@@ -257,7 +263,7 @@ export default function ExpensesReportPage() {
               type="button"
               onClick={handleImportClick}
               disabled={isImporting}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary disabled:opacity-50"
             >
               {isImporting ? (
                 <Loader2 className="h-4 w-4 animate-spin text-sky-500" />
@@ -270,22 +276,22 @@ export default function ExpensesReportPage() {
               type="button"
               onClick={handleExport}
               disabled={!data || isExporting}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 disabled:opacity-50"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary disabled:opacity-50"
             >
-              <FileOutput className={`h-4 w-4 text-sky-500 ${isExporting ? "animate-pulse" : ""}`} />
+              <FileOutput className={`h-3.5 w-3.5 text-primary ${isExporting ? "animate-pulse" : ""}`} />
               {isExporting ? "Exporting..." : "Export"}
             </button>
             <button
               type="button"
               onClick={handleDownloadTemplate}
               disabled={isDownloadingTemplate}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 disabled:opacity-50"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary disabled:opacity-50"
               title="Download Excel Template"
             >
               {isDownloadingTemplate ? (
-                <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
               ) : (
-                <Download className="h-4 w-4 shrink-0 text-slate-400" />
+                <Download className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               )}
               {isDownloadingTemplate ? "Downloading..." : "Template"}
             </button>
@@ -342,7 +348,7 @@ export default function ExpensesReportPage() {
         </section>
 
         {/* Daily Expenses Trend (full width) */}
-        <div className="rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+        <div className="rounded-xl border border-border bg-card p-2">
           {isLoading ? (
             <Skeleton className="h-[280px] w-full rounded-xl" />
           ) : isTrendEmpty ? (
@@ -367,7 +373,7 @@ export default function ExpensesReportPage() {
         {/* Breakdown Charts */}
         <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {/* Expenses by Category */}
-          <div className="rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
             {isLoading ? (
               <Skeleton className="h-[320px] w-full rounded-xl" />
             ) : isCategoryEmpty ? (
@@ -389,7 +395,7 @@ export default function ExpensesReportPage() {
           </div>
 
           {/* Top 5 Payees / Vendors */}
-          <div className="rounded-xl border border-slate-300 bg-gray-100 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
             {isLoading ? (
               <Skeleton className="h-[320px] w-full rounded-xl" />
             ) : isPayeesEmpty ? (

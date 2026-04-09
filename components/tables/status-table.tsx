@@ -18,70 +18,70 @@ export interface StatusTableProps {
 
 export function StatusTable({ title, items }: StatusTableProps) {
     return (
-        <Card className="rounded-xl shadow-sm overflow-hidden border">
-            <div className="p-6 border-b flex justify-between items-center bg-card">
-                <h3 className="font-bold text-lg">{title}</h3>
+        <Card className="rounded-xl shadow-sm overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-white">{title}</h3>
                 <div className="flex gap-2">
-                    <button className="px-3 py-1.5 border rounded-lg text-xs font-bold hover:bg-secondary transition-colors">Filter Status</button>
-                    <button className="px-3 py-1.5 border rounded-lg text-xs font-bold hover:bg-secondary transition-colors">Select Fleet</button>
+                    <button className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Filter Status</button>
+                    <button className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Select Fleet</button>
                 </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                    <thead className="bg-[#f8f9fb] dark:bg-secondary/50">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50">
                         <tr>
-                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase">Vessel Name</th>
-                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase">Current Status</th>
-                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase">Primary Cargo</th>
-                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase">Capacity Load</th>
-                            <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase text-right">ETA</th>
+                            <th className="px-5 py-3 text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vessel Name</th>
+                            <th className="px-5 py-3 text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                            <th className="px-5 py-3 text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Primary Cargo</th>
+                            <th className="px-5 py-3 text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Load</th>
+                            <th className="px-5 py-3 text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">ETA</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                         {items.map((item, i) => (
-                            <tr key={i} className="hover:bg-secondary/30 transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="size-8 rounded bg-secondary flex items-center justify-center">
-                                            <Ship className="size-4 text-primary" />
+                            <tr key={i} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                                <td className="px-5 py-3.5">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="size-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                                            <Ship className="size-3.5 text-primary" />
                                         </div>
-                                        <span className="text-sm font-bold">{item.name}</span>
+                                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.name}</span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-black uppercase", item.statusColor)}>
+                                <td className="px-5 py-3.5">
+                                    <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide", item.statusColor)}>
                                         {item.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-sm">{item.type}</td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1 bg-secondary rounded-full h-1.5 max-w-[100px]">
+                                <td className="px-5 py-3.5 text-xs text-slate-600 dark:text-slate-400">{item.type}</td>
+                                <td className="px-5 py-3.5">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 max-w-[80px]">
                                             <div 
-                                                className="bg-primary h-1.5 rounded-full" 
+                                                className="bg-primary h-1.5 rounded-full transition-all" 
                                                 style={{ width: `${item.load}%` }}
                                             ></div>
                                         </div>
-                                        <span className="text-[10px] font-bold text-muted-foreground">{item.load}%</span>
+                                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 w-7 text-right">{item.load}%</span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 text-sm font-medium text-right">{item.eta}</td>
+                                <td className="px-5 py-3.5 text-xs font-medium text-slate-600 dark:text-slate-400 text-right">{item.eta}</td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
-            <div className="p-4 border-t flex justify-between items-center bg-[#f8f9fb] dark:bg-card">
-                <span className="text-xs text-muted-foreground">Showing {items.length} of 86 active vessels</span>
+            <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
+                <span className="text-[11px] text-slate-400">Showing {items.length} of 86 active vessels</span>
                 <div className="flex gap-1">
-                    <button className="size-8 flex items-center justify-center rounded border hover:bg-background transition-colors">
-                        <ChevronLeft className="size-4" />
+                    <button className="size-7 flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                        <ChevronLeft className="size-3.5 text-slate-500" />
                     </button>
-                    <button className="size-8 flex items-center justify-center rounded border bg-primary text-primary-foreground font-bold text-xs">1</button>
-                    <button className="size-8 flex items-center justify-center rounded border hover:bg-background transition-colors text-xs">2</button>
-                    <button className="size-8 flex items-center justify-center rounded border hover:bg-background transition-colors text-xs">3</button>
-                    <button className="size-8 flex items-center justify-center rounded border hover:bg-background transition-colors">
-                        <ChevronRight className="size-4" />
+                    <button className="size-7 flex items-center justify-center rounded-md border bg-primary text-white text-[10px] font-bold">1</button>
+                    <button className="size-7 flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors text-[10px] text-slate-600">2</button>
+                    <button className="size-7 flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors text-[10px] text-slate-600">3</button>
+                    <button className="size-7 flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                        <ChevronRight className="size-3.5 text-slate-500" />
                     </button>
                 </div>
             </div>
