@@ -21,4 +21,8 @@ export const API_ENDPOINTS = {
 	COMPARISON_TREND: "/bi/comparison-trend",
 	REVENUE_PER_BOOKINGS: "/bi/sales-report/revenue-per-bookings",
 	SALES_REPORT_CHARTS: "/bi/sales-report/charts",
+	RECENT_ACTIVITY: "/bi/recent-activity",
+	TODAY_SCHEDULE: "/bi/today-schedule",
+	CAPACITY_HEATMAP: "/bi/capacity-heatmap",
+	TOP_AGENTS: "/bi/top-agents",
 } as const

@@ -39,6 +39,23 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var k = localStorage.getItem('dashboard-brand-theme');
+                var themes = { blue:[0.52,0.20,240], indigo:[0.50,0.22,265], violet:[0.52,0.22,290],
+                  rose:[0.52,0.22,10], orange:[0.60,0.20,40], amber:[0.68,0.18,72],
+                  green:[0.55,0.18,142], teal:[0.55,0.16,180] };
+                var t = themes[k] || themes.blue;
+                var r = document.documentElement;
+                r.style.setProperty('--brand-l', t[0]);
+                r.style.setProperty('--brand-c', t[1]);
+                r.style.setProperty('--brand-h', t[2]);
+              } catch(e) {}
+            `
+          }}
+        />
       </head>
       <body
         className={`${inter.variable} ${geistMono.variable} antialiased`}

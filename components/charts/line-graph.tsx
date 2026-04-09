@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
+import { useChartColors } from "@/hooks/use-chart-colors";
 
 
 export interface LineGraphSeries {
@@ -89,15 +90,14 @@ export function LineGraph({
   }
 
   const isDark = theme === "dark";
+  const { chart: chartColors, tooltipBg, tooltipBorder, tooltipText, axisLabel, splitLine } = useChartColors();
 
   const options = {
     tooltip: {
       trigger: "axis",
-      backgroundColor: isDark ? "#1f2937" : "#fff",
-      borderColor: isDark ? "#374151" : "#e5e7eb",
-      textStyle: {
-        color: isDark ? "#fff" : "#111827",
-      },
+      backgroundColor: tooltipBg,
+      borderColor: tooltipBorder,
+      textStyle: { color: tooltipText },
       valueFormatter: (value: number) => `$${value.toLocaleString()}`,
     },
     grid: {
@@ -114,7 +114,7 @@ export function LineGraph({
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: "#9ca3af",
+        color: axisLabel,
         fontSize: 12,
         fontFamily: "var(--font-display)",
       },
@@ -122,12 +122,10 @@ export function LineGraph({
     yAxis: {
       type: "value",
       splitLine: {
-        lineStyle: {
-          color: isDark ? "#374151" : "#f3f4f6",
-        },
+        lineStyle: { color: splitLine },
       },
       axisLabel: {
-        color: "#9ca3af",
+        color: axisLabel,
         fontSize: 12,
         fontFamily: "var(--font-display)",
         formatter: yAxisFormatter || ((value: number) => {
@@ -136,31 +134,25 @@ export function LineGraph({
         }),
       },
     },
-    series: series ? series.map(s => ({
+    series: series ? series.map((s, idx) => ({
       name: s.name,
       type: "line",
       smooth,
       showSymbol: showSymbols,
       symbolSize: 8,
       data: s.data,
-      itemStyle: { color: s.color },
+      itemStyle: { color: s.color || chartColors[idx % chartColors.length] },
       areaStyle: showArea ? {
         color: {
-          type: "linear",
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
+          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: `${s.color}33` },
-            { offset: 1, color: `${s.color}00` },
+            { offset: 0, color: `${s.color || chartColors[idx % chartColors.length]}33` },
+            { offset: 1, color: `${s.color || chartColors[idx % chartColors.length]}00` },
           ],
         },
       } : undefined,
       lineStyle: { width: 3 },
-      tooltip: tooltipFormatter ? {
-        valueFormatter: tooltipFormatter
-      } : undefined,
+      tooltip: tooltipFormatter ? { valueFormatter: tooltipFormatter } : undefined,
     })) : [
       {
         name: title,
@@ -170,18 +162,14 @@ export function LineGraph({
         symbolSize: 8,
         data: currentData?.series || [],
         itemStyle: {
-          color: "#3f68e4", // Primary
+          color: chartColors[0],
         },
         areaStyle: showArea ? {
           color: {
-            type: "linear",
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: "rgba(63, 104, 228, 0.2)" },
-              { offset: 1, color: "rgba(63, 104, 228, 0)" },
+              { offset: 0, color: `${chartColors[0]}33` },
+              { offset: 1, color: `${chartColors[0]}00` },
             ],
           },
         } : undefined,

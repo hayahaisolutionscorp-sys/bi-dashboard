@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Menu, Search, Bell, Ship } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SettingsDrawer } from "@/components/settings-drawer";
 import { authService } from "@/services/auth.service";
 import { Tenant, User } from "@/types/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -113,7 +113,7 @@ export function DashboardHeader() {
 
         <div className="h-4 w-px bg-border hidden sm:block mx-1" />
 
-        <ThemeToggle />
+        <SettingsDrawer />
 
         <button className="p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-colors" aria-label="Search">
           <Search className="size-4" />

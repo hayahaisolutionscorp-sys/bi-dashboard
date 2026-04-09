@@ -15,18 +15,7 @@ interface ComparisonTrendChartProps {
   selectedRouteName?: string;
 }
 
-const SERIES_COLORS = [
-  "#2563eb", // blue-600
-  "#f59e0b", // amber-500
-  "#10b981", // emerald-500
-  "#ef4444", // red-500
-  "#8b5cf6", // violet-500
-  "#06b6d4", // cyan-500
-  "#f97316", // orange-500
-  "#14b8a6", // teal-500
-  "#ec4899", // pink-500
-  "#6366f1", // indigo-500
-];
+import { CHART_CSS_VARS } from "@/hooks/use-chart-colors";
 
 export function ComparisonTrendChart({ dateRange, selectedRouteName }: ComparisonTrendChartProps) {
   const { activeTenant } = useTenant();
@@ -164,7 +153,7 @@ export function ComparisonTrendChart({ dateRange, selectedRouteName }: Compariso
     return trendData.series.map((seriesItem, idx) => ({
       dataKey: seriesItem.id,
       name: seriesItem.id,
-      color: SERIES_COLORS[idx % SERIES_COLORS.length]
+      color: CHART_CSS_VARS[idx % CHART_CSS_VARS.length]
     }));
   }, [trendData]);
 

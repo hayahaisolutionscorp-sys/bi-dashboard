@@ -156,7 +156,7 @@ export function ShadcnOverviewBarChartVertical({
             <CartesianGrid
               vertical={false}
               strokeDasharray="3"
-              stroke="#9ca3af"
+              stroke="var(--border)"
               opacity={isMobile ? 0.1 : 0.3}
             />
             <XAxis

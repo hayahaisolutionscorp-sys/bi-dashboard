@@ -36,7 +36,7 @@ export function ShadcnLineChartRegular({
   labelKey,
   dataKey,
   height = "280px",
-  color = "#ef4444",
+  color = "var(--chart-1)",
   dateRange,
   isCurrency = true
 }: ShadcnLineChartRegularProps) {
@@ -149,7 +149,7 @@ export function ShadcnLineChartRegular({
             <CartesianGrid
               vertical={false}
               strokeDasharray="3"
-              stroke="#9ca3af"
+              stroke="var(--border)"
               opacity={0.3}
             />
             <XAxis

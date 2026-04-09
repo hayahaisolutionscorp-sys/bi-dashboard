@@ -69,32 +69,48 @@
   --secondary:         oklch(0.14 0 0);
   --secondary-foreground: oklch(0.94 0 0);
 
-  /* Brand: authoritative blue (less violet, more neutral) */
-  --primary:           oklch(0.52 0.20 240);
-  --primary-foreground: oklch(0.98 0 0);
-  --accent:            oklch(0.62 0.18 235);
-  --accent-foreground: oklch(0.98 0 0);
-  --ring:              oklch(0.52 0.20 240);
+  /* ── Brand seed — override these three to change the entire color theme ── */
+  --brand-l: 0.52;
+  --brand-c: 0.20;
+  --brand-h: 240;
+
+  /* Computed primary scale — do not edit these directly */
+  --primary:              oklch(var(--brand-l) var(--brand-c) var(--brand-h));
+  --primary-foreground:   oklch(0.98 0 0);
+  --primary-hover:        oklch(calc(var(--brand-l) + 0.06) var(--brand-c) var(--brand-h));
+  --primary-active:       oklch(calc(var(--brand-l) - 0.06) var(--brand-c) var(--brand-h));
+  --accent:               oklch(calc(var(--brand-l) + 0.08) calc(var(--brand-c) * 0.8) var(--brand-h));
+  --accent-foreground:    oklch(calc(var(--brand-l) + 0.28) calc(var(--brand-c) * 0.7) var(--brand-h));
+  --ring:                 oklch(var(--brand-l) var(--brand-c) var(--brand-h) / 0.5);
+  --sidebar-primary:      oklch(var(--brand-l) var(--brand-c) var(--brand-h));
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent:       oklch(calc(var(--brand-l) - 0.36) calc(var(--brand-c) * 0.4) var(--brand-h));
+  --sidebar-accent-foreground: oklch(calc(var(--brand-l) + 0.24) calc(var(--brand-c) * 0.7) var(--brand-h));
+  --sidebar-ring:         oklch(var(--brand-l) var(--brand-c) var(--brand-h));
+
+  /* Active nav item */
+  --nav-active-bg:        oklch(calc(var(--brand-l) - 0.38) calc(var(--brand-c) * 0.35) var(--brand-h));
+  --nav-active-text:      oklch(calc(var(--brand-l) + 0.24) calc(var(--brand-c) * 0.7) var(--brand-h));
+
+  /* Info semantic — follows brand */
+  --info-bg:              oklch(calc(var(--brand-l) - 0.38) calc(var(--brand-c) * 0.35) var(--brand-h));
+  --info-text:            oklch(calc(var(--brand-l) + 0.22) calc(var(--brand-c) * 0.65) var(--brand-h));
+  --info-border:          oklch(calc(var(--brand-l) - 0.20) calc(var(--brand-c) * 0.5) var(--brand-h));
 
   /* Semantic */
   --destructive:       oklch(0.62 0.22 28);
 
-  /* Chart palette — 5 perceptually distinct colors */
-  --chart-1: oklch(0.58 0.20 240);   /* Blue — primary series */
-  --chart-2: oklch(0.68 0.16 145);   /* Green */
-  --chart-3: oklch(0.74 0.16 75);    /* Amber */
-  --chart-4: oklch(0.65 0.18 195);   /* Cyan — was duplicate of chart-1, now distinct */
-  --chart-5: oklch(0.62 0.18 320);   /* Rose */
+  /* Chart palette — brand-derived, updates automatically when brand color changes */
+  --chart-1: var(--primary);
+  --chart-2: color-mix(in oklch, var(--primary) 80%, white);
+  --chart-3: color-mix(in oklch, var(--primary) 60%, white);
+  --chart-4: color-mix(in oklch, var(--primary) 40%, white);
+  --chart-5: color-mix(in oklch, var(--primary) 20%, white);
 
   /* Sidebar — deepest surface */
   --sidebar:           oklch(0.075 0 0);  /* ~#0d0d0d */
   --sidebar-foreground: oklch(0.94 0 0);
-  --sidebar-primary:   oklch(0.52 0.20 240);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent:    oklch(0.14 0 0);
-  --sidebar-accent-foreground: oklch(0.94 0 0);
   --sidebar-border:    oklch(0.18 0 0);
-  --sidebar-ring:      oklch(0.52 0.20 240);
 }
 
 .dark {
@@ -110,11 +126,6 @@
   --muted-foreground:  oklch(0.50 0 0);
   --secondary:         oklch(0.14 0 0);
   --secondary-foreground: oklch(0.94 0 0);
-  --primary:           oklch(0.52 0.20 240);
-  --primary-foreground: oklch(0.98 0 0);
-  --accent:            oklch(0.62 0.18 235);
-  --accent-foreground: oklch(0.98 0 0);
-  --ring:              oklch(0.52 0.20 240);
   --destructive:       oklch(0.62 0.22 28);
   --chart-1: oklch(0.58 0.20 240);
   --chart-2: oklch(0.68 0.16 145);
@@ -123,12 +134,8 @@
   --chart-5: oklch(0.62 0.18 320);
   --sidebar:           oklch(0.075 0 0);
   --sidebar-foreground: oklch(0.94 0 0);
-  --sidebar-primary:   oklch(0.52 0.20 240);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent:    oklch(0.14 0 0);
-  --sidebar-accent-foreground: oklch(0.94 0 0);
   --sidebar-border:    oklch(0.18 0 0);
-  --sidebar-ring:      oklch(0.52 0.20 240);
+  /* primary, accent, ring, nav tokens all derive from --brand-* (set in :root) */
 }
 
 .light {
@@ -144,25 +151,34 @@
   --muted-foreground:  oklch(0.60 0 0);
   --secondary:         oklch(0.96 0 0);
   --secondary-foreground: oklch(0.13 0 0);
-  --primary:           oklch(0.45 0.20 240);
   --primary-foreground: oklch(0.98 0 0);
-  --accent:            oklch(0.94 0.04 240);
-  --accent-foreground: oklch(0.25 0.15 240);
-  --ring:              oklch(0.45 0.20 240);
   --destructive:       oklch(0.55 0.22 28);
-  --chart-1: oklch(0.48 0.20 240);
-  --chart-2: oklch(0.52 0.16 145);
-  --chart-3: oklch(0.58 0.16 75);
-  --chart-4: oklch(0.50 0.18 195);
-  --chart-5: oklch(0.52 0.18 320);
+  --chart-1: var(--primary);
+  --chart-2: color-mix(in oklch, var(--primary) 80%, oklch(0.13 0 0));
+  --chart-3: color-mix(in oklch, var(--primary) 60%, oklch(0.13 0 0));
+  --chart-4: color-mix(in oklch, var(--primary) 40%, oklch(0.13 0 0));
+  --chart-5: color-mix(in oklch, var(--primary) 20%, oklch(0.13 0 0));
   --sidebar:           oklch(1 0 0);
   --sidebar-foreground: oklch(0.13 0 0);
-  --sidebar-primary:   oklch(0.45 0.20 240);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent:    oklch(0.94 0.04 240);
-  --sidebar-accent-foreground: oklch(0.25 0.15 240);
   --sidebar-border:    oklch(0.90 0 0);
-  --sidebar-ring:      oklch(0.45 0.20 240);
+
+  /* Computed brand overrides for light mode */
+  --primary:              oklch(calc(var(--brand-l) - 0.07) var(--brand-c) var(--brand-h));
+  --primary-hover:        oklch(calc(var(--brand-l) - 0.13) var(--brand-c) var(--brand-h));
+  --primary-active:       oklch(calc(var(--brand-l) - 0.18) var(--brand-c) var(--brand-h));
+  --accent:               oklch(calc(var(--brand-l) + 0.42) calc(var(--brand-c) * 0.25) var(--brand-h));
+  --accent-foreground:    oklch(calc(var(--brand-l) - 0.12) calc(var(--brand-c) * 0.9) var(--brand-h));
+  --ring:                 oklch(calc(var(--brand-l) - 0.07) var(--brand-c) var(--brand-h) / 0.5);
+  --nav-active-bg:        oklch(calc(var(--brand-l) + 0.42) calc(var(--brand-c) * 0.22) var(--brand-h));
+  --nav-active-text:      oklch(calc(var(--brand-l) - 0.14) var(--brand-c) var(--brand-h));
+  --info-bg:              oklch(calc(var(--brand-l) + 0.44) calc(var(--brand-c) * 0.20) var(--brand-h));
+  --info-text:            oklch(calc(var(--brand-l) - 0.14) var(--brand-c) var(--brand-h));
+  --info-border:          oklch(calc(var(--brand-l) + 0.28) calc(var(--brand-c) * 0.35) var(--brand-h));
+  --sidebar-primary:      oklch(calc(var(--brand-l) - 0.07) var(--brand-c) var(--brand-h));
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent:       oklch(calc(var(--brand-l) + 0.42) calc(var(--brand-c) * 0.22) var(--brand-h));
+  --sidebar-accent-foreground: oklch(calc(var(--brand-l) - 0.14) var(--brand-c) var(--brand-h));
+  --sidebar-ring:         oklch(calc(var(--brand-l) - 0.07) var(--brand-c) var(--brand-h));
 }
 
 @layer base {

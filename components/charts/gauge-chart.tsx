@@ -4,6 +4,7 @@ import ReactECharts from "echarts-for-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTheme } from "next-themes";
 import { MoreHorizontal } from "lucide-react";
+import { useChartColors } from "@/hooks/use-chart-colors";
 
 export interface GaugeChartProps {
   title: string;
@@ -13,6 +14,7 @@ export interface GaugeChartProps {
 
 export function GaugeChart({ title, data, description }: GaugeChartProps) {
   const { theme } = useTheme();
+  const { chart: chartColors, tooltipText, trackBg } = useChartColors();
   const isDark = theme === "dark";
 
   const options = {
@@ -29,13 +31,13 @@ export function GaugeChart({ title, data, description }: GaugeChartProps) {
           roundCap: true,
           clip: false,
           itemStyle: {
-            color: '#3f68e4'
+            color: chartColors[0]
           }
         },
         axisLine: {
           lineStyle: {
             width: 12,
-            color: [[1, isDark ? '#2a2f3e' : '#f0f1f4']]
+            color: [[1, trackBg]]
           }
         },
         splitLine: { show: false },
@@ -56,7 +58,7 @@ export function GaugeChart({ title, data, description }: GaugeChartProps) {
             offsetCenter: ['0%', '-10%'],
             fontSize: 30,
             fontWeight: 'bolder',
-            color: isDark ? '#fff' : '#000',
+            color: tooltipText,
             formatter: '{value}%'
           }
         }],

@@ -71,7 +71,7 @@ export function ShadcnOverviewRegularLineChart({
             <CartesianGrid
               vertical={false}
               strokeDasharray="3"
-              stroke="#9ca3af"   // Tailwind gray-400
+              stroke="var(--border)"   // Tailwind gray-400
               opacity={isMobile ? 0.3 : 0.8}
             />
 

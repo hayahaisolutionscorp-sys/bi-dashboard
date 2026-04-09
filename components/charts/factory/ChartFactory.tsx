@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { ChartFactoryProps } from "./interfaces";
 import { ChartContainer } from "./ChartContainer";
 import { useTheme } from "next-themes";
+import { useChartColors } from "@/hooks/use-chart-colors";
 
 export function ChartFactory({
   config,
@@ -13,6 +14,7 @@ export function ChartFactory({
 }: ChartFactoryProps) {
   const { theme: appTheme } = useTheme();
   const isDark = appTheme === "dark";
+  const { chart: chartColors, axisLabel, splitLine } = useChartColors();
 
   // Compute ECharts option based on config
   const option = useMemo(() => {
@@ -65,15 +67,15 @@ export function ChartFactory({
         // Theme color injection for bar/line
         const itemStyle = color ? { color } : undefined;
         
-        // Cycle through theme colors if available and color not set
-        // This is primarily for bar/line charts where we want distinct colors per series
-        if (!itemStyle && theme?.color && Array.isArray(theme.color)) {
-             return {
-                 ...s,
-                 itemStyle: {
-                     color: theme.color[index % theme.color.length]
-                 }
-             }
+        // Cycle through chart colors if no explicit color is set
+        if (!itemStyle) {
+          const palette = (theme?.color && Array.isArray(theme.color))
+            ? theme.color
+            : chartColors;
+          return {
+            ...s,
+            itemStyle: { color: palette[index % palette.length] }
+          }
         }
         
         return {
@@ -91,16 +93,16 @@ export function ChartFactory({
         data: xAxis?.data,
         axisLine: {
              lineStyle: {
-                 color: theme?.axes?.[1]?.axisLineColor || (isDark ? '#555' : '#ccc')
+                 color: theme?.axes?.[1]?.axisLineColor || splitLine
              }
         },
         axisLabel: {
-            color: theme?.axes?.[1]?.axisLabelColor || (isDark ? '#aaa' : '#666')
+            color: theme?.axes?.[1]?.axisLabelColor || axisLabel
         },
         splitLine: {
             show: xAxis?.type === 'value',
             lineStyle: {
-                color: theme?.axes?.[2]?.splitLineColor[0] || (isDark ? '#333' : '#eee')
+                color: theme?.axes?.[2]?.splitLineColor[0] || splitLine
             }
         },
         ...xAxis
@@ -109,19 +111,19 @@ export function ChartFactory({
       baseOption.yAxis = Array.isArray(yAxis) ? yAxis.map(axis => ({
         type: axis.type || 'value',
         name: axis.name,
-        position: axis.position || 'left', // Ensure position is respected
+        position: axis.position || 'left',
         axisLine: {
              lineStyle: {
-                 color: theme?.axes?.[1]?.axisLineColor || (isDark ? '#555' : '#ccc')
+                 color: theme?.axes?.[1]?.axisLineColor || splitLine
              }
         },
         axisLabel: {
-            color: theme?.axes?.[1]?.axisLabelColor || (isDark ? '#aaa' : '#666')
+            color: theme?.axes?.[1]?.axisLabelColor || axisLabel
         },
         splitLine: {
             show: true,
             lineStyle: {
-                color: theme?.axes?.[2]?.splitLineColor[0] || (isDark ? '#333' : '#eee')
+                color: theme?.axes?.[2]?.splitLineColor[0] || splitLine
             }
         },
         ...axis
@@ -130,16 +132,16 @@ export function ChartFactory({
         name: yAxis?.name,
         axisLine: {
              lineStyle: {
-                 color: theme?.axes?.[1]?.axisLineColor || (isDark ? '#555' : '#ccc')
+                 color: theme?.axes?.[1]?.axisLineColor || splitLine
              }
         },
         axisLabel: {
-            color: theme?.axes?.[1]?.axisLabelColor || (isDark ? '#aaa' : '#666')
+            color: theme?.axes?.[1]?.axisLabelColor || axisLabel
         },
         splitLine: {
             show: true,
             lineStyle: {
-                color: theme?.axes?.[2]?.splitLineColor[0] || (isDark ? '#333' : '#eee')
+                color: theme?.axes?.[2]?.splitLineColor[0] || splitLine
             }
         },
         ...yAxis
@@ -155,7 +157,7 @@ export function ChartFactory({
     }
 
     return baseOption;
-  }, [config, isDark, theme]);
+  }, [config, isDark, theme, chartColors, axisLabel, splitLine]);
 
   return (
     <ChartContainer 

@@ -3,6 +3,7 @@
 import ReactECharts from "echarts-for-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useTheme } from "next-themes";
+import { useChartColors } from "@/hooks/use-chart-colors";
 
 export interface ScatterPlotProps {
   title: string;
@@ -11,6 +12,7 @@ export interface ScatterPlotProps {
 
 export function ScatterPlot({ title, data }: ScatterPlotProps) {
   const { theme } = useTheme();
+  const { chart: chartColors, tooltipBg, tooltipBorder, splitLine } = useChartColors();
   const isDark = theme === "dark";
 
   const options = {
@@ -23,11 +25,11 @@ export function ScatterPlot({ title, data }: ScatterPlotProps) {
     },
     tooltip: {
       trigger: 'item',
-       backgroundColor: isDark ? "#1f2937" : "#fff",
-       borderColor: isDark ? "#374151" : "#e5e7eb",
-       formatter: (params: any) => {
-           return `Hour: ${params.data[0]}:00<br/>Delay: ${params.data[1]}m`;
-       }
+      backgroundColor: tooltipBg,
+      borderColor: tooltipBorder,
+      formatter: (params: any) => {
+          return `Hour: ${params.data[0]}:00<br/>Delay: ${params.data[1]}m`;
+      }
     },
     xAxis: {
       type: 'value',
@@ -36,10 +38,7 @@ export function ScatterPlot({ title, data }: ScatterPlotProps) {
       interval: 6,
       splitLine: {
         show: true,
-        lineStyle: {
-          type: 'dashed',
-          color: isDark ? '#2a2f3e' : '#f0f1f4'
-        }
+        lineStyle: { type: 'dashed', color: splitLine }
       },
       axisLabel: {
           formatter: '{value}:00'
@@ -50,10 +49,7 @@ export function ScatterPlot({ title, data }: ScatterPlotProps) {
       name: 'Delay (m)',
       splitLine: {
         show: true,
-        lineStyle: {
-            type: 'dashed',
-            color: isDark ? '#2a2f3e' : '#f0f1f4'
-        }
+        lineStyle: { type: 'dashed', color: splitLine }
       }
     },
     series: [
@@ -66,9 +62,9 @@ export function ScatterPlot({ title, data }: ScatterPlotProps) {
             return {
                 value: item,
                 itemStyle: {
-                    color: item[2] === 2 ? '#ef4444' : item[2] === 1 ? '#fb923c' : '#3f68e4',
+                    color: item[2] === 2 ? '#ef4444' : item[2] === 1 ? '#fb923c' : chartColors[0],
                     shadowBlur: 10,
-                    shadowColor: item[2] === 2 ? 'rgba(239, 68, 68, 0.5)' : 'rgba(63, 104, 228, 0.2)'
+                    shadowColor: item[2] === 2 ? 'rgba(239, 68, 68, 0.5)' : `${chartColors[0]}33`
                 }
             }
         })

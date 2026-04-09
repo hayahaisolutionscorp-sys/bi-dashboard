@@ -4,6 +4,7 @@ import ReactECharts from "echarts-for-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTheme } from "next-themes";
 import { MoreHorizontal } from "lucide-react";
+import { useChartColors } from "@/hooks/use-chart-colors";
 
 export interface BarGraphProps {
   title: string;
@@ -27,16 +28,15 @@ export function BarGraph({ title, items = [], data = [] }: BarGraphProps) {
     colorClass: item.colorClass
   }));
   const { theme } = useTheme();
+  const { chart: chartColors, tooltipBg, tooltipBorder, tooltipText, axisLabel, splitLine } = useChartColors();
   const isDark = theme === "dark";
 
   const options = {
     tooltip: {
       trigger: "axis",
-      backgroundColor: isDark ? "#1f2937" : "#fff",
-      borderColor: isDark ? "#374151" : "#e5e7eb",
-      textStyle: {
-        color: isDark ? "#fff" : "#111827",
-      },
+      backgroundColor: tooltipBg,
+      borderColor: tooltipBorder,
+      textStyle: { color: tooltipText },
       valueFormatter: (value: number) => `$${value.toLocaleString()}`,
     },
     grid: {
@@ -52,21 +52,19 @@ export function BarGraph({ title, items = [], data = [] }: BarGraphProps) {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: "#9ca3af",
+        color: axisLabel,
         fontSize: 12,
         fontFamily: "var(--font-display)",
-        interval: 0, // Force show all labels
+        interval: 0,
       },
     },
     yAxis: {
       type: "value",
       splitLine: {
-        lineStyle: {
-          color: isDark ? "#374151" : "#f3f4f6",
-        },
+        lineStyle: { color: splitLine },
       },
       axisLabel: {
-        color: "#9ca3af",
+        color: axisLabel,
         fontSize: 12,
         fontFamily: "var(--font-display)",
         formatter: (value: number) => {
@@ -82,7 +80,7 @@ export function BarGraph({ title, items = [], data = [] }: BarGraphProps) {
         barWidth: "50%",
         data: chartItems.map(item => item.value),
         itemStyle: {
-            color: "#3b82f6", // Standard Blue
+            color: chartColors[0],
             borderRadius: 0
         },
         showBackground: false,

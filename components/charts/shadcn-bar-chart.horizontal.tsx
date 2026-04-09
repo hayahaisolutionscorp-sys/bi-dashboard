@@ -95,7 +95,7 @@ export function ShadcnBarChartHorizontal({
             <CartesianGrid
               vertical={false}
               strokeDasharray="3"
-              stroke="#9ca3af"
+              stroke="var(--border)"
               opacity={0.3}
             />
             <XAxis 

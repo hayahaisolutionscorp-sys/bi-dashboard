@@ -14,10 +14,16 @@ import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import type { RevenueMixSubCategory, RevenueMixTypeSplit } from "@/types/sales"
 
 const TYPE_COLORS: Record<string, string> = {
-  PASSENGER: "#2563eb",
-  CARGO: "#f59e0b",
+  PASSENGER: 'var(--chart-1)',
+  CARGO:     'var(--chart-2)',
 }
-const FALLBACK_COLORS = ["#2563eb", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444"]
+const FALLBACK_COLORS = [
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+]
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
 interface RevenueMixTooltipProps {

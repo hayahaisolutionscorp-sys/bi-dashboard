@@ -136,14 +136,14 @@ export function AppNav({ isMobile }: AppNavProps) {
                 "flex h-9 items-center gap-2.5 px-3 rounded-md transition-all duration-[120ms] group",
                 isCollapsed && !isMobile && "justify-center px-0",
                 isActive
-                  ? "bg-accent text-accent-foreground font-medium"
+                  ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] font-medium"
                   : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               )}
               title={item.label}
             >
               <item.icon className={cn(
                 "shrink-0 size-4",
-                isActive ? "text-accent-foreground" : "text-muted-foreground group-hover:text-foreground"
+                isActive ? "text-[var(--nav-active-text)]" : "text-muted-foreground group-hover:text-foreground"
               )} />
               <span className={cn("text-sm hidden truncate", !isCollapsed && "md:inline", isMobile && "inline")}>{item.label}</span>
             </Link>
