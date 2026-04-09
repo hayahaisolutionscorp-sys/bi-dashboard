@@ -19,10 +19,6 @@ export default function Error({
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
       <div className="flex flex-col items-center max-w-md w-full text-center space-y-6">
-        <div className="p-4 rounded-full bg-rose-100 dark:bg-rose-900/20">
-          <AlertCircle className="w-12 h-12 text-rose-600 dark:text-rose-500" />
-        </div>
-        
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             System Error
