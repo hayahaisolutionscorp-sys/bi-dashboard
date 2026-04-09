@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { RecentActivityItem } from "@/types/dashboard-widgets";
-import { Anchor, Package, Users, Clock } from "lucide-react";
+import { Anchor, Package, Users, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+
+const PAGE_SIZE = 5;
 
 const SOURCE_LABELS: Record<string, string> = {
   OTC: "Counter",
@@ -39,6 +42,8 @@ function timeAgo(isoStr: string) {
 }
 
 export function RecentActivityFeed({ items }: { items: RecentActivityItem[] }) {
+  const [page, setPage] = useState(1);
+
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-sm gap-2">
@@ -48,40 +53,70 @@ export function RecentActivityFeed({ items }: { items: RecentActivityItem[] }) {
     );
   }
 
+  const totalPages = Math.ceil(items.length / PAGE_SIZE);
+  const paged = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
-    <ul className="divide-y divide-border">
-      {items.map((item) => (
-        <li key={item.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
-          <span className={`flex-shrink-0 rounded-full p-1.5 ${typeColor(item.type)}`}>
-            {typeIcon(item.type)}
+    <div>
+      <ul className="divide-y divide-border">
+        {paged.map((item) => (
+          <li key={item.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+            <span className={`flex-shrink-0 rounded-full p-1.5 ${typeColor(item.type)}`}>
+              {typeIcon(item.type)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-sm font-medium truncate">{item.route_name}</span>
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge(item.status)}`}>
+                  {item.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                <span>{item.vessel_name}</span>
+                <span>·</span>
+                <span>{SOURCE_LABELS[item.source] ?? item.source}</span>
+                {item.pax_count > 0 && (
+                  <>
+                    <span>·</span>
+                    <span>{item.pax_count} pax</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex-shrink-0 text-right">
+              <p className="text-sm font-semibold tabular-nums">
+                ₱{item.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{timeAgo(item.created_at)}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-2 border-t border-border">
+          <span className="text-xs text-muted-foreground">
+            Page {page} of {totalPages}
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-sm font-medium truncate">{item.route_name}</span>
-              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge(item.status)}`}>
-                {item.status}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-              <span>{item.vessel_name}</span>
-              <span>·</span>
-              <span>{SOURCE_LABELS[item.source] ?? item.source}</span>
-              {item.pax_count > 0 && (
-                <>
-                  <span>·</span>
-                  <span>{item.pax_count} pax</span>
-                </>
-              )}
-            </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="p-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
-          <div className="flex-shrink-0 text-right">
-            <p className="text-sm font-semibold tabular-nums">
-              ₱{item.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            </p>
-            <p className="text-[10px] text-muted-foreground">{timeAgo(item.created_at)}</p>
-          </div>
-        </li>
-      ))}
-    </ul>
+        </div>
+      )}
+    </div>
   );
 }

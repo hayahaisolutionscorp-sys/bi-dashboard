@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { ScheduleTripItem } from "@/types/dashboard-widgets";
-import { Clock, Ship, AlertTriangle, CheckCircle2, Navigation } from "lucide-react";
+import { Clock, Ship, AlertTriangle, CheckCircle2, Navigation, ChevronLeft, ChevronRight } from "lucide-react";
+
+const PAGE_SIZE = 5;
 
 function statusStyle(status: string): { icon: React.ReactNode; badge: string } {
   const s = status.toLowerCase();
@@ -44,6 +47,8 @@ function formatTime(iso: string | null) {
 }
 
 export function TodayScheduleTimeline({ trips }: { trips: ScheduleTripItem[] }) {
+  const [page, setPage] = useState(1);
+
   if (trips.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-sm gap-2">
@@ -53,53 +58,83 @@ export function TodayScheduleTimeline({ trips }: { trips: ScheduleTripItem[] }) 
     );
   }
 
+  const totalPages = Math.ceil(trips.length / PAGE_SIZE);
+  const paged = trips.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
-    <ul className="divide-y divide-border">
-      {trips.map((trip) => {
-        const { icon, badge } = statusStyle(trip.status);
-        const pct = trip.pax_utilization_pct;
-        return (
-          <li key={trip.trip_id} className="px-4 py-3 space-y-2 hover:bg-muted/30 transition-colors">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                {icon}
-                <span className="text-sm font-medium truncate">{trip.route_name}</span>
-              </div>
-              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${badge}`}>
-                {trip.status}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Ship className="h-3 w-3" />
-                {trip.vessel_name}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatTime(trip.departure_time)}
-                {trip.arrival_time && ` – ${formatTime(trip.arrival_time)}`}
-              </span>
-            </div>
-            {trip.pax_capacity > 0 && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Capacity</span>
-                  <span className="font-medium tabular-nums">
-                    {trip.pax_booked}/{trip.pax_capacity}
-                    <span className="text-muted-foreground ml-1">({pct.toFixed(0)}%)</span>
-                  </span>
+    <div>
+      <ul className="divide-y divide-border">
+        {paged.map((trip) => {
+          const { icon, badge } = statusStyle(trip.status);
+          const pct = trip.pax_utilization_pct;
+          return (
+            <li key={trip.trip_id} className="px-4 py-3 space-y-2 hover:bg-muted/30 transition-colors">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {icon}
+                  <span className="text-sm font-medium truncate">{trip.route_name}</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${utilizationColor(pct)}`}
-                    style={{ width: `${Math.min(pct, 100)}%` }}
-                  />
-                </div>
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${badge}`}>
+                  {trip.status}
+                </span>
               </div>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Ship className="h-3 w-3" />
+                  {trip.vessel_name}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatTime(trip.departure_time)}
+                  {trip.arrival_time && ` – ${formatTime(trip.arrival_time)}`}
+                </span>
+              </div>
+              {trip.pax_capacity > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Capacity</span>
+                    <span className="font-medium tabular-nums">
+                      {trip.pax_booked}/{trip.pax_capacity}
+                      <span className="text-muted-foreground ml-1">({pct.toFixed(0)}%)</span>
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${utilizationColor(pct)}`}
+                      style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-2 border-t border-border">
+          <span className="text-xs text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="p-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
