@@ -23,22 +23,19 @@ export default function LoginPage() {
             await authService.login({ email, password });
             // Get tenants from localStorage and parse JSON
             const tenantsStr = localStorage.getItem("tenants");
-            if (tenantsStr) {
-                const tenants = JSON.parse(tenantsStr);
-                let slug = tenants[0]?.slug;
-                if (!slug && tenants[0]?.name) {
-                    slug = tenants[0].name
-                        .toLowerCase()
-                        .trim()
-                        .replace(/[^\w\s-]/g, '') 
-                        .replace(/\s+/g, '-')      
-                        .replace(/-+/g, '-');      
-                }
-                
-                router.push(`/${slug}/dashboard`);
-            } else {
-                router.push("/tenant-1/dashboard");
+            const tenants = tenantsStr ? JSON.parse(tenantsStr) : [];
+            const firstTenant = tenants[0];
+            if (!firstTenant?.name) {
+                setError("Login succeeded but no shipping lines are assigned to your account. Contact your administrator.");
+                return;
             }
+            const slug = firstTenant.name
+                .toLowerCase()
+                .trim()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+            router.push(`/${slug}/dashboard`);
         } catch (err: any) {
             setError(err.message || "Invalid credentials. Please try again.");
         } finally {

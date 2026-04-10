@@ -6,12 +6,19 @@ import {
   TopAgentItem,
 } from "@/types/dashboard-widgets";
 
+function normalizeBaseUrl(url: string): string {
+  if (!url) return url
+  if (!/^https?:\/\//i.test(url)) return `https://${url}`
+  return url
+}
+
 async function apiFetch<T>(
-  baseUrl: string,
+  rawBaseUrl: string,
   path: string,
   params: Record<string, string | number | undefined>,
   serviceKey?: string
 ): Promise<T> {
+  const baseUrl = normalizeBaseUrl(rawBaseUrl)
   const url = new URL(`${baseUrl}${path}`);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined) url.searchParams.set(k, String(v));
