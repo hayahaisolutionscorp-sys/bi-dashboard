@@ -23,4 +23,8 @@ export interface Tenant {
 export interface AuthResponseDto {
     status: string
     message: string
+    data?: {
+        user: User
+        tenants: Tenant[]
+    }
 }

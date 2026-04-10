@@ -21,17 +21,33 @@ export const authService = {
             const data: AuthResponseDto = await response.json()
 
             if (typeof window !== 'undefined') {
-                authService.syncFromCookies();
-                
-                const tenantsStr = localStorage.getItem('tenants');
-                if (tenantsStr) {
-                    try {
-                        const tenants: Tenant[] = JSON.parse(tenantsStr);
-                        if (tenants.length > 0 && tenants[0].service_key) {
-                            document.cookie = `service_key=${tenants[0].service_key}; path=/;`;
+                // Prefer reading user/tenants from response body (reliable across all environments)
+                if (data.data?.tenants && data.data.tenants.length > 0) {
+                    const tenantsJson = JSON.stringify(data.data.tenants);
+                    localStorage.setItem('tenants', tenantsJson);
+                    localStorage.setItem('user', JSON.stringify(data.data.user));
+
+                    const defaultTenant = data.data.tenants[0];
+                    localStorage.setItem('selectedTenantId', String(defaultTenant.id ?? 0));
+                    localStorage.setItem('selectedCompanyName', defaultTenant.name);
+
+                    if (defaultTenant.service_key) {
+                        document.cookie = `service_key=${defaultTenant.service_key}; path=/;`;
+                    }
+                } else {
+                    // Fallback: try reading from cookies (same-domain / localhost scenarios)
+                    authService.syncFromCookies();
+
+                    const tenantsStr = localStorage.getItem('tenants');
+                    if (tenantsStr) {
+                        try {
+                            const tenants: Tenant[] = JSON.parse(tenantsStr);
+                            if (tenants.length > 0 && tenants[0].service_key) {
+                                document.cookie = `service_key=${tenants[0].service_key}; path=/;`;
+                            }
+                        } catch (e) {
+                            console.error("Failed to parse tenants for setting service_key cookie", e);
                         }
-                    } catch (e) {
-                        console.error("Failed to parse tenants for setting service_key cookie", e);
                     }
                 }
             }

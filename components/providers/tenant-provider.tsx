@@ -25,10 +25,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const tenantSlug = params?.tenant_slug as string;
 
   const refreshTenantState = useCallback(() => {
-    // 1. Sync from cookies to ensure we have latest session
-    authService.syncFromCookies();
-    
-    // 2. Load available tenants
+    // 1. Load available tenants from localStorage (set by login response body)
     const availableTenants = authService.getTenants();
     setTenants(availableTenants);
 
@@ -37,7 +34,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 3. Determine active tenant based on URL slug or previous selection
+    // 2. Determine active tenant based on URL slug or previous selection
     let current: Tenant | null = null;
     
     if (tenantSlug) {
@@ -49,7 +46,14 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (current) {
-      setActiveTenant(current);
+      // Allow NEXT_PUBLIC_CLIENT_API_URL to override api_base_url in local dev
+      // so localhost browsers can reach a local ayahay-client-api instance
+      const clientApiOverride = process.env.NEXT_PUBLIC_CLIENT_API_URL;
+      setActiveTenant(
+        clientApiOverride
+          ? { ...current, api_base_url: clientApiOverride }
+          : current
+      );
     }
     
     setIsLoading(false);
@@ -60,7 +64,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   }, [refreshTenantState]);
 
   const setTenant = (tenant: Tenant) => {
-    setActiveTenant(tenant);
+    const clientApiOverride = process.env.NEXT_PUBLIC_CLIENT_API_URL;
+    setActiveTenant(clientApiOverride ? { ...tenant, api_base_url: clientApiOverride } : tenant);
     authService.setSelectedTenant(tenant.id);
     
     // Update service_key cookie for immediate service use (temporary until backend set-cookie)
