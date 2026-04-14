@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { useState, useRef, useMemo } from 'react';
 import MapGL, { Marker, MapRef, Source, Layer } from 'react-map-gl/maplibre';
-import "maplibre-gl/dist/maplibre-gl.css";
 import { Search, Plus, Minus, TrendingUp, User, Clock, X, Navigation, Anchor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as turf from '@turf/turf';

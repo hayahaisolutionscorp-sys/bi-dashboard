@@ -34,8 +34,9 @@ export default function AdvanceBookingPage() {
   const tenant_slug = params.tenant_slug as string;
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-    const from = new Date("2026-03-01");
-    const to = new Date("2026-04-30");
+    const from = new Date();
+    const to = new Date();
+    to.setDate(to.getDate() + 60);
     return { from, to };
   });
 
@@ -65,8 +66,9 @@ export default function AdvanceBookingPage() {
   }, [tenant_slug, dateRange, activeTenant]);
 
   const resetFilter = () => {
-    const from = new Date("2026-03-01");
-    const to = new Date("2026-04-30");
+    const from = new Date();
+    const to = new Date();
+    to.setDate(to.getDate() + 60);
     setDateRange({ from, to });
   };
 

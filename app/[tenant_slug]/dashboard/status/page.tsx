@@ -26,9 +26,10 @@ import { StatusReportResponse } from "@/types/status";
 export default function StatusPage() {
   const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const now = new Date();
     return { 
-      from: new Date("2026-01-01"), 
-      to: new Date("2026-01-31") 
+      from: new Date(now.getFullYear(), now.getMonth(), 1), 
+      to: now 
     };
   });
 
@@ -70,9 +71,10 @@ export default function StatusPage() {
   }, [dateRange, activeTenant]);
 
   const handleClearFilter = () => {
+    const now = new Date();
     setDateRange({ 
-      from: new Date("2026-01-01"), 
-      to: new Date("2026-01-31") 
+      from: new Date(now.getFullYear(), now.getMonth(), 1), 
+      to: now 
     });
   };
 
