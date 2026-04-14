@@ -115,9 +115,7 @@ export function FleetMapComponent() {
 
   // Map API Data to Component Structure
   const { DEFINED_ROUTES, ROUTE_LIST, apiVessels } = useMemo(() => {
-    if (!apiTrips.length) return { DEFINED_ROUTES: [], ROUTE_LIST: [], apiVessels: [] };
-
-    // Group trips by route to build the DEFINED_ROUTES list
+    // Group trips by route (may be empty if no trips today)
     const routeGroups = new Map<string, RouteMapTrip[]>();
     apiTrips.forEach(trip => {
       if (!routeGroups.has(trip.route_name)) {
@@ -125,6 +123,17 @@ export function FleetMapComponent() {
       }
       routeGroups.get(trip.route_name)!.push(trip);
     });
+
+    // Also include all routes that exist in sea-routes.json so port pins always show
+    if (seaRoutesData) {
+      Object.keys(seaRoutesData).forEach(routeName => {
+        if (!routeGroups.has(routeName)) {
+          routeGroups.set(routeName, []);
+        }
+      });
+    }
+
+    if (!routeGroups.size) return { DEFINED_ROUTES: [], ROUTE_LIST: [], apiVessels: [] };
 
     const definedRoutes = Array.from(routeGroups.entries()).map(([routeName, trips], index) => {
        const firstTrip = trips[0];
@@ -145,9 +154,8 @@ export function FleetMapComponent() {
          // 2. Use real port coordinates as straight line fallback
          coords = [[srcLng!, srcLat!], [destLng!, destLat!]];
        } else {
-         // 3. Fallback to mock data
-         const mockIndex = index % SERVICE_ROUTES_RAW.length;
-         coords = SERVICE_ROUTES_RAW[mockIndex].coordinates;
+         // 3. Skip routes with no coords at all (no sea-routes.json entry and no DB coords)
+         return null;
        }
 
        const startPoint = coords[0];
@@ -187,11 +195,11 @@ export function FleetMapComponent() {
            ],
            revenue: { 
                current: `₱${(ytdRevenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
-               last: "N/A", // This could come from a past data aggregate if added to the API
+               last: "N/A",
                trend: 0 
            }
        };
-    });
+    }).filter((r): r is NonNullable<typeof r> => r !== null);
 
     const routeList = definedRoutes.map(r => ({ id: r.id, name: r.name, vessels: r.vessels }));
 
@@ -247,7 +255,7 @@ export function FleetMapComponent() {
      });
 
     return { DEFINED_ROUTES: definedRoutes, ROUTE_LIST: routeList, apiVessels: initialVessels };
-  }, [apiTrips]);
+  }, [apiTrips, seaRoutesData]);
 
   // Sync vessels from API data
   React.useEffect(() => {
