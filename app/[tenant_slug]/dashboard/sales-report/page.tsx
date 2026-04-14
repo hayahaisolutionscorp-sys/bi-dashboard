@@ -311,7 +311,7 @@ export default function SalesReportPage() {
 
   return (
     <div className="bg-background text-foreground">
-      <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
+      <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
         
         {/* Toolbar */}
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -342,22 +342,26 @@ export default function SalesReportPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:items-center sm:gap-2">
-            <button onClick={handleClearFilter} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"><FilterX className="h-3.5 w-3.5" /> Reset</button>
-            <button onClick={handleImportClick} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"><FileInput className="h-3.5 w-3.5" /> Import</button>
-            <button onClick={handleExport} disabled={isExporting} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            <button onClick={handleClearFilter} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary"><FilterX className="h-3.5 w-3.5" /> Reset</button>
+            <button onClick={handleImportClick} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary"><FileInput className="h-3.5 w-3.5" /> Import</button>
+            <button onClick={handleExport} disabled={isExporting} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary disabled:opacity-50">
               {isExporting ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : <FileOutput className="h-3.5 w-3.5 text-primary" />} Export
             </button>
-            <button onClick={handleDownloadTemplate} disabled={isDownloadingTemplate} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              {isDownloadingTemplate ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" /> : <Download className="h-3.5 w-3.5 text-slate-400" />} Template
+            <button onClick={handleDownloadTemplate} disabled={isDownloadingTemplate} className="inline-flex h-8 justify-center items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary">
+              {isDownloadingTemplate ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" /> : <Download className="h-3.5 w-3.5 text-muted-foreground" />} Template
             </button>
           </div>
           <input ref={fileInputRef} type="file" accept=".xlsx, .xls, .json" className="hidden" onChange={() => {}} />
         </div>
 
         {/* KPIs */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <section className="grid grid-cols-1 gap-2 sm:grid-cols-3 2xl:gap-3">
           {isKpisLoading ? (
-            <Skeleton className="h-24 w-full rounded-xl" />
+            <>
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+            </>
           ) : (
             <>
               <SimpleKpiCard label="Total Sales" value={formatCurrency(kpiData?.totalSales.value)} icon={Banknote} colorClass="text-blue-500" subtext="Before deductions" />
@@ -368,8 +372,8 @@ export default function SalesReportPage() {
         </section>
 
         {/* Trend Chart */}
-        <div className="relative rounded-xl border border-border bg-card p-2">
-          {isTrendLoading ? <Skeleton className="h-[300px] w-full rounded-xl" /> : isChartEmpty(revenueTrend) ? <NoDataPlaceholder height="300px" /> : (
+        <div className="relative rounded-xl border border-border bg-card">
+          {isTrendLoading ? <Skeleton className="h-[220px] w-full rounded-xl md:h-[280px] 2xl:h-[340px]" /> : isChartEmpty(revenueTrend) ? <NoDataPlaceholder height="280px" /> : (
             <ShadcnLineChartMultiple
               title="Revenue per Bookings Source"
               description="Daily performance by booking source channel"
@@ -402,9 +406,9 @@ export default function SalesReportPage() {
         <ComparisonTrendChart dateRange={dateRange} selectedRouteName={selectedRouteName} />
 
         {/* Breakdown Charts */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900 min-h-[350px]">
-            {isChartsLoading ? <Skeleton className="h-[300px] w-full" /> : isChartEmpty(salesByRoute) ? <NoDataPlaceholder height="270px" /> : (
+        <section className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:gap-3">
+          <div className="rounded-xl border border-border bg-card min-h-[220px] md:min-h-[260px] 2xl:min-h-[320px]">
+            {isChartsLoading ? <Skeleton className="h-[260px] w-full" /> : isChartEmpty(salesByRoute) ? <NoDataPlaceholder height="220px" /> : (
               <ShadcnBarChartHorizontal
                 title="Sales by Route"
                 description="Revenue breakdown by geographical route"
@@ -422,8 +426,8 @@ export default function SalesReportPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900 min-h-[350px]">
-            {isChartsLoading ? <Skeleton className="h-[300px] w-full" /> : isChartEmpty(salesByVessel) ? <NoDataPlaceholder height="270px" /> : (
+          <div className="rounded-xl border border-border bg-card min-h-[220px] md:min-h-[260px] 2xl:min-h-[320px]">
+            {isChartsLoading ? <Skeleton className="h-[260px] w-full" /> : isChartEmpty(salesByVessel) ? <NoDataPlaceholder height="220px" /> : (
               <ShadcnBarChartHorizontal
                 title="Sales per Vessel"
                 description="Revenue contribution by individual vessels"

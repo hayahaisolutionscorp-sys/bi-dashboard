@@ -27,9 +27,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <AppNav />
       </div>
 
-      <main className="flex-1 flex flex-col overflow-y-auto bg-background">
+      <main className="flex-1 min-w-0 flex flex-col overflow-y-auto bg-background">
         <DashboardHeader />
-        {children}
+        <div className="flex-1 min-w-0">
+          {children}
+        </div>
       </main>
     </div>
   );

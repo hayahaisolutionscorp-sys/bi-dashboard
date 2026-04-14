@@ -243,7 +243,7 @@ export default function ExpensesReportPage() {
 
   return (
     <div className="bg-background text-foreground">
-      <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
+      <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
 
         {/* Toolbar */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
@@ -306,11 +306,11 @@ export default function ExpensesReportPage() {
         </div>
 
         {/* KPI Row */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-4">
           {isInitialLoad ? (
             <>
               {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-24 w-full rounded-xl" />
+                <Skeleton key={i} className="h-20 w-full rounded-xl" />
               ))}
             </>
           ) : (
@@ -348,9 +348,9 @@ export default function ExpensesReportPage() {
         </section>
 
         {/* Daily Expenses Trend (full width) */}
-        <div className="rounded-xl border border-border bg-card p-2">
+        <div className="rounded-xl border border-border bg-card">
           {isLoading ? (
-            <Skeleton className="h-[280px] w-full rounded-xl" />
+            <Skeleton className="h-[220px] w-full rounded-xl md:h-[260px] 2xl:h-[320px]" />
           ) : isTrendEmpty ? (
             <div className="px-4 pt-4">
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Daily Expenses Trend</p>
@@ -371,15 +371,15 @@ export default function ExpensesReportPage() {
         </div>
 
         {/* Breakdown Charts */}
-        <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <section className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:gap-3">
           {/* Expenses by Category */}
-          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card min-h-[220px] md:min-h-[260px] 2xl:min-h-[320px]">
             {isLoading ? (
-              <Skeleton className="h-[320px] w-full rounded-xl" />
+              <Skeleton className="h-[260px] w-full rounded-xl" />
             ) : isCategoryEmpty ? (
               <div className="px-4 pt-4">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Expenses by Category</p>
-                <NoDataPlaceholder height="280px" />
+                <NoDataPlaceholder height="220px" />
               </div>
             ) : (
               <ShadcnPieChartLegend
@@ -395,13 +395,13 @@ export default function ExpensesReportPage() {
           </div>
 
           {/* Top 5 Payees / Vendors */}
-          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card min-h-[220px] md:min-h-[260px] 2xl:min-h-[320px]">
             {isLoading ? (
-              <Skeleton className="h-[320px] w-full rounded-xl" />
+              <Skeleton className="h-[260px] w-full rounded-xl" />
             ) : isPayeesEmpty ? (
               <div className="px-4 pt-4">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Top 5 Payees / Vendors</p>
-                <NoDataPlaceholder height="280px" />
+                <NoDataPlaceholder height="220px" />
               </div>
             ) : (
               <ShadcnBarChartHorizontal

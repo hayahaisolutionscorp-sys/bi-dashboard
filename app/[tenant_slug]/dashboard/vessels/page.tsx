@@ -123,10 +123,8 @@ export default function VesselsPage() {
 
 
   return (
-    <div className="bg-background text-foreground">
-      <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
-        
-        {/* Header Section */}
+    <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
+      {/* Header Section */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
             <span className="font-medium">Date Range:</span>
@@ -142,11 +140,11 @@ export default function VesselsPage() {
           </button>
         </div>
 
-        {/* KPI Row */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3">
+      {/* KPI Row */}
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-[repeat(auto-fit,minmax(0,1fr))] 2xl:gap-3">
           {isInitialLoad || !data ? (
             Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-[120px] w-full rounded-xl" />
+              <Skeleton key={i} className="h-20 w-full rounded-xl" />
             ))
           ) : (
             (data.kpiData || []).map((kpi, idx) => {
@@ -167,16 +165,16 @@ export default function VesselsPage() {
           )}
         </section>
         
-        {/* Charts Section */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Charts Section */}
+      <section className="grid grid-cols-1 gap-2 2xl:gap-3">
           
-          <div className="lg:col-span-2 rounded-xl border border-border bg-card p-4">
+          <div className="rounded-xl border border-border bg-card">
             {isLoading ? (
-              <Skeleton className="h-[500px] w-full rounded-xl" />
+              <Skeleton className="h-[280px] w-full rounded-xl md:h-[360px] 2xl:h-[420px]" />
             ) : !data || !data.fleetLoadFactor || data.fleetLoadFactor.length === 0 ? (
-              <NoDataPlaceholder height="500px" />
+              <NoDataPlaceholder height="360px" />
             ) : (
-              <div className="flex h-[500px] min-h-0 flex-col">
+              <div className="flex h-[280px] md:h-[360px] 2xl:h-[420px] min-h-0 flex-col">
                 <ShadcnBarChartVertical
                   title="Fleet Load Factor"
                   description="Passenger utilization per vessel"
@@ -219,26 +217,22 @@ export default function VesselsPage() {
             )}
           </div> */}
 
-          {/* Trip Density Heatmap */}
-          <div className="grid grid-cols-1 lg:col-span-2 gap-4 mt-4">
-            <div className="rounded-xl border border-border bg-card p-2 min-h-[400px]">
-              {isLoading ? (
-                <Skeleton className="h-[380px] w-full rounded-xl" />
-              ) : !data || !data.successfulTripsCount || data.successfulTripsCount.length === 0 ? (
-                <NoDataPlaceholder height="380px" />
-              ) : (
-                <Heatmap
-                  title="Trip Density Heatmap"
-                  description="Daily completed trips per vessel"
-                  data={data.successfulTripsCount}
-                  dateRange={dateRange as { from: Date; to: Date }}
-                />
-              )}
-            </div>
+          <div className="rounded-xl border border-border bg-card">
+            {isLoading ? (
+              <Skeleton className="h-[240px] w-full rounded-xl md:h-[320px] 2xl:h-[380px]" />
+            ) : !data || !data.successfulTripsCount || data.successfulTripsCount.length === 0 ? (
+              <NoDataPlaceholder height="320px" />
+            ) : (
+              <Heatmap
+                title="Trip Density Heatmap"
+                description="Daily completed trips per vessel"
+                data={data.successfulTripsCount}
+                dateRange={dateRange as { from: Date; to: Date }}
+              />
+            )}
           </div>
 
-        </section>
-      </div>
+      </section>
     </div>
   );
 }

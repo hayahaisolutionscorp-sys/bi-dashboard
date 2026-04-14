@@ -108,10 +108,14 @@ export default function CargoPerTripPage() {
   const kpiCount = data?.kpiData.length || 0;
   const kpiGridClass =
     kpiCount >= 5
-      ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
+      ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-[repeat(auto-fit,minmax(0,1fr))]"
       : kpiCount === 4
-        ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-        : "grid-cols-[repeat(auto-fit,minmax(210px,1fr))]";
+        ? "grid-cols-2 sm:grid-cols-4"
+        : kpiCount === 3
+          ? "grid-cols-1 sm:grid-cols-3"
+          : kpiCount === 2
+            ? "grid-cols-2"
+            : "grid-cols-[repeat(auto-fit,minmax(0,1fr))]";
 
   if (error) {
     return (
@@ -199,9 +203,8 @@ export default function CargoPerTripPage() {
   const cargoClassesData = getMapData(data?.cargoClassesData || []);
 
   return (
-    <div className="bg-background text-foreground">
-      <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
-        {/* Toolbar */}
+    <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
+      {/* Toolbar */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <div className="flex items-center gap-2 text-sm">
             <CalendarDays className="h-4 w-4 text-slate-500 dark:text-slate-400" />
@@ -218,14 +221,14 @@ export default function CargoPerTripPage() {
           </button>
         </div>
 
-        {/* KPIs */}
-        <section className={`grid ${kpiGridClass} gap-3 md:auto-rows-fr`}>
+      {/* KPIs */}
+      <section className={`grid ${kpiGridClass} gap-2`}>
           {isInitialLoad || !data ? (
             <>
-              <Skeleton className="h-[120px] w-full rounded-xl" />
-              <Skeleton className="h-[120px] w-full rounded-xl" />
-              <Skeleton className="h-[120px] w-full rounded-xl" />
-              <Skeleton className="h-[120px] w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
             </>
           ) : (
             data.kpiData.map((kpi, index) => {
@@ -246,13 +249,13 @@ export default function CargoPerTripPage() {
           )}
         </section>
 
-        {/* Primary Trend Chart */}
-        <section className="col-span-1">
-          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
+      {/* Primary Trend Chart */}
+      <section className="col-span-1">
+          <div className="rounded-xl border border-border bg-card min-h-[220px] md:min-h-[260px] 2xl:min-h-[320px]">
              {isLoading || !data ? (
-                <Skeleton className="h-[320px] w-full rounded-xl" />
+                <Skeleton className="h-[260px] w-full rounded-xl" />
              ) : lineData.mappedData.length === 0 ? (
-                <NoDataPlaceholder height="320px" />
+                <NoDataPlaceholder height="260px" />
              ) : (
                 <ShadcnLineChartMultipleCargo
                   title={`Revenue by ${cargoType.charAt(0).toUpperCase() + cargoType.slice(1)} Cargo Trend`}
@@ -260,7 +263,7 @@ export default function CargoPerTripPage() {
                   data={lineData.mappedData}
                   config={lineData.config}
                   labelKey="date"
-                  height="340px"
+                  height="280px"
                   dateRange={dateRange}
                   cargoType={cargoType}
                   onCargoTypeChange={setCargoType}
@@ -308,7 +311,6 @@ export default function CargoPerTripPage() {
           </div>
         </section> */}
 
-      </div>
     </div>
   );
 }

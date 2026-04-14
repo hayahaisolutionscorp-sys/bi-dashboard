@@ -76,7 +76,7 @@ export default function AdvanceBookingPage() {
 
   return (
     <div className="bg-background text-foreground">
-      <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
+<div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
         
         {/* Header & Date Filter */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -97,13 +97,13 @@ export default function AdvanceBookingPage() {
         </div>
 
         {/* Executive KPI Row */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-4">
           {isInitialLoad || !data ? (
             <>
-              <Skeleton className="h-32 w-full rounded-xl" />
-              <Skeleton className="h-32 w-full rounded-xl" />
-              <Skeleton className="h-32 w-full rounded-xl" />
-              <Skeleton className="h-32 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
             </>
           ) : (
             <>
@@ -149,13 +149,13 @@ export default function AdvanceBookingPage() {
 
         {/* Main Strategic Charts */}
         {!data ? (
-           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-             <Skeleton className="h-[400px] lg:col-span-3 rounded-xl" />
-             <Skeleton className="h-[300px] lg:col-span-3 rounded-xl" />
+           <div className="grid grid-cols-1 gap-2 2xl:gap-3">
+             <Skeleton className="h-[300px] rounded-xl md:h-[360px] 2xl:h-[420px]" />
+             <Skeleton className="h-[220px] rounded-xl md:h-[260px]" />
            </div>
         ) : (
           <>
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <section className="grid grid-cols-1 gap-2 2xl:gap-3">
               {/* Yield Projection Chart - Full Width */}
               <div className="lg:col-span-3">
             {new ChartBuilder("yield-projection", "bar")
@@ -223,7 +223,7 @@ export default function AdvanceBookingPage() {
         </section>
 
         {/* Second Row: Lead Time */}
-        <section className="grid grid-cols-1 lg:grid-cols-1 gap-3">
+        <section className="grid grid-cols-1 gap-2 2xl:gap-3">
           {/* Booking Window Distribution */}
           <div>
             {new ChartBuilder("booking-window", "bar")
@@ -252,7 +252,7 @@ export default function AdvanceBookingPage() {
         </section>
 
         {/* Secondary Insights Row */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <section className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:gap-3">
           {/* Revenue Source Breakdown */}
           <div className="rounded-xl border border-border bg-card p-4">
             <h3 className="text-lg font-semibold mb-2 text-slate-800 dark:text-slate-100 flex items-center gap-2">

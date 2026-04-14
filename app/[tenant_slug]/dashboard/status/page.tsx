@@ -152,9 +152,8 @@ export default function StatusPage() {
   }
 
   return (
-    <div className="bg-background text-foreground">
-      <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
-        {/* Header Section */}
+    <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
+      {/* Header Section */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <div className="flex items-center gap-2 text-sm">
             <CalendarDays className="h-4 w-4 text-slate-500 dark:text-slate-400" />
@@ -171,54 +170,53 @@ export default function StatusPage() {
           </button>
         </div>
 
-        {/* KPI Row - Flexible layout that fills available width */}
-        <section className="flex flex-wrap gap-4">
-          {isInitialLoad || !data ? (
-             <>
-               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
-               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
-               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
-               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
-               <div className="flex-1 min-w-[280px] h-24"><Skeleton className="h-full w-full rounded-xl" /></div>
-             </>
-          ) : (
-            kpis.map((kpi, index) => (
-              <div key={index} className="flex-1 min-w-[280px]">
-                <SimpleKpiCard
-                  label={kpi.label}
-                  value={String(kpi.value)}
-                  icon={kpi.icon as any}
-                  indicatorText={kpi.indicatorText}
-                  indicatorDirection={kpi.indicatorDirection}
-                  subtext={kpi.indicatorSubtext}
-                  colorClass={kpi.colorClass}
-                />
-              </div>
-            ))
-          )}
-        </section>
+      {/* KPI Row */}
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-5">
+        {isInitialLoad || !data ? (
+           <>
+             <Skeleton className="h-20 w-full rounded-xl" />
+             <Skeleton className="h-20 w-full rounded-xl" />
+             <Skeleton className="h-20 w-full rounded-xl" />
+             <Skeleton className="h-20 w-full rounded-xl" />
+             <Skeleton className="h-20 w-full rounded-xl col-span-2 sm:col-span-1" />
+           </>
+        ) : (
+          kpis.map((kpi, index) => (
+            <SimpleKpiCard
+              key={index}
+              label={kpi.label}
+              value={String(kpi.value)}
+              icon={kpi.icon as any}
+              indicatorText={kpi.indicatorText}
+              indicatorDirection={kpi.indicatorDirection}
+              subtext={kpi.indicatorSubtext}
+              colorClass={kpi.colorClass}
+            />
+          ))
+        )}
+      </section>
 
-        {/* Booking Trend Chart */}
-        <section>
-          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
-            {isLoading || !data ? (
-              <Skeleton className="h-[320px] w-full rounded-xl" />
-            ) : bookingTrend.mappedData.length === 0 ? (
-              <NoDataPlaceholder height="320px" />
-            ) : (
-              <ShadcnLineChartMultiple
-                title="Booking Performance Trend"
-                description="Confirmed vs Cancelled bookings"
-                data={bookingTrend.mappedData}
-                config={bookingTrend.config}
-                series={bookingTrend.series}
-                labelKey="date"
-                height="340px"
-                dateRange={dateRange}
-              />
-            )}
-          </div>
-        </section>
+      {/* Booking Trend Chart */}
+      <section>
+        <div className="rounded-xl border border-border bg-card min-h-[220px] md:min-h-[260px] 2xl:min-h-[320px]">
+          {isLoading || !data ? (
+            <Skeleton className="h-[220px] w-full rounded-xl md:h-[260px] 2xl:h-[320px]" />
+          ) : bookingTrend.mappedData.length === 0 ? (
+            <NoDataPlaceholder height="260px" />
+          ) : (
+            <ShadcnLineChartMultiple
+              title="Booking Performance Trend"
+              description="Confirmed vs Cancelled bookings"
+              data={bookingTrend.mappedData}
+              config={bookingTrend.config}
+              series={bookingTrend.series}
+              labelKey="date"
+              height="280px"
+              dateRange={dateRange}
+            />
+          )}
+        </div>
+      </section>
 
         {/* Charts & Distribution */}
         {/* <section className="grid grid-cols-1 gap-3">
@@ -278,7 +276,6 @@ export default function StatusPage() {
             </CardContent>
           </Card> */}
         </section>
-      </div>
     </div>
   );
 }

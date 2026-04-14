@@ -185,9 +185,8 @@ export default function PassengersPerTripPage() {
   }
 
   return (
-    <div className="bg-background text-foreground">
-      <div className="mx-auto w-full max-w-[1120px] space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+    <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <div className="flex items-center gap-2 text-sm">
             <CalendarDays className="h-4 w-4 text-slate-500 dark:text-slate-400" />
             <span className="text-slate-600 dark:text-slate-300">Date Range:</span>
@@ -203,12 +202,12 @@ export default function PassengersPerTripPage() {
           </button>
         </div>
 
-        <section className={`grid ${kpiGridClass} gap-3 md:auto-rows-fr`}>
+        <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:auto-rows-fr 2xl:grid-cols-4">
           {isInitialLoad || !data ? (
             <>
-              <Skeleton className="h-[120px] w-full rounded-xl" />
-              <Skeleton className="h-[120px] w-full rounded-xl" />
-              <Skeleton className="h-[120px] w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
             </>
           ) : (
             filteredKpiData.map((kpi, index) => {
@@ -232,12 +231,12 @@ export default function PassengersPerTripPage() {
           )}
         </section>
 
-        <section className="grid grid-cols-1 gap-4">
-          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
+        <section className="grid grid-cols-1 gap-2">
+          <div className="rounded-xl border border-border bg-card min-h-[220px] md:min-h-[260px] 2xl:min-h-[320px]">
             {isLoading || !data ? (
-              <Skeleton className="h-[320px] w-full rounded-xl" />
+              <Skeleton className="h-[260px] w-full rounded-xl" />
             ) : lineData.length === 0 ? (
-              <NoDataPlaceholder height="320px" />
+              <NoDataPlaceholder height="260px" />
             ) : (
               <ShadcnLineChartRegular
                 title="Passenger Count Trend"
@@ -246,7 +245,7 @@ export default function PassengersPerTripPage() {
                 dataKey="count"
                 labelKey="date"
                 color="#3b82f6"
-                height="320px"
+                height="280px"
                 dateRange={dateRange}
                 isCurrency={false}
                 config={{
@@ -257,12 +256,12 @@ export default function PassengersPerTripPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
+        <section className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:gap-3">
+          <div className="rounded-xl border border-border bg-card min-h-[220px] md:min-h-[260px] 2xl:min-h-[320px]">
             {isLoading || !data ? (
-              <Skeleton className="h-[320px] w-full rounded-xl" />
+              <Skeleton className="h-[260px] w-full rounded-xl" />
             ) : getBookingChannelPieData().mappedData.length === 0 ? (
-              <NoDataPlaceholder height="320px" />
+              <NoDataPlaceholder height="260px" />
             ) : (
               <ShadcnPieChartLegend
                 title="Booking Channels"
@@ -271,16 +270,16 @@ export default function PassengersPerTripPage() {
                 config={getBookingChannelPieData().config}
                 dataKey="value"
                 nameKey="name"
-                height="320px"
+                height="280px"
               />
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-2 min-h-[350px]">
+          <div className="rounded-xl border border-border bg-card min-h-[220px] md:min-h-[260px] 2xl:min-h-[320px]">
              {isLoading || !data ? (
-               <Skeleton className="h-[320px] w-full rounded-xl" />
+               <Skeleton className="h-[260px] w-full rounded-xl" />
              ) : getPieData().mappedData.length === 0 ? (
-               <NoDataPlaceholder height="320px" />
+               <NoDataPlaceholder height="260px" />
              ) : (
                <ShadcnPieChartLegend
                  title="Passenger Demographic"
@@ -289,13 +288,12 @@ export default function PassengersPerTripPage() {
                  config={getPieData().config}
                  dataKey="value"
                  nameKey="name"
-                 height="320px"
+                 height="280px"
                />
              )}
           </div>
         </section>
       </div>
-    </div>
   );
 }
 

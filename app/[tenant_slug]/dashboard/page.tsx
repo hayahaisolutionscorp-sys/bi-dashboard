@@ -64,8 +64,8 @@ function PeriodComparisonCard({
   const isDown = delta < -1;
 
   return (
-    <div className="rounded-md border border-border bg-card p-4 space-y-3">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+    <div className="rounded-md border border-border bg-card p-3 space-y-2">
+      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
       <div className="space-y-2">
         <div className="space-y-1">
           <div className="flex items-center justify-between">
@@ -277,9 +277,9 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
       {/* KPI Section */}
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 2xl:gap-3">
           {kpis.map((kpi) => {
             const isSelected = period === kpi.id;
             const displayValue = formatCurrency(kpiTotals[kpi.id as keyof typeof kpiTotals]);
@@ -325,10 +325,7 @@ export default function DashboardPage() {
       {/* Period Comparison */}
       {!isLoading && (
         <section>
-          <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-            Period Comparison
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-3">
             <PeriodComparisonCard
               title="Today vs Daily Avg"
               currentLabel="Today"
@@ -360,13 +357,13 @@ export default function DashboardPage() {
       )}
 
       {/* Charts Section */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:grid-cols-4">
           {isLoading || !data ? (
             <>
-              <Skeleton className="h-[280px] w-full rounded-md" />
-              <Skeleton className="h-[280px] w-full rounded-md" />
-              <Skeleton className="h-[280px] w-full rounded-md" />
-              <Skeleton className="h-[280px] w-full rounded-md" />
+              <Skeleton className="h-[200px] w-full rounded-md md:h-[240px] 2xl:h-[280px]" />
+              <Skeleton className="h-[200px] w-full rounded-md md:h-[240px] 2xl:h-[280px]" />
+              <Skeleton className="h-[200px] w-full rounded-md md:h-[240px] 2xl:h-[280px]" />
+              <Skeleton className="h-[200px] w-full rounded-md md:h-[240px] 2xl:h-[280px]" />
             </>
           ) : (
             <>
@@ -486,12 +483,15 @@ export default function DashboardPage() {
                     isInner: false,
                     category: 'cargo',
                     sourceBreakdown: [
-                      ...Object.entries(data.passenger_vs_cargo.cargo_class_breakdown?.rolling || {}),
-                      ...Object.entries(data.passenger_vs_cargo.cargo_class_breakdown?.loose || {})
-                    ].map(([className, revenue]) => ({
-                      source: className,
-                      revenue: revenue as number
-                    }))
+                      ...Object.entries(data.passenger_vs_cargo.cargo_class_breakdown?.rolling || {}).map(([name, rev]) => ({
+                        source: `Vehicle: ${name.replace(/\b\w/g, c => c.toUpperCase())}`,
+                        revenue: rev as number
+                      })),
+                      ...Object.entries(data.passenger_vs_cargo.cargo_class_breakdown?.loose || {}).map(([name, rev]) => ({
+                        source: `Goods: ${name.replace(/\b\w/g, c => c.toUpperCase())}`,
+                        revenue: rev as number
+                      }))
+                    ]
                     .filter(s => s.revenue > 0)
                     .sort((a, b) => b.revenue - a.revenue)
                   }
@@ -521,14 +521,16 @@ export default function DashboardPage() {
                   ...Object.entries(data.passenger_vs_cargo.cargo_breakdown || {})
                     .filter(([_, v]) => (v as number) > 0)
                     .map(([k, v]) => ({
-                      name: k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '),
+                      name: k === 'rolling' ? 'Rolling (Vehicles)' : k === 'loose' ? 'Loose Goods' : k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '),
                       value: v as number,
                       fill: cargoColors[k.toLowerCase()] || "var(--chart-4)",
                       isInner: true,
                       category: 'cargo',
                       sourceBreakdown: Object.entries(data.passenger_vs_cargo.cargo_class_breakdown?.[k.toLowerCase() as 'rolling' | 'loose'] || {})
                         .map(([className, revenue]) => ({
-                          source: className,
+                          source: k === 'rolling'
+                            ? `Vehicle: ${className.replace(/\b\w/g, c => c.toUpperCase())}`
+                            : `Goods: ${className.replace(/\b\w/g, c => c.toUpperCase())}`,
                           revenue: revenue as number
                         }))
                         .filter(s => s.revenue > 0)
@@ -564,10 +566,7 @@ export default function DashboardPage() {
       {/* Operational Insights */}
       {!isLoading && insights.length > 0 && (
         <section>
-          <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-            Operational Insights
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-4">
             {insights.map((insight, i) => {
               const styles = {
                 success: {
@@ -591,7 +590,7 @@ export default function DashboardPage() {
               }[insight.type];
               const InsightIcon = styles.icon;
               return (
-                <div key={i} className={`flex items-start gap-3 rounded-md border p-4 ${styles.bg}`}>
+                <div key={i} className={`flex items-start gap-2 rounded-md border p-3 ${styles.bg}`}>
                   <InsightIcon className={`h-4 w-4 mt-0.5 shrink-0 ${styles.iconColor}`} />
                   <div className="min-w-0">
                     <span className={`inline-block px-2 py-0.5 text-[11px] font-medium rounded mb-1 ${styles.badge}`}>
@@ -607,13 +606,13 @@ export default function DashboardPage() {
       )}
 
       {/* Live Activity + Today's Schedule */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:gap-3">
         {/* Live Activity Feed */}
         <div className="rounded-md border border-border bg-card overflow-hidden flex flex-col">
-          <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+          <div className="px-3 pt-3 pb-1.5 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold">Live Activity Feed</h2>
-              <p className="text-xs text-muted-foreground">Recent bookings across all routes</p>
+              <h2 className="text-xs font-semibold">Live Activity Feed</h2>
+              <p className="text-[11px] text-muted-foreground">Recent bookings across all routes</p>
             </div>
           </div>
           {widgetsLoading ? (
@@ -627,9 +626,9 @@ export default function DashboardPage() {
 
         {/* Today's Schedule Timeline */}
         <div className="rounded-md border border-border bg-card overflow-hidden flex flex-col">
-          <div className="px-4 pt-4 pb-2">
-            <h2 className="text-sm font-semibold">Today's Schedule</h2>
-            <p className="text-xs text-muted-foreground">All trips departing today</p>
+          <div className="px-3 pt-3 pb-1.5">
+            <h2 className="text-xs font-semibold">Today's Schedule</h2>
+            <p className="text-[11px] text-muted-foreground">All trips departing today</p>
           </div>
           {widgetsLoading ? (
             <div className="p-4 space-y-3">
@@ -644,9 +643,9 @@ export default function DashboardPage() {
       {/* Capacity Heatmap */}
       <section>
         <div className="rounded-md border border-border bg-card overflow-hidden">
-          <div className="px-4 pt-4 pb-2">
-            <h2 className="text-sm font-semibold">Capacity Utilization Heatmap</h2>
-            <p className="text-xs text-muted-foreground">Passenger load by route and date (current month)</p>
+          <div className="px-3 pt-3 pb-1.5">
+            <h2 className="text-xs font-semibold">Capacity Utilization Heatmap</h2>
+            <p className="text-[11px] text-muted-foreground">Passenger load by route and date (current month)</p>
           </div>
           {widgetsLoading ? (
             <div className="p-4">
@@ -661,9 +660,9 @@ export default function DashboardPage() {
       {/* Top Travel Agents */}
       <section>
         <div className="rounded-md border border-border bg-card overflow-hidden">
-          <div className="px-4 pt-4 pb-2">
-            <h2 className="text-sm font-semibold">Top Travel Agents</h2>
-            <p className="text-xs text-muted-foreground">Agents ranked by revenue (current month)</p>
+          <div className="px-3 pt-3 pb-1.5">
+            <h2 className="text-xs font-semibold">Top Travel Agents</h2>
+            <p className="text-[11px] text-muted-foreground">Agents ranked by revenue (current month)</p>
           </div>
           {widgetsLoading ? (
             <div className="p-4 space-y-2">

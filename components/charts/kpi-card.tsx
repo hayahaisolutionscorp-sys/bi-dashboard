@@ -76,16 +76,16 @@ export function KpiCard({
     return (
       <div
         className={cn(
-          "rounded-md bg-muted p-4 cursor-pointer transition-all duration-[120ms] select-none relative overflow-visible",
+          "rounded-md bg-muted p-3 sm:p-4 cursor-pointer transition-all duration-[120ms] select-none relative overflow-visible",
           isActive && "ring-1 ring-primary",
           isExpanded && "rounded-b-none z-20"
         )}
         onClick={onClick}
       >
-        <p className="text-[13px] text-muted-foreground mb-1">{title}</p>
-        <p className="text-2xl font-medium tabular-nums text-foreground">{value}</p>
+        <p className="text-[11px] sm:text-[13px] text-muted-foreground mb-1 truncate">{title}</p>
+        <p className="text-lg sm:text-xl lg:text-2xl font-medium tabular-nums text-foreground leading-tight truncate">{value}</p>
         {trend && (
-          <p className={cn("text-xs mt-1", trendColor)}>
+          <p className={cn("text-[11px] sm:text-xs mt-1", trendColor)}>
             {trend.direction === "up" ? "↑" : trend.direction === "down" ? "↓" : "—"}
             {" "}
             {trend.direction === "up" ? "+" : trend.direction === "down" ? "-" : ""}
