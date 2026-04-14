@@ -11,7 +11,7 @@ import * as turf from '@turf/turf';
 
 
 import { Ship } from "lucide-react";
-import { VesselCreator } from "@/components/maps/vessel-creator";
+
 import { RouteMapService, RouteMapTrip } from "@/services/route-map.service";
 import { useTenant } from "@/components/providers/tenant-provider";
 
@@ -234,13 +234,9 @@ export function FleetMapComponent() {
     return { DEFINED_ROUTES: definedRoutes, ROUTE_LIST: routeList, apiVessels: initialVessels };
   }, [apiTrips]);
 
-  // Combine local injected vessels (from creator) with API vessels
-  // Update state whenever apiVessels change, but preserve user-added ones
+  // Sync vessels from API data
   React.useEffect(() => {
-    setVessels(prev => {
-      const userAdded = prev.filter(v => v.id.startsWith('v-user-'));
-      return [...apiVessels, ...userAdded];
-    });
+    setVessels(apiVessels);
   }, [apiVessels]);
 
   // Generate curved sea routes — offset midpoint seaward so lines bow into water
@@ -276,9 +272,7 @@ export function FleetMapComponent() {
     }
   }, [selectedRouteId, showAllRoutes, DEFINED_ROUTES]);
 
-  const handleAddVessel = (newVessel: any) => {
-      setVessels(prev => [...prev, { ...newVessel, id: `v-user-${Date.now()}`, isArrived: false, position: null }]);
-  };
+
 
   // ANIMATION LOGIC: All Vessels
   // Status-based positioning rules:
@@ -580,13 +574,8 @@ export function FleetMapComponent() {
 
       {/* Simplified Search Only Overlay if needed, or keeping it clean */}
        <div className="absolute top-6 left-6 right-6 z-10 flex items-start justify-between pointer-events-none">
-            {/* Left Side: Vessel Creator */}
-            <div className="pointer-events-auto">
-                <VesselCreator routes={DEFINED_ROUTES} onAddVessel={handleAddVessel} />
-            </div>
-
             {/* Right Side: Map Controls */}
-             <div className="pointer-events-auto bg-white/90 backdrop-blur-md p-1.5 rounded-2xl flex gap-1 shadow-sm border border-white/50">
+             <div className="pointer-events-auto ml-auto bg-white/90 backdrop-blur-md p-1.5 rounded-2xl flex gap-1 shadow-sm border border-white/50">
                  <button className="p-2.5 rounded-xl hover:bg-secondary text-muted-foreground transition-colors" onClick={() => mapRef.current?.zoomIn()}>
                     <Plus className="size-5" />
                  </button>
