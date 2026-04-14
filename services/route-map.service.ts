@@ -25,9 +25,11 @@ export interface RouteMapResponse {
 }
 
 export const RouteMapService = {
-  getRouteMapData: async (baseUrl: string, serviceKey?: string): Promise<RouteMapResponse> => {
+  getRouteMapData: async (baseUrl: string, serviceKey?: string, date?: string): Promise<RouteMapResponse> => {
     try {
-      const response = await fetch(`${baseUrl}${API_ENDPOINTS.ROUTE_MAP}`, {
+      const url = new URL(`${baseUrl}${API_ENDPOINTS.ROUTE_MAP}`);
+      if (date) url.searchParams.set('date', date);
+      const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

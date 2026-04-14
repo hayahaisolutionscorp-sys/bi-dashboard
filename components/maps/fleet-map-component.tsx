@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState, useRef, useMemo } from 'react';
 import MapGL, { Marker, MapRef, Source, Layer } from 'react-map-gl/maplibre';
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Search, Layers, Plus, Minus, List, Sun, Wind, Waves, Map as MapIcon, TrendingUp, User, Package, Clock, X, Navigation, Anchor } from "lucide-react";
+import { Search, Plus, Minus, TrendingUp, User, Clock, X, Navigation, Anchor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as turf from '@turf/turf';
 // @ts-ignore — no type declarations for searoute-js
@@ -71,6 +71,18 @@ export function FleetMapComponent() {
   const [apiTrips, setApiTrips] = useState<RouteMapTrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [seaRoutesData, setSeaRoutesData] = useState<Record<string, { coords: number[][]; distance_km: number }> | null>(null);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [routeSearch, setRouteSearch] = useState<string>('');
+
+  // Keyboard shortcut: Escape → show all routes
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowAllRoutes(true);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Load pre-computed sea route waypoints
   React.useEffect(() => {
@@ -85,7 +97,7 @@ export function FleetMapComponent() {
     const fetchRoutes = async () => {
       if (!activeTenant?.api_base_url) return;
       try {
-        const response = await RouteMapService.getRouteMapData(activeTenant.api_base_url, activeTenant.service_key);
+        const response = await RouteMapService.getRouteMapData(activeTenant.api_base_url, activeTenant.service_key, selectedDate);
         setApiTrips(response.trips);
       } catch (error) {
         console.error("Failed to fetch route map data:", error);
@@ -95,10 +107,12 @@ export function FleetMapComponent() {
     };
     fetchRoutes();
     
-    // Optional polling for real-time updates
-    const intervalId = setInterval(fetchRoutes, 60000); // 1 minute refresh
-    return () => clearInterval(intervalId);
-  }, [activeTenant]);
+    // Only poll in real-time when viewing today
+    if (selectedDate === todayStr) {
+      const intervalId = setInterval(fetchRoutes, 60000);
+      return () => clearInterval(intervalId);
+    }
+  }, [activeTenant, selectedDate]);
 
   // Map API Data to Component Structure
   const { DEFINED_ROUTES, ROUTE_LIST, apiVessels } = useMemo(() => {
@@ -228,6 +242,8 @@ export function FleetMapComponent() {
             position: null,
             isArrived: false,
             tripStatus: trip.status,
+            utilization: trip.total_seats > 0 ? Math.round((trip.boarded_count / trip.total_seats) * 100) : 0,
+            scheduledDeparture: trip.scheduled_departure,
         };
      });
 
@@ -238,6 +254,13 @@ export function FleetMapComponent() {
   React.useEffect(() => {
     setVessels(apiVessels);
   }, [apiVessels]);
+
+  // Filter routes by search query
+  const filteredRouteList = useMemo(() =>
+    routeSearch.trim()
+      ? ROUTE_LIST.filter(r => r.name.toLowerCase().includes(routeSearch.toLowerCase()))
+      : ROUTE_LIST,
+  [ROUTE_LIST, routeSearch]);
 
   // Generate curved sea routes — offset midpoint seaward so lines bow into water
   const routeGeoJSON = useMemo(() => {
@@ -399,13 +422,15 @@ export function FleetMapComponent() {
 
   const onSelectRoute = (routeId: number) => {
     setSelectedRouteId(routeId);
-    setShowAllRoutes(false); // Disable "show all" when selecting a specific route
-    
-    // Optional: Fly to route center or bounds
+    setShowAllRoutes(false);
+    setRouteSearch('');
+
+    // Fly to the midpoint between origin and destination
     const route = DEFINED_ROUTES.find(r => r.id === routeId);
-    if (route && route.ports.length > 0) {
-        // Fly to first port (usually origin Cebu) for consistency, or standard view
-         mapRef.current?.flyTo({ center: [route.ports[0].lng, route.ports[0].lat], zoom: 7, duration: 1500 });
+    if (route && route.ports.length >= 2) {
+      const midLng = (route.ports[0].lng + route.ports[1].lng) / 2;
+      const midLat = (route.ports[0].lat + route.ports[1].lat) / 2;
+      mapRef.current?.flyTo({ center: [midLng, midLat], zoom: 7.5, duration: 1500 });
     }
   };
 
@@ -547,12 +572,29 @@ export function FleetMapComponent() {
                                             <span className="truncate max-w-[90px]">{vessel.destination}</span>
                                         </div>
                                     </div>
-                                    <div className="px-3 py-2 flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5">
-                                            <User className="size-3 text-muted-foreground" />
-                                            <span className="text-[10px] text-muted-foreground font-medium">{vessel.passengers}</span>
+                                    <div className="px-3 pt-2.5 pb-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-[10px] text-muted-foreground font-medium">Occupancy</span>
+                                            <span className="text-[10px] font-bold">{vessel.passengers} ({vessel.utilization}%)</span>
                                         </div>
-                                        <span className="text-[10px] font-semibold text-blue-600">{vessel.eta}</span>
+                                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                            <div
+                                                className={cn("h-full rounded-full transition-all",
+                                                    vessel.utilization >= 80 ? "bg-red-500" :
+                                                    vessel.utilization >= 50 ? "bg-amber-500" : "bg-emerald-500"
+                                                )}
+                                                style={{ width: `${vessel.utilization}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="px-3 py-2 flex items-center justify-between border-t border-border/40 mt-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <Clock className="size-3 text-muted-foreground" />
+                                            <span className="text-[10px] text-muted-foreground">
+                                                {vessel.scheduledDeparture ? new Date(vessel.scheduledDeparture).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                                            </span>
+                                        </div>
+                                        <span className="text-[10px] font-semibold text-blue-600">ETA: {vessel.eta}</span>
                                     </div>
                                 </div>
                             )}
@@ -563,167 +605,239 @@ export function FleetMapComponent() {
 
         </MapGL>
 
-      {/* Top Header Overlay - HIDDEN/COMMENTED OUT as requested */}
-      {/* 
-      <div className="absolute top-6 left-6 right-6 z-10 flex items-center justify-between pointer-events-none">
-        
-        ... buttons ...
-             
-      </div> 
-      */}
-
-      {/* Simplified Search Only Overlay if needed, or keeping it clean */}
-       <div className="absolute top-6 left-6 right-6 z-10 flex items-start justify-between pointer-events-none">
-            {/* Right Side: Map Controls */}
-             <div className="pointer-events-auto ml-auto bg-white/90 backdrop-blur-md p-1.5 rounded-2xl flex gap-1 shadow-sm border border-white/50">
-                 <button className="p-2.5 rounded-xl hover:bg-secondary text-muted-foreground transition-colors" onClick={() => mapRef.current?.zoomIn()}>
-                    <Plus className="size-5" />
-                 </button>
-                 <button className="p-2.5 rounded-xl hover:bg-secondary text-muted-foreground transition-colors" onClick={() => mapRef.current?.zoomOut()}>
-                    <Minus className="size-5" />
-                 </button>
-            </div>
-      </div>
+      {/* Loading overlay */}
+      {loading && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-xl pointer-events-none">
+          <div className="flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-xl border border-border/50">
+            <div className="animate-spin text-primary"><Ship className="size-5" /></div>
+            <span className="text-sm font-semibold text-muted-foreground">Loading routes…</span>
+          </div>
+        </div>
+      )}
 
       {/* Right Sidebar Overlay - Routes Selection */}
-      <aside className="absolute top-24 right-6 bottom-6 w-[340px] bg-white/90 backdrop-blur-md rounded-3xl flex flex-col z-10 shadow-xl shadow-blue-900/5 border border-white/50 overflow-hidden">
-         <div className="p-6 border-b border-border/50">
-             <div className="flex items-center justify-between mb-4">
-                 <h3 className="text-base font-extrabold">Routes</h3>
-                 <button 
-                    onClick={() => setShowAllRoutes(!showAllRoutes)}
-                    className={cn(
-                        "text-[10px] font-bold px-3 py-1.5 rounded-full transition-all border",
-                        showAllRoutes 
-                            ? "bg-primary text-white border-primary shadow-sm" 
-                            : "bg-white text-muted-foreground border-border/50 hover:bg-secondary"
-                    )}
-                 >
-                    {showAllRoutes ? "Showing All" : "Show All Routes"}
-                 </button>
-             </div>
-             
-             {!showAllRoutes && (
-                 <div className="flex items-center gap-1.5 mb-2 px-2.5 py-1 w-fit bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400">
-                     <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse"></span> ACTIVE
-                 </div>
-             )}
-             <p className="text-xs text-muted-foreground font-medium">Monitoring {ROUTE_LIST.length} active routes</p>
-         </div>
-         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-             {ROUTE_LIST.map((route) => {
-                 const detailedRoute = DEFINED_ROUTES.find(r => r.id === route.id);
-                 const isSelected = selectedRouteId === route.id && !showAllRoutes;
-                 
-                 return (
-                 <div 
-                    key={route.id} 
-                    className={cn(
-                        "border rounded-2xl p-4 transition-all cursor-pointer group hover:shadow-md",
-                        isSelected 
-                            ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20" 
-                            : "bg-white/50 border-border/50 hover:bg-white text-foreground"
-                    )}
-                    onClick={() => onSelectRoute(route.id)}
-                 >
-                     <div className="flex justify-between items-start">
-                         <div className="flex gap-3">
-                            <div className={cn(
-                                "p-1.5 rounded-full h-fit flex items-center justify-center",
-                                isSelected ? "bg-white/20" : "bg-blue-600/10"
-                            )}>
-                                <Ship className={cn("size-4", isSelected ? "text-white fill-white/50" : "text-blue-600 fill-blue-600/30")} />
+      <aside className="absolute top-6 right-6 bottom-6 w-[340px] bg-white/90 backdrop-blur-md rounded-3xl flex flex-col z-10 shadow-xl shadow-blue-900/5 border border-white/50 overflow-hidden">
+        {/* Sidebar Header */}
+        <div className="p-5 border-b border-border/40 space-y-3">
+          {/* Title + status badge row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-xl bg-primary/10">
+                <Navigation className="size-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold leading-none">Route Monitor</h3>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {ROUTE_LIST.length} route{ROUTE_LIST.length !== 1 ? 's' : ''} · {vessels.length} vessel{vessels.length !== 1 ? 's' : ''} active
+                </p>
+              </div>
+            </div>
+            {selectedDate === todayStr ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full border border-emerald-200">
+                <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                LIVE
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full border border-amber-200">
+                <Clock className="size-3" /> {selectedDate}
+              </div>
+            )}
+          </div>
+
+          {/* Date picker + zoom controls row */}
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={e => { setSelectedDate(e.target.value); setLoading(true); }}
+              className="flex-1 text-xs border border-border/60 rounded-xl px-3 py-1.5 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            {selectedDate !== todayStr && (
+              <button
+                onClick={() => { setSelectedDate(todayStr); setLoading(true); }}
+                className="text-[10px] font-bold px-2.5 py-1.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors whitespace-nowrap"
+              >
+                Today
+              </button>
+            )}
+            <div className="flex gap-1 shrink-0">
+              <button
+                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-white/60"
+                onClick={() => mapRef.current?.zoomIn()}
+                title="Zoom in"
+              >
+                <Plus className="size-3.5" />
+              </button>
+              <button
+                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-white/60"
+                onClick={() => mapRef.current?.zoomOut()}
+                title="Zoom out"
+              >
+                <Minus className="size-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Search + Show All row */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search routes…"
+                value={routeSearch}
+                onChange={e => setRouteSearch(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 text-xs border border-border/60 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              {routeSearch && (
+                <button
+                  onClick={() => setRouteSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => { setShowAllRoutes(!showAllRoutes); if (!showAllRoutes) setRouteSearch(''); }}
+              className={cn(
+                "text-[10px] font-bold px-2.5 py-1.5 rounded-xl transition-all border whitespace-nowrap shrink-0",
+                showAllRoutes
+                  ? "bg-primary text-white border-primary shadow-sm"
+                  : "bg-white text-muted-foreground border-border/50 hover:bg-secondary"
+              )}
+            >
+              {showAllRoutes ? "All" : "Show All"}
+            </button>
+          </div>
+        </div>
+
+        {/* Route list */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+          {loading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="border rounded-2xl p-4 animate-pulse bg-muted/30 border-border/30">
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-full bg-muted shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-muted rounded w-3/4" />
+                    <div className="h-2 bg-muted rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : filteredRouteList.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Anchor className="size-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-semibold text-muted-foreground">
+                {routeSearch ? `No routes matching "${routeSearch}"` : `No trips scheduled for ${selectedDate}`}
+              </p>
+              {routeSearch && (
+                <button onClick={() => setRouteSearch('')} className="mt-2 text-xs text-primary underline">
+                  Clear search
+                </button>
+              )}
+            </div>
+          ) : (
+            filteredRouteList.map((route) => {
+              const detailedRoute = DEFINED_ROUTES.find(r => r.id === route.id);
+              const isSelected = selectedRouteId === route.id && !showAllRoutes;
+              const activeVessels = vessels.filter(v => v.routeId === route.id && v.tripStatus === 'departed').length;
+
+              return (
+                <div
+                  key={route.id}
+                  className={cn(
+                    "border rounded-2xl p-4 transition-all cursor-pointer group hover:shadow-md",
+                    isSelected
+                      ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20"
+                      : "bg-white/50 border-border/50 hover:bg-white text-foreground"
+                  )}
+                  onClick={() => onSelectRoute(route.id)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-3 min-w-0">
+                      <div className={cn(
+                        "p-1.5 rounded-full h-fit flex items-center justify-center shrink-0",
+                        isSelected ? "bg-white/20" : "bg-blue-600/10"
+                      )}>
+                        <Ship className={cn("size-4", isSelected ? "text-white fill-white/50" : "text-blue-600 fill-blue-600/30")} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className={cn("text-sm font-bold truncate", isSelected ? "text-white" : "text-foreground")}>{route.name}</p>
+
+                        {isSelected && detailedRoute ? (
+                          <div className="mt-3 space-y-2 animate-in slide-in-from-left-2 fade-in duration-300">
+                            <div className="flex items-center gap-1.5">
+                              <TrendingUp className="size-3 text-white/70" />
+                              <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">YTD Revenue</span>
                             </div>
-                            <div>
-                                <p className={cn("text-sm font-bold", isSelected ? "text-white" : "text-foreground")}>{route.name}</p>
-                                
-                                {isSelected && detailedRoute?.revenue ? (
-                                    <div className="mt-3 space-y-2 animate-in slide-in-from-left-2 fade-in duration-300">
-                                        <div className="flex items-center gap-2">
-                                            <div className="bg-white/20 p-1 rounded-md">
-                                                <TrendingUp className="size-3 text-white" />
-                                            </div>
-                                            <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider">Revenue</span>
-                                        </div>
-                                        <div>
-                                            <div className="flex items-baseline gap-2">
-                                                <span className="text-xl font-black">{detailedRoute.revenue.current}</span>
-                                                 <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/20 text-white")}>
-                                                     {detailedRoute.revenue.trend > 0 ? "+" : ""}{detailedRoute.revenue.trend}%
-                                                 </span>
-                                            </div>
-                                            <p className="text-[10px] text-white/70 font-medium">vs {detailedRoute.revenue.last} last month</p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{route.vessels} Vessels Assigned</p>
-                                )}
+                            <span className="text-xl font-black block">{detailedRoute.revenue.current}</span>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-white/20 text-white">
+                                <User className="size-2.5" />{route.vessels} trip{route.vessels !== 1 ? 's' : ''}
+                              </span>
+                              {activeVessels > 0 && (
+                                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-emerald-500/30 text-emerald-100 border border-emerald-400/30">
+                                  <span className="size-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                                  {activeVessels} en route
+                                </span>
+                              )}
                             </div>
-                         </div>
-                         {isSelected && <div className="size-2 rounded-full bg-white animate-pulse mt-2" />}
-                     </div>
-                 </div>
-             )})}
-         </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className={cn("text-[10px] font-semibold", isSelected ? "text-white/70" : "text-muted-foreground")}>
+                              {route.vessels} trip{route.vessels !== 1 ? 's' : ''}
+                            </span>
+                            {activeVessels > 0 && (
+                              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                {activeVessels} en route
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {isSelected && <div className="size-2 rounded-full bg-white animate-pulse mt-2 shrink-0" />}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer legend */}
+        <div className="p-4 border-t border-border/40">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Legend</p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-blue-600 text-white">EN ROUTE</span>
+              <span className="text-[10px] text-muted-foreground">Departed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-amber-500 text-white">BOARDING</span>
+              <span className="text-[10px] text-muted-foreground">Onboarded</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-slate-500 text-white">PENDING</span>
+              <span className="text-[10px] text-muted-foreground">Pending</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-slate-400 text-white">AWAITING</span>
+              <span className="text-[10px] text-muted-foreground">Awaiting</span>
+            </div>
+          </div>
+          {!showAllRoutes && (
+            <p className="text-[10px] text-muted-foreground/50 mt-2.5">
+              Press <kbd className="px-1 py-0.5 rounded bg-muted text-[9px] font-mono">Esc</kbd> to show all routes
+            </p>
+          )}
+        </div>
       </aside>
 
-      {/* Bottom Right Weather Widget Overlay */}
-      <div className="absolute bottom-6 right-[380px] z-10 hidden lg:block">
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl px-6 py-4 flex items-center gap-8 shadow-lg border border-white/50">
-               <div className="flex items-center gap-3">
-                   <Sun className="text-amber-400 size-6 fill-current" />
-                   <div>
-                       <p className="text-xs font-bold leading-none">29°C</p>
-                       <p className="text-[10px] text-muted-foreground font-medium">Manila Bay</p>
-                   </div>
-               </div>
-               <div className="w-px h-8 bg-border"></div>
-               <div className="flex items-center gap-3">
-                   <Waves className="text-blue-400 size-6" />
-                   <div>
-                       <p className="text-xs font-bold leading-none">0.8m</p>
-                       <p className="text-[10px] text-muted-foreground font-medium">Swell Height</p>
-                   </div>
-               </div>
-               <div className="w-px h-8 bg-border"></div>
-               <div className="flex items-center gap-3">
-                   <Wind className="text-muted-foreground size-6" />
-                   <div>
-                       <p className="text-xs font-bold leading-none">14 km/h</p>
-                       <p className="text-[10px] text-muted-foreground font-medium">NE Wind</p>
-                   </div>
-               </div>
-          </div>
-      </div>
-      
-      {/* Bottom Left Legend */}
-      {(
-      <div className="absolute bottom-6 left-6 z-10 bg-white/90 backdrop-blur-md rounded-2xl p-4 flex flex-col gap-3 shadow-lg border border-white/50">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Map Legend</p>
-          <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-3">
-                  <span className="w-6 h-1 bg-primary rounded-full"></span>
-                  <span className="text-xs font-semibold">Active Route</span>
-              </div>
-              <div className="flex items-center gap-3">
-                  <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-blue-600 text-white border border-blue-700">EN ROUTE</span>
-                  <span className="text-xs font-semibold">Departed</span>
-              </div>
-              <div className="flex items-center gap-3">
-                  <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-amber-500 text-white border border-amber-600">BOARDING</span>
-                  <span className="text-xs font-semibold">Onboarded</span>
-              </div>
-              <div className="flex items-center gap-3">
-                  <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-slate-500 text-white border border-slate-600">PENDING</span>
-                  <span className="text-xs font-semibold">Pending</span>
-              </div>
-              <div className="flex items-center gap-3">
-                  <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-slate-400 text-white border border-slate-500">AWAITING</span>
-                  <span className="text-xs font-semibold">Awaiting</span>
-              </div>
-          </div>
-      </div>
-      )}
+
     </div>
   );
 }

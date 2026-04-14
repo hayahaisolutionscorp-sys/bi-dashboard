@@ -165,7 +165,9 @@ export function AppNav({ isMobile }: AppNavProps) {
               </Avatar>
               <div className={cn("hidden flex-1 min-w-0 text-left", !isCollapsed && "md:block", isMobile && "block")}>
                 <p className="text-xs font-medium truncate text-foreground">
-                  {user?.first_name ? `${user.first_name} ${user.last_name || ""}` : (user?.name || "User")}
+                  {user?.first_name
+                    ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ''}`
+                    : (user?.name || user?.email || 'User')}
                 </p>
                 <p className="text-[11px] text-muted-foreground truncate">{user?.role || "Executive"}</p>
               </div>
@@ -176,12 +178,14 @@ export function AppNav({ isMobile }: AppNavProps) {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-7 w-7 rounded-md">
-                  <AvatarImage src={user?.email === "admin@ayahay.com" ? "https://lh3.googleusercontent.com/aida-public/AB6AXuARVrNVO7BNdOULCPAUPGEjeVDRD9yeFmcbvwCRRhx3AUZzmvt_rR1RG9PhiL0UJ7QvUvjltX0GmzWPX7ApIvlpskLNZHlJ5QGsoALBl5rp87XuL_civpgJU1EVTDjE8VNX_g8rB6tzgUKuhFA418qe8MTSvy_xuLvXZme7H8WHxOasrOiE8-bQN9kMmLzWd1su-wQ7HEF2VPD7kp2rvB40GLemOquKndY9fq4vzWgbYKjB0vH89_saV2KN8SRyjKZ-oDHUbqSv-A" : ""} alt={user?.name || "User"} />
+                  <AvatarImage src={user?.email === "admin@ayahay.com" ? "https://lh3.googleusercontent.com/aida-public/AB6AXuARVrNVO7BNdOULCPAUPGEjeVDRD9yeFmcbvwCRRhx3AUZzmvt_rR1RG9PhiL0UJ7QvUvjltX0GmzWPX7ApIvlpskLNZHlJ5QGsoALBl5rp87XuL_civpgJU1EVTDjE8VNX_g8rB6tzgUKuhFA418qe8MTSvy_xuLvXZme7H8WHxOasrOiE8-bQN9kMmLzWd1su-wQ7HEF2VPD7kp2rvB40GLemOquKndY9fq4vzWgbYKjB0vH89_saV2KN8SRyjKZ-oDHUbqSv-A" : ""} alt={user?.first_name ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ''}` : (user?.email || 'User')} />
                   <AvatarFallback className="rounded-md">{(user?.first_name?.[0] || "") + (user?.last_name?.[0] || "") || "US"}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
-                    {user?.first_name ? `${user.first_name} ${user.last_name || ""}` : (user?.name || "User")}
+                    {user?.first_name
+                      ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ''}`
+                      : (user?.name || user?.email || 'User')}
                   </span>
                   <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
                 </div>
