@@ -25,7 +25,7 @@ export function DateRangePicker({
   className,
   date,
   onDateChange,
-  allowFuture = false,
+  allowFuture = true,
 }: DateRangePickerProps) {
 
   return (
