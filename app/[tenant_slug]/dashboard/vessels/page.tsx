@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { SimpleKpiCard } from "@/components/charts/simple-kpi-card";
 import { VesselsService } from "@/services/vessels.service";
 import { VesselsResponse } from "@/types/vessels";
@@ -106,6 +106,27 @@ export default function VesselsPage() {
 
   const totalFleetPages = data?.fleetLoadFactor ? Math.ceil(data.fleetLoadFactor.length / itemsPerPage) : 0;
 
+  // Derive correct fleet counts from successfulTripsCount (pre-seeded with all registered vessels),
+  // overriding kpiData values when the backend returns 0 due to no trips in the period.
+  const derivedKpiData = useMemo(() => {
+    if (!data) return [];
+    const stc = data.successfulTripsCount ?? [];
+    const computedTotalFleet = stc.length;
+    const computedActiveFleet = stc.filter(
+      v => v.successful_trips.length + (v.cancelled_trips?.length ?? 0) > 0
+    ).length;
+    console.log("Vessels:", stc.map(v => v.vessel_name));
+    console.log("Total Fleet:", computedTotalFleet);
+    console.log("Active Fleet:", computedActiveFleet);
+    return data.kpiData.map(kpi => {
+      if (kpi.title === "Total Fleet" && computedTotalFleet > 0)
+        return { ...kpi, value: computedTotalFleet };
+      if (kpi.title === "Active Fleet")
+        return { ...kpi, value: computedActiveFleet };
+      return kpi;
+    });
+  }, [data]);
+
 
   if (error) {
     return (
@@ -147,7 +168,7 @@ export default function VesselsPage() {
               <Skeleton key={i} className="h-20 w-full rounded-xl" />
             ))
           ) : (
-            (data.kpiData || []).map((kpi, idx) => {
+            (derivedKpiData).map((kpi, idx) => {
               const colors = ["text-blue-500", "text-green-500", "text-orange-500", "text-purple-500", "text-yellow-500", "text-red-500"];
               return (
                 <SimpleKpiCard

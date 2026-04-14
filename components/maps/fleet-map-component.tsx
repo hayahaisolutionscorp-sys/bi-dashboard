@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useState, useRef, useMemo } from 'react';
 import MapGL, { Marker, MapRef, Source, Layer } from 'react-map-gl/maplibre';
-import { Search, Plus, Minus, TrendingUp, User, Clock, X, Navigation, Anchor } from "lucide-react";
+import { Search, Plus, Minus, TrendingUp, User, Clock, X, Navigation, Anchor, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as turf from '@turf/turf';
 // @ts-ignore — no type declarations for searoute-js
@@ -74,6 +74,7 @@ export function FleetMapComponent() {
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [routeSearch, setRouteSearch] = useState<string>('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
   // Keyboard shortcut: Escape → show all routes
   React.useEffect(() => {
@@ -128,12 +129,21 @@ export function FleetMapComponent() {
 
     // Seed with all tenant-configured routes (from API) so port pins always show
     // even when there are no trips on the selected date.
-    // sea-routes.json is only used for waypoints (curved paths), not for deciding which ports to show.
-    apiRoutes.forEach(r => {
-      if (!routeGroups.has(r.route_name)) {
-        routeGroups.set(r.route_name, []);
-      }
-    });
+    // If the API hasn't deployed the routes field yet, fall back to sea-routes.json keys.
+    if (apiRoutes.length > 0) {
+      apiRoutes.forEach(r => {
+        if (!routeGroups.has(r.route_name)) {
+          routeGroups.set(r.route_name, []);
+        }
+      });
+    } else if (seaRoutesData) {
+      // Fallback: old API (no routes field) — seed from static sea-routes.json
+      Object.keys(seaRoutesData).forEach(routeName => {
+        if (!routeGroups.has(routeName)) {
+          routeGroups.set(routeName, []);
+        }
+      });
+    }
 
     if (!routeGroups.size) return { DEFINED_ROUTES: [], ROUTE_LIST: [], apiVessels: [] };
 
@@ -627,10 +637,38 @@ export function FleetMapComponent() {
       )}
 
       {/* Right Sidebar Overlay - Routes Selection */}
-      <aside className="absolute top-6 right-6 bottom-6 w-[340px] bg-white/90 backdrop-blur-md rounded-3xl flex flex-col z-10 shadow-xl shadow-blue-900/5 border border-white/50 overflow-hidden">
+      <aside className={cn(
+        "absolute top-6 right-6 bottom-6 bg-white/90 backdrop-blur-md rounded-3xl flex flex-col z-10 shadow-xl shadow-blue-900/5 border border-white/50 overflow-hidden transition-all duration-300",
+        isSidebarOpen ? "w-[340px]" : "w-[48px]"
+      )}>
+        {/* Collapse toggle — always visible */}
+        <button
+          onClick={() => setIsSidebarOpen(v => !v)}
+          className={cn(
+            "absolute top-4 z-20 flex items-center justify-center size-7 rounded-full bg-white border border-border/50 shadow-sm hover:bg-secondary transition-all",
+            isSidebarOpen ? "right-4" : "left-1/2 -translate-x-1/2"
+          )}
+          title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          <ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", isSidebarOpen ? "rotate-0" : "rotate-180")} />
+        </button>
+
+        {/* Collapsed state — just show icon */}
+        {!isSidebarOpen && (
+          <div className="flex flex-col items-center pt-14 gap-3 px-2">
+            <div className="p-1.5 rounded-xl bg-primary/10">
+              <Navigation className="size-4 text-primary" />
+            </div>
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}>
+              Route Monitor
+            </span>
+          </div>
+        )}
+
+        {/* Expanded sidebar content */}
+        {isSidebarOpen && (<>
         {/* Sidebar Header */}
-        <div className="p-5 border-b border-border/40 space-y-3">
-          {/* Title + status badge row */}
+        <div className="p-5 pt-12 border-b border-border/40 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-xl bg-primary/10">
@@ -846,6 +884,7 @@ export function FleetMapComponent() {
             </p>
           )}
         </div>
+        </>)}
       </aside>
 
 
