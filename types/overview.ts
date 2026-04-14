@@ -15,7 +15,8 @@ export interface RevenueTrendItem {
 }
 
 export interface RevenueByRouteItem {
-  canonical_route_name: string;
+  canonical_route_name?: string;
+  route_name?: string;
   total_revenue: number;
 }
 
