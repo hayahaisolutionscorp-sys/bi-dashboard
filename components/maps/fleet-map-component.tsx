@@ -11,7 +11,7 @@ import * as turf from '@turf/turf';
 
 import { Ship } from "lucide-react";
 
-import { RouteMapService, RouteMapTrip } from "@/services/route-map.service";
+import { RouteMapService, RouteMapTrip, RouteMapRoute } from "@/services/route-map.service";
 import { useTenant } from "@/components/providers/tenant-provider";
 
 // Mock Data
@@ -68,6 +68,7 @@ export function FleetMapComponent() {
   const animationRef = useRef<number>(0);
 
   const [apiTrips, setApiTrips] = useState<RouteMapTrip[]>([]);
+  const [apiRoutes, setApiRoutes] = useState<RouteMapRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [seaRoutesData, setSeaRoutesData] = useState<Record<string, { coords: number[][]; distance_km: number }> | null>(null);
   const todayStr = new Date().toISOString().split('T')[0];
@@ -98,6 +99,7 @@ export function FleetMapComponent() {
       try {
         const response = await RouteMapService.getRouteMapData(activeTenant.api_base_url, activeTenant.service_key, selectedDate);
         setApiTrips(response.trips);
+        setApiRoutes(response.routes ?? []);
       } catch (error) {
         console.error("Failed to fetch route map data:", error);
       } finally {
@@ -124,23 +126,25 @@ export function FleetMapComponent() {
       routeGroups.get(trip.route_name)!.push(trip);
     });
 
-    // Also include all routes that exist in sea-routes.json so port pins always show
-    if (seaRoutesData) {
-      Object.keys(seaRoutesData).forEach(routeName => {
-        if (!routeGroups.has(routeName)) {
-          routeGroups.set(routeName, []);
-        }
-      });
-    }
+    // Seed with all tenant-configured routes (from API) so port pins always show
+    // even when there are no trips on the selected date.
+    // sea-routes.json is only used for waypoints (curved paths), not for deciding which ports to show.
+    apiRoutes.forEach(r => {
+      if (!routeGroups.has(r.route_name)) {
+        routeGroups.set(r.route_name, []);
+      }
+    });
 
     if (!routeGroups.size) return { DEFINED_ROUTES: [], ROUTE_LIST: [], apiVessels: [] };
 
     const definedRoutes = Array.from(routeGroups.entries()).map(([routeName, trips], index) => {
        const firstTrip = trips[0];
-       const srcLat = firstTrip?.src_port_latitude;
-       const srcLng = firstTrip?.src_port_longitude;
-       const destLat = firstTrip?.dest_port_latitude;
-       const destLng = firstTrip?.dest_port_longitude;
+       // Prefer trip-level coordinates; fall back to the static route entry from the API
+       const configuredRoute = apiRoutes.find(r => r.route_name === routeName);
+       const srcLat  = firstTrip?.src_port_latitude  ?? configuredRoute?.src_port_latitude;
+       const srcLng  = firstTrip?.src_port_longitude ?? configuredRoute?.src_port_longitude;
+       const destLat = firstTrip?.dest_port_latitude  ?? configuredRoute?.dest_port_latitude;
+       const destLng = firstTrip?.dest_port_longitude ?? configuredRoute?.dest_port_longitude;
 
        const hasRealCoords = srcLat != null && srcLng != null && destLat != null && destLng != null;
 
@@ -255,7 +259,7 @@ export function FleetMapComponent() {
      });
 
     return { DEFINED_ROUTES: definedRoutes, ROUTE_LIST: routeList, apiVessels: initialVessels };
-  }, [apiTrips, seaRoutesData]);
+  }, [apiTrips, apiRoutes, seaRoutesData]);
 
   // Sync vessels from API data
   React.useEffect(() => {

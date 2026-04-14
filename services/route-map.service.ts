@@ -20,8 +20,18 @@ export interface RouteMapTrip {
   dest_port_longitude: number | null;
 }
 
+export interface RouteMapRoute {
+  route_name: string;
+  src_port_latitude: number | null;
+  src_port_longitude: number | null;
+  dest_port_latitude: number | null;
+  dest_port_longitude: number | null;
+}
+
 export interface RouteMapResponse {
   trips: RouteMapTrip[];
+  /** All routes configured for this tenant, regardless of trip activity on the selected date */
+  routes: RouteMapRoute[];
 }
 
 export const RouteMapService = {
