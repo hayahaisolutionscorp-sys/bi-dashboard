@@ -1,76 +1,41 @@
 "use client";
 
 import * as React from 'react';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import MapGL, { Marker, MapRef, Source, Layer } from 'react-map-gl/maplibre';
-import { Search, Plus, Minus, TrendingUp, User, Clock, X, Navigation, Anchor, ChevronRight } from "lucide-react";
+import { Search, Plus, Minus, TrendingUp, User, Clock, X, Navigation, Anchor, ChevronRight, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as turf from '@turf/turf';
-// @ts-ignore — no type declarations for searoute-js
-
-
 import { Ship } from "lucide-react";
 
 import { RouteMapService, RouteMapTrip, RouteMapRoute } from "@/services/route-map.service";
+import { routePathsService, RoutePathRecord } from "@/services/route-paths.service";
 import { useTenant } from "@/components/providers/tenant-provider";
-
-// Mock Data
-
-
-import { routes as SERVICE_ROUTES_RAW } from '@/mock-data/route-service-2';
-
-// Transform Service Data to Component Structure
-const SERVICE_ROUTES = SERVICE_ROUTES_RAW.map((route, index) => {
-    const coords = route.coordinates;
-    const startPoint = coords[0];
-    const endPoint = coords[coords.length - 1];
-    
-    // Attempt to infer port names from route name 
-    // e.g. "Cebu - Manila" -> Start: Cebu, End: Manila
-    const parts = route.route_name.split('-').map(s => s.trim());
-    const startName = parts[0] ? `${parts[0]} Port` : "Origin Port";
-    const endName = parts[1] ? `${parts[1]} Port` : "Destination Port";
-
-    return {
-        id: index + 1,
-        name: route.route_name,
-        vessels: Math.floor(Math.random() * 4) + 1, // Mock vessel count
-        coords: coords,
-        ports: [
-            { name: startName, lat: startPoint[1], lng: startPoint[0] },
-            { name: endName, lat: endPoint[1], lng: endPoint[0] }
-        ],
-        // Mock revenue data for UI completeness
-        revenue: { 
-            current: `₱${(Math.random() * 300000 + 100000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`, 
-            last: `₱${(Math.random() * 300000 + 100000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`, 
-            trend: Number((Math.random() * 20 - 5).toFixed(1)) 
-        }
-    };
-});
-
-const ROUTE_LIST = SERVICE_ROUTES.map(r => ({ id: r.id, name: r.name, vessels: r.vessels }));
 
 
 
 export function FleetMapComponent() {
   const { activeTenant } = useTenant();
   const mapRef = useRef<MapRef>(null);
-  const [selectedRouteId, setSelectedRouteId] = useState<number>(1); // Default to Cebu-Manila
+  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
   const [showAllRoutes, setShowAllRoutes] = useState<boolean>(false);
   
   // Vessel Animation State
   // Initial demo vessel: Cebu - Manila (ID 5: Index 4)
   const [vessels, setVessels] = useState<any[]>([]);
   const [hoveredVesselId, setHoveredVesselId] = useState<string | null>(null);
-  
-  const activeRouteRef = useRef<any>(null);
   const animationRef = useRef<number>(0);
 
   const [apiTrips, setApiTrips] = useState<RouteMapTrip[]>([]);
   const [apiRoutes, setApiRoutes] = useState<RouteMapRoute[]>([]);
+  const [routePaths, setRoutePaths] = useState<RoutePathRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seaRoutesData, setSeaRoutesData] = useState<Record<string, { coords: number[][]; distance_km: number }> | null>(null);
+  const [hoveredRouteInfo, setHoveredRouteInfo] = useState<{
+    x: number;
+    y: number;
+    routeName: string;
+    distanceKm?: number;
+  } | null>(null);
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [routeSearch, setRouteSearch] = useState<string>('');
@@ -85,39 +50,63 @@ export function FleetMapComponent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Load pre-computed sea route waypoints
-  React.useEffect(() => {
-    fetch('/sea-routes.json')
-      .then(r => r.json())
-      .then(data => setSeaRoutesData(data))
-      .catch(() => console.warn('sea-routes.json not found, using fallback routing'));
-  }, []);
-
-  // Fetch API Data
-  React.useEffect(() => {
-    const fetchRoutes = async () => {
-      if (!activeTenant?.api_base_url) return;
-      try {
-        const response = await RouteMapService.getRouteMapData(activeTenant.api_base_url, activeTenant.service_key, selectedDate);
-        setApiTrips(response.trips);
-        setApiRoutes(response.routes ?? []);
-      } catch (error) {
-        console.error("Failed to fetch route map data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRoutes();
-    
-    // Only poll in real-time when viewing today
-    if (selectedDate === todayStr) {
-      const intervalId = setInterval(fetchRoutes, 60000);
-      return () => clearInterval(intervalId);
+  const fetchRouteData = useCallback(async (forceRefresh = false) => {
+    if (!activeTenant?.api_base_url) {
+      setApiTrips([]);
+      setApiRoutes([]);
+      setRoutePaths([]);
+      setLoading(false);
+      return;
     }
-  }, [activeTenant, selectedDate]);
+
+    setLoading(true);
+    try {
+      const [routeMapResponse, routePathsResponse] = await Promise.all([
+        RouteMapService.getRouteMapData(activeTenant.api_base_url, activeTenant.service_key, selectedDate),
+        routePathsService.getRoutePaths(activeTenant.api_base_url, activeTenant.service_key, forceRefresh),
+      ]);
+
+      setApiTrips(routeMapResponse.trips ?? []);
+      setApiRoutes(routeMapResponse.routes ?? []);
+      setRoutePaths(routePathsResponse ?? []);
+    } catch (error) {
+      console.error("Failed to fetch route map data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTenant?.api_base_url, activeTenant?.service_key, selectedDate]);
+
+  React.useEffect(() => {
+    void fetchRouteData();
+
+    const handleFocus = () => {
+      void fetchRouteData(true);
+    };
+    window.addEventListener('focus', handleFocus);
+
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    if (selectedDate === todayStr) {
+      intervalId = setInterval(() => {
+        void fetchRouteData(true);
+      }, 60000);
+    }
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [fetchRouteData, selectedDate, todayStr]);
+
+  const handleRefresh = useCallback(() => {
+    void fetchRouteData(true);
+  }, [fetchRouteData]);
 
   // Map API Data to Component Structure
   const { DEFINED_ROUTES, ROUTE_LIST, apiVessels } = useMemo(() => {
+    const routePathByPair = new Map(
+      routePaths.map((path) => [`${path.src_port_id}:${path.dest_port_id}`, path] as const),
+    );
+
     // Group trips by route (may be empty if no trips today)
     const routeGroups = new Map<string, RouteMapTrip[]>();
     apiTrips.forEach(trip => {
@@ -129,28 +118,31 @@ export function FleetMapComponent() {
 
     // Seed with all tenant-configured routes (from API) so port pins always show
     // even when there are no trips on the selected date.
-    // If the API hasn't deployed the routes field yet, fall back to sea-routes.json keys.
-    if (apiRoutes.length > 0) {
-      apiRoutes.forEach(r => {
-        if (!routeGroups.has(r.route_name)) {
-          routeGroups.set(r.route_name, []);
-        }
-      });
-    } else if (seaRoutesData) {
-      // Fallback: old API (no routes field) — seed from static sea-routes.json
-      Object.keys(seaRoutesData).forEach(routeName => {
-        if (!routeGroups.has(routeName)) {
-          routeGroups.set(routeName, []);
-        }
-      });
-    }
+    apiRoutes.forEach(r => {
+      if (!routeGroups.has(r.route_name)) {
+        routeGroups.set(r.route_name, []);
+      }
+    });
+
+    // Also merge saved route paths so manually created paths appear even when
+    // they are not part of the configured route list or have no trips yet.
+    routePaths.forEach((path) => {
+      const routeName = path.route_name ?? (path.src_port?.name && path.dest_port?.name
+        ? `${path.src_port.name} - ${path.dest_port.name}`
+        : null);
+      if (routeName && !routeGroups.has(routeName)) {
+        routeGroups.set(routeName, []);
+      }
+    });
 
     if (!routeGroups.size) return { DEFINED_ROUTES: [], ROUTE_LIST: [], apiVessels: [] };
 
     const definedRoutes = Array.from(routeGroups.entries()).map(([routeName, trips], index) => {
        const firstTrip = trips[0];
-       // Prefer trip-level coordinates; fall back to the static route entry from the API
        const configuredRoute = apiRoutes.find(r => r.route_name === routeName);
+       const routePath = configuredRoute?.src_port_id != null && configuredRoute?.dest_port_id != null
+         ? routePathByPair.get(`${configuredRoute.src_port_id}:${configuredRoute.dest_port_id}`)
+         : routePaths.find((path) => path.route_name === routeName);
        const srcLat  = firstTrip?.src_port_latitude  ?? configuredRoute?.src_port_latitude;
        const srcLng  = firstTrip?.src_port_longitude ?? configuredRoute?.src_port_longitude;
        const destLat = firstTrip?.dest_port_latitude  ?? configuredRoute?.dest_port_latitude;
@@ -160,15 +152,16 @@ export function FleetMapComponent() {
 
        let coords: number[][];
 
-       // 1. Check pre-computed sea routes (from sea-routes.json loaded via seaRoutesData)
-       const seaRouteMatch = seaRoutesData?.[routeName];
-       if (seaRouteMatch && seaRouteMatch.coords?.length >= 2) {
-         coords = seaRouteMatch.coords;
+       // 1. Prefer pre-computed sea route coords returned by BI route map.
+       // 2. Fall back to the route-paths endpoint so newly saved paths appear without static data.
+       const apiRouteCoords = firstTrip?.route_coords ?? configuredRoute?.route_coords ?? routePath?.coords;
+       if (apiRouteCoords && apiRouteCoords.length >= 2) {
+         coords = apiRouteCoords;
        } else if (hasRealCoords) {
-         // 2. Use real port coordinates as straight line fallback
+         // Final fallback: draw a straight line only when the tenant has no saved sea path yet.
          coords = [[srcLng!, srcLat!], [destLng!, destLat!]];
        } else {
-         // 3. Skip routes with no coords at all (no sea-routes.json entry and no DB coords)
+         // Skip routes with no renderable geometry at all.
          return null;
        }
 
@@ -176,21 +169,24 @@ export function FleetMapComponent() {
        const endPoint = coords[coords.length - 1];
 
        const parts = routeName.split('-').map(s => s.trim());
-       const startName = parts[0] ? `${parts[0]} Port` : "Origin Port";
-       const endName = parts[1] ? `${parts[1]} Port` : "Destination Port";
+       const startName = routePath?.src_port?.name ?? (parts[0] || "Origin Port");
+       const endName = routePath?.dest_port?.name ?? (parts[1] || "Destination Port");
 
        // Aggregate revenue for the route based on the first trip's YTD data
        const ytdRevenue = trips[0]?.route_ytd_revenue || 0;
+       const distanceKm = routePath?.distance_km
+         ?? (firstTrip?.distance_nm != null ? Number(firstTrip.distance_nm) * 1.852 : undefined)
+         ?? (configuredRoute?.distance_nm != null ? Number(configuredRoute.distance_nm) * 1.852 : undefined);
 
        // Pre-compute smoothed route for animation
        let curvedCoords: number[][];
        try {
            if (coords.length >= 3) {
-               // Multi-point waypoints (from sea-routes.json or mock) — smooth with Bezier
+               // Multi-point saved sea routes — smooth with Bezier for vessel animation.
                const curved = turf.bezierSpline(turf.lineString(coords), { resolution: 10000, sharpness: 0.85 });
                curvedCoords = curved.geometry.coordinates;
            } else {
-               // 2-point straight line — use as-is (shouldn't happen with sea-routes.json)
+               // 2-point route — use as-is.
                curvedCoords = coords;
            }
        } catch {
@@ -203,6 +199,7 @@ export function FleetMapComponent() {
            vessels: trips.length,
            coords: coords,
            curvedCoords: curvedCoords,
+             distanceKm,
            ports: [
                { name: startName, lat: startPoint[1], lng: startPoint[0] },
                { name: endName, lat: endPoint[1], lng: endPoint[0] }
@@ -269,7 +266,19 @@ export function FleetMapComponent() {
      });
 
     return { DEFINED_ROUTES: definedRoutes, ROUTE_LIST: routeList, apiVessels: initialVessels };
-  }, [apiTrips, apiRoutes, seaRoutesData]);
+  }, [apiTrips, apiRoutes, routePaths]);
+
+  React.useEffect(() => {
+    if (DEFINED_ROUTES.length === 0) {
+      setSelectedRouteId(null);
+      setShowAllRoutes(false);
+      return;
+    }
+
+    if (selectedRouteId == null || !DEFINED_ROUTES.some((route) => route.id === selectedRouteId)) {
+      setSelectedRouteId(DEFINED_ROUTES[0].id);
+    }
+  }, [DEFINED_ROUTES, selectedRouteId]);
 
   // Sync vessels from API data
   React.useEffect(() => {
@@ -292,17 +301,32 @@ export function FleetMapComponent() {
 
         const features = routesToShow.map(route => {
             const coords = route.coords;
-            if (coords.length < 2) return turf.lineString(coords);
+            if (coords.length < 2) return turf.lineString(coords, {
+              routeId: route.id,
+              routeName: route.name,
+              distanceKm: route.distanceKm ?? null,
+            });
 
             try {
-                if (coords.length >= 3) {
-                    // Multi-point waypoints — smooth with Bezier
-                    return turf.bezierSpline(turf.lineString(coords), { resolution: 10000, sharpness: 0.85 });
-                }
-                // 2-point straight line
-                return turf.lineString(coords);
+              const feature = coords.length >= 3
+                ? turf.bezierSpline(turf.lineString(coords), { resolution: 10000, sharpness: 0.85 })
+                : turf.lineString(coords);
+
+                return {
+                  ...feature,
+                  properties: {
+                    ...(feature.properties ?? {}),
+                    routeId: route.id,
+                    routeName: route.name,
+                    distanceKm: route.distanceKm ?? null,
+                  },
+                };
             } catch {
-                return turf.lineString(coords);
+                return turf.lineString(coords, {
+                  routeId: route.id,
+                  routeName: route.name,
+                  distanceKm: route.distanceKm ?? null,
+                });
             }
         });
 
@@ -315,6 +339,24 @@ export function FleetMapComponent() {
         return { type: "FeatureCollection" as const, features: [] };
     }
   }, [selectedRouteId, showAllRoutes, DEFINED_ROUTES]);
+
+  const handleRouteHover = useCallback((event: any) => {
+    const feature = event.features?.find((item: any) => item.layer?.id === 'routes-hit-layer');
+    if (!feature) {
+      setHoveredRouteInfo(null);
+      return;
+    }
+
+    setHoveredRouteInfo({
+      x: event.point.x,
+      y: event.point.y,
+      routeName: String(feature.properties?.routeName ?? 'Sea Route'),
+      distanceKm:
+        feature.properties?.distanceKm != null
+          ? Number(feature.properties.distanceKm)
+          : undefined,
+    });
+  }, []);
 
 
 
@@ -476,6 +518,9 @@ export function FleetMapComponent() {
             style={{width: "100%", height: "100%"}}
             mapStyle="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
             attributionControl={false}
+          interactiveLayerIds={["routes-hit-layer"]}
+          onMouseMove={handleRouteHover}
+          onMouseLeave={() => setHoveredRouteInfo(null)}
         >
             {/* ROUTES */}
             <Source id="routes-source" type="geojson" data={routeGeoJSON}>
@@ -493,6 +538,19 @@ export function FleetMapComponent() {
                         "line-join": "round"
                     }}
                 />
+                    <Layer
+                      id="routes-hit-layer"
+                      type="line"
+                      paint={{
+                        "line-color": "#3f68e4",
+                        "line-width": 14,
+                        "line-opacity": 0,
+                      }}
+                      layout={{
+                        "line-cap": "round",
+                        "line-join": "round"
+                      }}
+                    />
             </Source>
             
             {/* Markers for Route Endpoints */}
@@ -626,12 +684,27 @@ export function FleetMapComponent() {
 
         </MapGL>
 
+      {hoveredRouteInfo && (
+        <div
+          className="absolute z-20 pointer-events-none rounded-xl border border-border/60 bg-white/95 px-3 py-2 shadow-xl backdrop-blur-sm"
+          style={{ left: hoveredRouteInfo.x + 16, top: hoveredRouteInfo.y + 16 }}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Active Sea Route</p>
+          <p className="text-sm font-semibold text-foreground">{hoveredRouteInfo.routeName}</p>
+          <p className="text-xs text-muted-foreground">
+            {hoveredRouteInfo.distanceKm != null
+              ? `${hoveredRouteInfo.distanceKm.toFixed(1)} km`
+              : 'Distance unavailable'}
+          </p>
+        </div>
+      )}
+
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-xl pointer-events-none">
           <div className="flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-xl border border-border/50">
             <div className="animate-spin text-primary"><Ship className="size-5" /></div>
-            <span className="text-sm font-semibold text-muted-foreground">Loading routes…</span>
+            <span className="text-sm font-semibold text-muted-foreground">Loading sea routes…</span>
           </div>
         </div>
       )}
@@ -677,7 +750,7 @@ export function FleetMapComponent() {
               <div>
                 <h3 className="text-sm font-extrabold leading-none">Route Monitor</h3>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {ROUTE_LIST.length} route{ROUTE_LIST.length !== 1 ? 's' : ''} · {vessels.length} vessel{vessels.length !== 1 ? 's' : ''} active
+                  {ROUTE_LIST.length} sea route{ROUTE_LIST.length !== 1 ? 's' : ''} · {vessels.length} vessel{vessels.length !== 1 ? 's' : ''} active
                 </p>
               </div>
             </div>
@@ -710,6 +783,13 @@ export function FleetMapComponent() {
               </button>
             )}
             <div className="flex gap-1 shrink-0">
+              <button
+                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-white/60"
+                onClick={handleRefresh}
+                title="Refresh sea routes"
+              >
+                <RotateCw className={cn("size-3.5", loading && "animate-spin")} />
+              </button>
               <button
                 className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-white/60"
                 onClick={() => mapRef.current?.zoomIn()}
@@ -779,8 +859,17 @@ export function FleetMapComponent() {
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Anchor className="size-10 text-muted-foreground/30 mb-3" />
               <p className="text-sm font-semibold text-muted-foreground">
-                {routeSearch ? `No routes matching "${routeSearch}"` : `No trips scheduled for ${selectedDate}`}
+                {routeSearch
+                  ? `No routes matching "${routeSearch}"`
+                  : ROUTE_LIST.length === 0
+                    ? 'No route paths available'
+                    : `No route paths available for ${selectedDate}`}
               </p>
+              {!routeSearch && ROUTE_LIST.length === 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Create or update route paths in TMS and they will appear here automatically.
+                </p>
+              )}
               {routeSearch && (
                 <button onClick={() => setRouteSearch('')} className="mt-2 text-xs text-primary underline">
                   Clear search
@@ -859,7 +948,11 @@ export function FleetMapComponent() {
 
         {/* Footer legend */}
         <div className="p-4 border-t border-border/40">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Legend</p>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Active Sea Routes</p>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="h-0.5 w-8 rounded-full bg-blue-600" />
+            <span className="text-[10px] text-muted-foreground">Dynamic route paths from backend coordinates</span>
+          </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
             <div className="flex items-center gap-2">
               <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-blue-600 text-white">EN ROUTE</span>

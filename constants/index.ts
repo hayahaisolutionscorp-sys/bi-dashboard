@@ -25,4 +25,5 @@ export const API_ENDPOINTS = {
 	TODAY_SCHEDULE: "/bi/today-schedule",
 	CAPACITY_HEATMAP: "/bi/capacity-heatmap",
 	TOP_AGENTS: "/bi/top-agents",
+	ROUTE_SEA_PATHS: "/public/routes/sea-paths",
 } as const

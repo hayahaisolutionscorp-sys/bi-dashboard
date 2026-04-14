@@ -18,14 +18,24 @@ export interface RouteMapTrip {
   src_port_longitude: number | null;
   dest_port_latitude: number | null;
   dest_port_longitude: number | null;
+  /** Sea route coordinates [[lng, lat], ...] computed by searoute-js */
+  route_coords: number[][] | null;
+  /** Sea route distance in nautical miles */
+  distance_nm: number | null;
 }
 
 export interface RouteMapRoute {
   route_name: string;
+  src_port_id: number | null;
+  dest_port_id: number | null;
   src_port_latitude: number | null;
   src_port_longitude: number | null;
   dest_port_latitude: number | null;
   dest_port_longitude: number | null;
+  /** Sea route coordinates [[lng, lat], ...] computed by searoute-js */
+  route_coords: number[][] | null;
+  /** Sea route distance in nautical miles */
+  distance_nm: number | null;
 }
 
 export interface RouteMapResponse {
