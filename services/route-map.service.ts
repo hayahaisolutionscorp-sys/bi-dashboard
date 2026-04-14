@@ -57,7 +57,7 @@ export const RouteMapService = {
       return result.data as RouteMapResponse;
     } catch (error) {
       console.error("Route Map fetch error:", error);
-      return { trips: [] };
+      return { trips: [], routes: [] };
     }
   }
 };
