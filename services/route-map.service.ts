@@ -1,11 +1,13 @@
-import { API_ENDPOINTS } from "@/constants";
+import { API_ENDPOINTS, AYAHAY_API_URL } from "@/constants";
+
+const CLIENT_API_URL = process.env.NEXT_PUBLIC_CLIENT_API_URL || "http://localhost:3000";
 
 export interface RouteMapTrip {
   trip_id: string;               // Use this as your React key prop
   vessel_name: string;
   route_name: string;            // Format: "Source Port - Dest Port"
   scheduled_departure: string;   // ISO Date String
-  scheduled_arrival: string;     // ISO Date String
+  scheduled_arrival: string | null; // ISO Date String
   actual_departure: string | null; // When the trip actually departed (null if not yet departed)
   eta_minutes: number;           // Configured vessel travel time
   status: string;                // e.g., "scheduled", "departed"
@@ -44,30 +46,99 @@ export interface RouteMapResponse {
   routes: RouteMapRoute[];
 }
 
-export const RouteMapService = {
-  getRouteMapData: async (baseUrl: string, serviceKey?: string, date?: string): Promise<RouteMapResponse> => {
-    try {
-      const url = new URL(`${baseUrl}${API_ENDPOINTS.ROUTE_MAP}`);
-      if (date) url.searchParams.set('date', date);
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(serviceKey ? { "x-service-key": serviceKey } : {})
-          // Authentication: BI session/cookie authorization is handled by the browser
-        },
-        credentials: 'include', // equivalent to withCredentials: true
-      });
+function normalizeRouteMapResponse(payload: unknown): RouteMapResponse {
+  if (!payload || typeof payload !== 'object') {
+    return { trips: [], routes: [] };
+  }
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch route map data: ${response.statusText}`);
-      }
+  const record = payload as Record<string, unknown>;
+  const data = (record.data && typeof record.data === 'object'
+    ? record.data
+    : record) as Record<string, unknown>;
 
-      const result = await response.json();
-      return result.data as RouteMapResponse;
-    } catch (error) {
-      console.error("Route Map fetch error:", error);
-      return { trips: [], routes: [] };
+  return {
+    trips: Array.isArray(data.trips) ? (data.trips as RouteMapTrip[]) : [],
+    routes: Array.isArray(data.routes) ? (data.routes as RouteMapRoute[]) : [],
+  };
+}
+
+function hasRenderableGeometry(data: RouteMapResponse): boolean {
+  return [...data.trips, ...data.routes].some((item) => {
+    const coords = item.route_coords;
+    return (
+      (Array.isArray(coords) && coords.length >= 2) ||
+      (item.src_port_latitude != null &&
+        item.src_port_longitude != null &&
+        item.dest_port_latitude != null &&
+        item.dest_port_longitude != null)
+    );
+  });
+}
+
+async function fetchRouteMapFromUrl(
+  rawUrl: string,
+  serviceKey?: string,
+  date?: string,
+): Promise<RouteMapResponse | null> {
+  try {
+    const url = new URL(rawUrl);
+    if (date) url.searchParams.set('date', date);
+    if (!url.searchParams.has('include')) {
+      url.searchParams.set('include', 'liveStatus,routePath');
     }
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(serviceKey ? { 'x-service-key': serviceKey } : {}),
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return normalizeRouteMapResponse(await response.json());
+  } catch {
+    return null;
+  }
+}
+
+export const RouteMapService = {
+  getRouteMapData: async (serviceKey?: string, date?: string): Promise<RouteMapResponse> => {
+    const primary = await fetchRouteMapFromUrl(
+      `${AYAHAY_API_URL}${API_ENDPOINTS.ROUTE_MAP}`,
+      serviceKey,
+      date,
+    );
+
+    if (
+      primary &&
+      (primary.trips.length > 0 || primary.routes.length > 0) &&
+      hasRenderableGeometry(primary)
+    ) {
+      return primary;
+    }
+
+    const fallback = await fetchRouteMapFromUrl(
+      `${CLIENT_API_URL}/bi/route-map`,
+      serviceKey,
+      date,
+    );
+
+    if (primary && fallback) {
+      return {
+        trips: fallback.trips.length > 0 ? fallback.trips : primary.trips,
+        routes: fallback.routes.length > 0 ? fallback.routes : primary.routes,
+      };
+    }
+
+    if (fallback) {
+      return fallback;
+    }
+
+    return primary ?? { trips: [], routes: [] };
   }
 };

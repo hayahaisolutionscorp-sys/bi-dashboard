@@ -17,7 +17,7 @@ export const API_ENDPOINTS = {
 	STATUS_REPORT: "/bi/status-report",
 	VESSELS_REPORT: "/bi/vessels-report",
 	ADVANCE_BOOKING: "/bi/advance-booking",
-	ROUTE_MAP: "/bi/route-map",
+	ROUTE_MAP: "/trips/unified",
 	COMPARISON_TREND: "/bi/comparison-trend",
 	REVENUE_PER_BOOKINGS: "/bi/sales-report/revenue-per-bookings",
 	SALES_REPORT_CHARTS: "/bi/sales-report/charts",

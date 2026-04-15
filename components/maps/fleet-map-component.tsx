@@ -9,7 +9,6 @@ import * as turf from '@turf/turf';
 import { Ship } from "lucide-react";
 
 import { RouteMapService, RouteMapTrip, RouteMapRoute } from "@/services/route-map.service";
-import { routePathsService, RoutePathRecord } from "@/services/route-paths.service";
 import { useTenant } from "@/components/providers/tenant-provider";
 
 
@@ -28,7 +27,6 @@ export function FleetMapComponent() {
 
   const [apiTrips, setApiTrips] = useState<RouteMapTrip[]>([]);
   const [apiRoutes, setApiRoutes] = useState<RouteMapRoute[]>([]);
-  const [routePaths, setRoutePaths] = useState<RoutePathRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredRouteInfo, setHoveredRouteInfo] = useState<{
     x: number;
@@ -51,30 +49,28 @@ export function FleetMapComponent() {
   }, []);
 
   const fetchRouteData = useCallback(async (forceRefresh = false) => {
-    if (!activeTenant?.api_base_url) {
+    if (!activeTenant?.service_key) {
       setApiTrips([]);
       setApiRoutes([]);
-      setRoutePaths([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      const [routeMapResponse, routePathsResponse] = await Promise.all([
-        RouteMapService.getRouteMapData(activeTenant.api_base_url, activeTenant.service_key, selectedDate),
-        routePathsService.getRoutePaths(activeTenant.api_base_url, activeTenant.service_key, forceRefresh),
-      ]);
+      const routeMapResponse = await RouteMapService.getRouteMapData(
+        activeTenant.service_key,
+        selectedDate,
+      );
 
       setApiTrips(routeMapResponse.trips ?? []);
       setApiRoutes(routeMapResponse.routes ?? []);
-      setRoutePaths(routePathsResponse ?? []);
     } catch (error) {
       console.error("Failed to fetch route map data:", error);
     } finally {
       setLoading(false);
     }
-  }, [activeTenant?.api_base_url, activeTenant?.service_key, selectedDate]);
+  }, [activeTenant?.service_key, selectedDate]);
 
   React.useEffect(() => {
     void fetchRouteData();
@@ -103,10 +99,6 @@ export function FleetMapComponent() {
 
   // Map API Data to Component Structure
   const { DEFINED_ROUTES, ROUTE_LIST, apiVessels } = useMemo(() => {
-    const routePathByPair = new Map(
-      routePaths.map((path) => [`${path.src_port_id}:${path.dest_port_id}`, path] as const),
-    );
-
     // Group trips by route (may be empty if no trips today)
     const routeGroups = new Map<string, RouteMapTrip[]>();
     apiTrips.forEach(trip => {
@@ -124,25 +116,11 @@ export function FleetMapComponent() {
       }
     });
 
-    // Also merge saved route paths so manually created paths appear even when
-    // they are not part of the configured route list or have no trips yet.
-    routePaths.forEach((path) => {
-      const routeName = path.route_name ?? (path.src_port?.name && path.dest_port?.name
-        ? `${path.src_port.name} - ${path.dest_port.name}`
-        : null);
-      if (routeName && !routeGroups.has(routeName)) {
-        routeGroups.set(routeName, []);
-      }
-    });
-
     if (!routeGroups.size) return { DEFINED_ROUTES: [], ROUTE_LIST: [], apiVessels: [] };
 
     const definedRoutes = Array.from(routeGroups.entries()).map(([routeName, trips], index) => {
        const firstTrip = trips[0];
        const configuredRoute = apiRoutes.find(r => r.route_name === routeName);
-       const routePath = configuredRoute?.src_port_id != null && configuredRoute?.dest_port_id != null
-         ? routePathByPair.get(`${configuredRoute.src_port_id}:${configuredRoute.dest_port_id}`)
-         : routePaths.find((path) => path.route_name === routeName);
        const srcLat  = firstTrip?.src_port_latitude  ?? configuredRoute?.src_port_latitude;
        const srcLng  = firstTrip?.src_port_longitude ?? configuredRoute?.src_port_longitude;
        const destLat = firstTrip?.dest_port_latitude  ?? configuredRoute?.dest_port_latitude;
@@ -150,32 +128,25 @@ export function FleetMapComponent() {
 
        const hasRealCoords = srcLat != null && srcLng != null && destLat != null && destLng != null;
 
-       let coords: number[][];
+       let coords: number[][] = [];
 
-       // 1. Prefer pre-computed sea route coords returned by BI route map.
-       // 2. Fall back to the route-paths endpoint so newly saved paths appear without static data.
-       const apiRouteCoords = firstTrip?.route_coords ?? configuredRoute?.route_coords ?? routePath?.coords;
+       const apiRouteCoords = firstTrip?.route_coords ?? configuredRoute?.route_coords;
        if (apiRouteCoords && apiRouteCoords.length >= 2) {
          coords = apiRouteCoords;
        } else if (hasRealCoords) {
-         // Final fallback: draw a straight line only when the tenant has no saved sea path yet.
          coords = [[srcLng!, srcLat!], [destLng!, destLat!]];
-       } else {
-         // Skip routes with no renderable geometry at all.
-         return null;
        }
 
-       const startPoint = coords[0];
-       const endPoint = coords[coords.length - 1];
+       const startPoint = coords[0] ?? (hasRealCoords ? [srcLng!, srcLat!] : null);
+       const endPoint = coords[coords.length - 1] ?? (hasRealCoords ? [destLng!, destLat!] : null);
 
        const parts = routeName.split('-').map(s => s.trim());
-       const startName = routePath?.src_port?.name ?? (parts[0] || "Origin Port");
-       const endName = routePath?.dest_port?.name ?? (parts[1] || "Destination Port");
+  const startName = parts[0] || "Origin Port";
+  const endName = parts[1] || "Destination Port";
 
        // Aggregate revenue for the route based on the first trip's YTD data
        const ytdRevenue = trips[0]?.route_ytd_revenue || 0;
-       const distanceKm = routePath?.distance_km
-         ?? (firstTrip?.distance_nm != null ? Number(firstTrip.distance_nm) * 1.852 : undefined)
+       const distanceKm = (firstTrip?.distance_nm != null ? Number(firstTrip.distance_nm) * 1.852 : undefined)
          ?? (configuredRoute?.distance_nm != null ? Number(configuredRoute.distance_nm) * 1.852 : undefined);
 
        // Pre-compute smoothed route for animation
@@ -201,16 +172,16 @@ export function FleetMapComponent() {
            curvedCoords: curvedCoords,
              distanceKm,
            ports: [
-               { name: startName, lat: startPoint[1], lng: startPoint[0] },
-               { name: endName, lat: endPoint[1], lng: endPoint[0] }
+               ...(startPoint ? [{ name: startName, lat: startPoint[1], lng: startPoint[0] }] : []),
+               ...(endPoint ? [{ name: endName, lat: endPoint[1], lng: endPoint[0] }] : [])
            ],
            revenue: { 
-               current: `₱${(ytdRevenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+               current: `₱${(ytdRevenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                last: "N/A",
                trend: 0 
            }
        };
-    }).filter((r): r is NonNullable<typeof r> => r !== null);
+    });
 
     const routeList = definedRoutes.map(r => ({ id: r.id, name: r.name, vessels: r.vessels }));
 
@@ -223,10 +194,14 @@ export function FleetMapComponent() {
     //   arrived             — excluded entirely (filtered below)
     //   cancelled           — excluded entirely (not returned by backend, but guard here too)
     const initialVessels = apiTrips
-      .filter(trip => trip.status === 'departed')
+      .filter(trip => !['arrived', 'completed', 'cancelled', 'canceled'].includes(String(trip.status ?? '').toLowerCase()))
       .map(trip => {
-        const route = definedRoutes.find(r => r.name === trip.route_name)!;
+        const route = definedRoutes.find(r => r.name === trip.route_name);
+        if (!route || route.curvedCoords.length < 2 || route.ports.length < 2) {
+          return null;
+        }
 
+        const normalizedStatus = String(trip.status ?? '').toLowerCase();
         const scheduledDepartureMs = new Date(trip.scheduled_departure).getTime();
         const scheduledArrivalMs = trip.scheduled_arrival
           ? new Date(trip.scheduled_arrival).getTime()
@@ -238,7 +213,7 @@ export function FleetMapComponent() {
         // Fall back to scheduled_departure if actual is missing.
         // Clamp to Date.now() so elapsed is never negative (guard for future-scheduled trips).
         // For non-departed trips: far-future startTime keeps elapsed = 0 (pinned at origin).
-        const isDeparted = trip.status === 'departed';
+        const isDeparted = normalizedStatus === 'departed';
         const departureBasis = trip.actual_departure
           ? new Date(trip.actual_departure).getTime()
           : scheduledDepartureMs;
@@ -259,14 +234,15 @@ export function FleetMapComponent() {
             eta: trip.eta_minutes > 0 ? (trip.eta_minutes >= 60 ? `${Math.floor(trip.eta_minutes / 60)}h ${trip.eta_minutes % 60}m` : `${trip.eta_minutes} min`) : "N/A",
             position: null,
             isArrived: false,
-            tripStatus: trip.status,
+            tripStatus: normalizedStatus,
             utilization: trip.total_seats > 0 ? Math.round((trip.boarded_count / trip.total_seats) * 100) : 0,
             scheduledDeparture: trip.scheduled_departure,
         };
-     });
+     })
+     .filter((v): v is NonNullable<typeof v> => v !== null);
 
     return { DEFINED_ROUTES: definedRoutes, ROUTE_LIST: routeList, apiVessels: initialVessels };
-  }, [apiTrips, apiRoutes, routePaths]);
+  }, [apiTrips, apiRoutes]);
 
   React.useEffect(() => {
     if (DEFINED_ROUTES.length === 0) {
@@ -275,8 +251,12 @@ export function FleetMapComponent() {
       return;
     }
 
+    const preferredRoute =
+      DEFINED_ROUTES.find((route) => route.coords.length >= 2 || route.ports.length >= 1) ??
+      DEFINED_ROUTES[0];
+
     if (selectedRouteId == null || !DEFINED_ROUTES.some((route) => route.id === selectedRouteId)) {
-      setSelectedRouteId(DEFINED_ROUTES[0].id);
+      setSelectedRouteId(preferredRoute.id);
     }
   }, [DEFINED_ROUTES, selectedRouteId]);
 
@@ -299,13 +279,10 @@ export function FleetMapComponent() {
             ? DEFINED_ROUTES
             : DEFINED_ROUTES.filter(r => r.id === selectedRouteId);
 
-        const features = routesToShow.map(route => {
+        const features = routesToShow
+          .filter(route => route.coords.length >= 2)
+          .map(route => {
             const coords = route.coords;
-            if (coords.length < 2) return turf.lineString(coords, {
-              routeId: route.id,
-              routeName: route.name,
-              distanceKm: route.distanceKm ?? null,
-            });
 
             try {
               const feature = coords.length >= 3
@@ -498,12 +475,38 @@ export function FleetMapComponent() {
   };
 
   const activeMarkers = useMemo(() => {
-      // Show markers for all routes if showing all, otherwise just selected
-      const routes = showAllRoutes 
-          ? DEFINED_ROUTES 
-          : DEFINED_ROUTES.filter(r => r.id === selectedRouteId);
-          
-      return routes.flatMap(r => r.ports);
+      const routesToShow = showAllRoutes
+        ? DEFINED_ROUTES
+        : DEFINED_ROUTES.filter((route) => route.id === selectedRouteId);
+
+      const portMap = new Map<string, { name: string; lat: number; lng: number; isSelected: boolean }>();
+
+      for (const route of routesToShow) {
+        const isSelectedRoute = route.id === selectedRouteId || !showAllRoutes;
+
+        for (const port of route.ports) {
+          if (port.lat == null || port.lng == null) continue;
+
+          const key = `${port.name}:${port.lat}:${port.lng}`;
+          const existingPort = portMap.get(key);
+
+          if (existingPort) {
+            if (isSelectedRoute && !existingPort.isSelected) {
+              portMap.set(key, { ...existingPort, isSelected: true });
+            }
+            continue;
+          }
+
+          portMap.set(key, {
+            name: port.name,
+            lat: port.lat,
+            lng: port.lng,
+            isSelected: isSelectedRoute,
+          });
+        }
+      }
+
+      return Array.from(portMap.values());
   }, [selectedRouteId, showAllRoutes, DEFINED_ROUTES]);
 
   return (
@@ -556,29 +559,31 @@ export function FleetMapComponent() {
             {/* Markers for Route Endpoints */}
             {activeMarkers.map((port, idx) => (
                 <Marker 
-                    key={`${showAllRoutes ? 'all' : selectedRouteId}-${idx}`} 
+                    key={`${port.name}-${port.lat}-${port.lng}-${idx}`} 
                     longitude={port.lng} 
                     latitude={port.lat} 
                     anchor="bottom"
                 >
-                    {/* Outer div is exactly the pin icon size so anchor="bottom" aligns the pin tip to the coordinate.
-                        The label floats absolutely above — it does NOT stretch the bounding box downward. */}
                     <div
                         className="relative group transition-transform hover:scale-110"
-                        style={{ width: !showAllRoutes ? 32 : 22, height: !showAllRoutes ? 40 : 28 }}
+                        style={{ width: !showAllRoutes || port.isSelected ? 32 : 22, height: !showAllRoutes || port.isSelected ? 40 : 28 }}
                     >
-                        {!showAllRoutes && <div className="absolute inset-0 bg-blue-600/20 rounded-full animate-ping" />}
+                        {(!showAllRoutes || port.isSelected) && <div className="absolute inset-0 bg-blue-600/20 rounded-full animate-ping" />}
                         <img
                             src="/icons/anchor-pinpoint.png"
                             alt="Port"
-                            width={!showAllRoutes ? 32 : 22}
-                            height={!showAllRoutes ? 40 : 28}
-                            className="relative z-10 drop-shadow-lg"
+                            width={!showAllRoutes || port.isSelected ? 32 : 22}
+                            height={!showAllRoutes || port.isSelected ? 40 : 28}
+                            className={cn(
+                              "relative z-10 drop-shadow-lg",
+                              !port.isSelected && showAllRoutes && "opacity-75"
+                            )}
                         />
-                        {/* Label floats above the pin — absolutely positioned so it doesn't shift the anchor */}
                         <span className={cn(
-                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-white/95 backdrop-blur text-[10px] font-bold rounded-md shadow-sm border transition-opacity whitespace-nowrap pointer-events-none",
-                            showAllRoutes ? "opacity-0 group-hover:opacity-100" : "opacity-100"
+                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-white/95 backdrop-blur text-[10px] font-bold rounded-md shadow-sm border whitespace-nowrap pointer-events-none",
+                            showAllRoutes && !port.isSelected
+                              ? "opacity-100 text-slate-600 border-slate-200"
+                              : "opacity-100"
                         )}>{port.name}</span>
                     </div>
                 </Marker>
@@ -880,7 +885,7 @@ export function FleetMapComponent() {
             filteredRouteList.map((route) => {
               const detailedRoute = DEFINED_ROUTES.find(r => r.id === route.id);
               const isSelected = selectedRouteId === route.id && !showAllRoutes;
-              const activeVessels = vessels.filter(v => v.routeId === route.id && v.tripStatus === 'departed').length;
+              const activeVessels = vessels.filter(v => v.routeId === route.id && String(v.tripStatus).toLowerCase() === 'departed').length;
 
               return (
                 <div
