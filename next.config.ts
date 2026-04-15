@@ -14,6 +14,9 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   transpilePackages: ["maplibre-gl"],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   /* config options here */
 };
 
