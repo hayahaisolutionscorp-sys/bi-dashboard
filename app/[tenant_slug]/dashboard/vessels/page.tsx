@@ -115,9 +115,6 @@ export default function VesselsPage() {
     const computedActiveFleet = stc.filter(
       v => v.successful_trips.length + (v.cancelled_trips?.length ?? 0) > 0
     ).length;
-    console.log("Vessels:", stc.map(v => v.vessel_name));
-    console.log("Total Fleet:", computedTotalFleet);
-    console.log("Active Fleet:", computedActiveFleet);
     return data.kpiData.map(kpi => {
       if (kpi.title === "Total Fleet" && computedTotalFleet > 0)
         return { ...kpi, value: computedTotalFleet };
