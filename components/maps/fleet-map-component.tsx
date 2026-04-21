@@ -10,11 +10,17 @@ import { Ship } from "lucide-react";
 
 import { RouteMapService, RouteMapTrip, RouteMapRoute } from "@/services/route-map.service";
 import { useTenant } from "@/components/providers/tenant-provider";
+import { useTheme } from "next-themes";
 
 
 
 export function FleetMapComponent() {
   const { activeTenant } = useTenant();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const mapStyleUrl = isDark
+    ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+    : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
   const mapRef = useRef<MapRef>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
   const [showAllRoutes, setShowAllRoutes] = useState<boolean>(false);
@@ -479,6 +485,9 @@ export function FleetMapComponent() {
         ? DEFINED_ROUTES
         : DEFINED_ROUTES.filter((route) => route.id === selectedRouteId);
 
+      // Deduplicate by port name only — vice-versa routes (e.g. "Ajuy - EB Magalona"
+      // and "EB Magalona - Ajuy") share the same physical ports but may store slightly
+      // different coordinates for src vs dest. Keying by name avoids double markers.
       const portMap = new Map<string, { name: string; lat: number; lng: number; isSelected: boolean }>();
 
       for (const route of routesToShow) {
@@ -487,7 +496,7 @@ export function FleetMapComponent() {
         for (const port of route.ports) {
           if (port.lat == null || port.lng == null) continue;
 
-          const key = `${port.name}:${port.lat}:${port.lng}`;
+          const key = port.name.toLowerCase().trim();
           const existingPort = portMap.get(key);
 
           if (existingPort) {
@@ -519,7 +528,7 @@ export function FleetMapComponent() {
                 zoom: 6
             }}
             style={{width: "100%", height: "100%"}}
-            mapStyle="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
+            mapStyle={mapStyleUrl}
             attributionControl={false}
           interactiveLayerIds={["routes-hit-layer"]}
           onMouseMove={handleRouteHover}
@@ -580,10 +589,11 @@ export function FleetMapComponent() {
                             )}
                         />
                         <span className={cn(
-                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-white/95 backdrop-blur text-[10px] font-bold rounded-md shadow-sm border whitespace-nowrap pointer-events-none",
-                            showAllRoutes && !port.isSelected
-                              ? "opacity-100 text-slate-600 border-slate-200"
-                              : "opacity-100"
+                            "absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 backdrop-blur text-[10px] font-bold rounded-md shadow-sm border whitespace-nowrap pointer-events-none",
+                            isDark
+                              ? "bg-zinc-800/95 text-zinc-100 border-zinc-600"
+                              : "bg-white/95 text-slate-700 border-slate-200",
+                            showAllRoutes && !port.isSelected && "opacity-80"
                         )}>{port.name}</span>
                     </div>
                 </Marker>
@@ -647,7 +657,7 @@ export function FleetMapComponent() {
 
                             {/* Hover tooltip */}
                             {hoveredVesselId === vessel.id && (
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-6 w-64 bg-white rounded-xl shadow-2xl border border-border/50 overflow-hidden z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200 pointer-events-none">
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-6 w-64 bg-card rounded-xl shadow-2xl border border-border/50 overflow-hidden z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200 pointer-events-none">
                                     <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-3">
                                         <h4 className="font-bold text-sm text-white leading-tight">{vessel.name}</h4>
                                         <div className="flex items-center gap-1.5 text-blue-100 text-xs mt-0.5">
@@ -691,7 +701,7 @@ export function FleetMapComponent() {
 
       {hoveredRouteInfo && (
         <div
-          className="absolute z-20 pointer-events-none rounded-xl border border-border/60 bg-white/95 px-3 py-2 shadow-xl backdrop-blur-sm"
+          className="absolute z-20 pointer-events-none rounded-xl border border-border/60 bg-card/95 px-3 py-2 shadow-xl backdrop-blur-sm"
           style={{ left: hoveredRouteInfo.x + 16, top: hoveredRouteInfo.y + 16 }}
         >
           <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Active Sea Route</p>
@@ -706,8 +716,8 @@ export function FleetMapComponent() {
 
       {/* Loading overlay */}
       {loading && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-xl pointer-events-none">
-          <div className="flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-xl border border-border/50">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-xl pointer-events-none">
+          <div className="flex items-center gap-3 bg-card rounded-2xl px-6 py-4 shadow-xl border border-border/50">
             <div className="animate-spin text-primary"><Ship className="size-5" /></div>
             <span className="text-sm font-semibold text-muted-foreground">Loading sea routes…</span>
           </div>
@@ -716,14 +726,14 @@ export function FleetMapComponent() {
 
       {/* Right Sidebar Overlay - Routes Selection */}
       <aside className={cn(
-        "absolute top-6 right-6 bottom-6 bg-white/90 backdrop-blur-md rounded-3xl flex flex-col z-10 shadow-xl shadow-blue-900/5 border border-white/50 overflow-hidden transition-all duration-300",
+        "absolute top-6 right-6 bottom-6 bg-background/95 backdrop-blur-md rounded-3xl flex flex-col z-10 shadow-xl shadow-blue-900/5 border border-border/40 overflow-hidden transition-all duration-300",
         isSidebarOpen ? "w-[340px]" : "w-[48px]"
       )}>
         {/* Collapse toggle — always visible */}
         <button
           onClick={() => setIsSidebarOpen(v => !v)}
           className={cn(
-            "absolute top-4 z-20 flex items-center justify-center size-7 rounded-full bg-white border border-border/50 shadow-sm hover:bg-secondary transition-all",
+            "absolute top-4 z-20 flex items-center justify-center size-7 rounded-full bg-card border border-border/50 shadow-sm hover:bg-secondary transition-all",
             isSidebarOpen ? "right-4" : "left-1/2 -translate-x-1/2"
           )}
           title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
@@ -760,12 +770,12 @@ export function FleetMapComponent() {
               </div>
             </div>
             {selectedDate === todayStr ? (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full border border-emerald-200">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-black rounded-full border border-emerald-500/30">
                 <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse" />
                 LIVE
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full border border-amber-200">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-black rounded-full border border-amber-500/30">
                 <Clock className="size-3" /> {selectedDate}
               </div>
             )}
@@ -777,7 +787,7 @@ export function FleetMapComponent() {
               type="date"
               value={selectedDate}
               onChange={e => { setSelectedDate(e.target.value); setLoading(true); }}
-              className="flex-1 text-xs border border-border/60 rounded-xl px-3 py-1.5 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="flex-1 text-xs border border-border/60 rounded-xl px-3 py-1.5 bg-background/80 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             {selectedDate !== todayStr && (
               <button
@@ -789,21 +799,21 @@ export function FleetMapComponent() {
             )}
             <div className="flex gap-1 shrink-0">
               <button
-                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-white/60"
+                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-background/60"
                 onClick={handleRefresh}
                 title="Refresh sea routes"
               >
                 <RotateCw className={cn("size-3.5", loading && "animate-spin")} />
               </button>
               <button
-                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-white/60"
+                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-background/60"
                 onClick={() => mapRef.current?.zoomIn()}
                 title="Zoom in"
               >
                 <Plus className="size-3.5" />
               </button>
               <button
-                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-white/60"
+                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors border border-border/40 bg-background/60"
                 onClick={() => mapRef.current?.zoomOut()}
                 title="Zoom out"
               >
@@ -821,7 +831,7 @@ export function FleetMapComponent() {
                 placeholder="Search routes…"
                 value={routeSearch}
                 onChange={e => setRouteSearch(e.target.value)}
-                className="w-full pl-8 pr-7 py-1.5 text-xs border border-border/60 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full pl-8 pr-7 py-1.5 text-xs border border-border/60 rounded-xl bg-background/80 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               {routeSearch && (
                 <button
@@ -838,7 +848,7 @@ export function FleetMapComponent() {
                 "text-[10px] font-bold px-2.5 py-1.5 rounded-xl transition-all border whitespace-nowrap shrink-0",
                 showAllRoutes
                   ? "bg-primary text-white border-primary shadow-sm"
-                  : "bg-white text-muted-foreground border-border/50 hover:bg-secondary"
+                  : "bg-background text-muted-foreground border-border/50 hover:bg-secondary"
               )}
             >
               {showAllRoutes ? "All" : "Show All"}
@@ -894,7 +904,7 @@ export function FleetMapComponent() {
                     "border rounded-2xl p-4 transition-all cursor-pointer group hover:shadow-md",
                     isSelected
                       ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20"
-                      : "bg-white/50 border-border/50 hover:bg-white text-foreground"
+                      : "bg-card/60 border-border/50 hover:bg-card text-foreground"
                   )}
                   onClick={() => onSelectRoute(route.id)}
                 >
@@ -934,7 +944,7 @@ export function FleetMapComponent() {
                               {route.vessels} trip{route.vessels !== 1 ? 's' : ''}
                             </span>
                             {activeVessels > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                                 <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                 {activeVessels} en route
                               </span>
@@ -953,7 +963,7 @@ export function FleetMapComponent() {
 
         {/* Footer legend */}
         <div className="p-4 border-t border-border/40">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5">Active Sea Routes</p>
+          <p className="text-[10px] font-bold text-foreground/60 uppercase tracking-widest mb-2.5">Active Sea Routes</p>
           <div className="flex items-center gap-2 mb-3">
             <span className="h-0.5 w-8 rounded-full bg-blue-600" />
             <span className="text-[10px] text-muted-foreground">Dynamic route paths from backend coordinates</span>
@@ -977,8 +987,8 @@ export function FleetMapComponent() {
             </div>
           </div>
           {!showAllRoutes && (
-            <p className="text-[10px] text-muted-foreground/50 mt-2.5">
-              Press <kbd className="px-1 py-0.5 rounded bg-muted text-[9px] font-mono">Esc</kbd> to show all routes
+            <p className="text-[10px] text-muted-foreground/60 mt-2.5">
+              Press <kbd className="px-1 py-0.5 rounded bg-muted text-foreground text-[9px] font-mono">Esc</kbd> to show all routes
             </p>
           )}
         </div>

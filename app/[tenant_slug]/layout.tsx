@@ -2,7 +2,13 @@
 
 import { DashboardHeader } from "@/components/dashboard-header";
 import { MobileMenuProvider } from "@/components/mobile-menu-provider";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useMobileMenu } from "@/components/mobile-menu-provider";
 import dynamic from "next/dynamic";
 
@@ -18,6 +24,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       {/* Mobile Drawer */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent side="left" className="p-0 w-64 bg-sidebar border-sidebar-border">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Navigation Menu</SheetTitle>
+            <SheetDescription>
+              Browse dashboard sections and switch between analytics views.
+            </SheetDescription>
+          </SheetHeader>
           <AppNav isMobile />
         </SheetContent>
       </Sheet>

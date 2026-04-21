@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
 	ADVANCE_BOOKING: "/bi/advance-booking",
 	ROUTE_MAP: "/trips/unified",
 	COMPARISON_TREND: "/bi/comparison-trend",
+	COMPARISON_TREND_ENTITIES: "/bi/comparison-trend/entities",
 	REVENUE_PER_BOOKINGS: "/bi/sales-report/revenue-per-bookings",
 	SALES_REPORT_CHARTS: "/bi/sales-report/charts",
 	RECENT_ACTIVITY: "/bi/recent-activity",

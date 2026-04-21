@@ -4,6 +4,7 @@ import {
   SalesReportRoute,
   SalesRoutesApiResponse,
   ComparisonTrendParams,
+  ComparisonTrendEntitiesParams,
   ComparisonTrendData,
   ComparisonTrendApiResponse,
   SalesKpiResponse,
@@ -155,6 +156,8 @@ export const salesService = {
         url.searchParams.append("entityIds", params.entityIds);
       }
 
+      if (params.granularity) url.searchParams.append("granularity", params.granularity);
+
       const response = await fetch(url.toString(), {
         method: "GET",
         headers: { 
@@ -176,6 +179,41 @@ export const salesService = {
       return json.data;
     } catch (error) {
       console.error("Comparison trend fetch error:", error);
+      throw error;
+    }
+  },
+
+  /** Fetch searchable entity list for the comparison trend dimension selector. */
+  getComparisonTrendEntities: async (
+    baseUrl: string,
+    params: ComparisonTrendEntitiesParams,
+    serviceKey?: string,
+  ): Promise<string[]> => {
+    try {
+      const url = new URL(`${baseUrl}${API_ENDPOINTS.COMPARISON_TREND_ENTITIES}`);
+      url.searchParams.append("compareBy", params.compareBy);
+      if (params.from) url.searchParams.append("from", params.from);
+      if (params.to)   url.searchParams.append("to",   params.to);
+      if (params.q)    url.searchParams.append("q",    params.q);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(serviceKey ? { "x-service-key": serviceKey } : {}),
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to fetch entities (${response.status})`);
+      }
+
+      const json = await response.json() as { data: { entities: string[] } };
+      return json.data.entities;
+    } catch (error) {
+      console.error("Comparison trend entities fetch error:", error);
       throw error;
     }
   },

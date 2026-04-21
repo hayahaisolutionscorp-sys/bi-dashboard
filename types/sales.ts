@@ -77,14 +77,24 @@ export interface ComparisonTrendParams {
   from: string;
   to: string;
   compareBy: string; // 'route' | 'vessel' | 'trip'
-  entityIds?: string | string[]; // <--- Make it Optional
+  entityIds?: string | string[];
+  granularity?: 'day' | 'week' | 'month';
+}
+
+export interface ComparisonTrendEntitiesParams {
+  compareBy: 'route' | 'vessel' | 'trip';
+  from?: string;
+  to?: string;
+  q?: string;
 }
 
 export interface ComparisonPoint {
   date: string; // "YYYY-MM-DD"
   totalSales: number;
+  grossRevenue: number;
   totalBookings: number;
   totalPassengers: number;
+  loadFactor?: number | null;
 }
 
 export interface ComparisonTrendSeries {
@@ -93,7 +103,7 @@ export interface ComparisonTrendSeries {
 }
 
 export interface ComparisonTrendData {
-  granularity: 'hourly' | 'daily';
+  granularity: 'hourly' | 'daily' | 'weekly' | 'monthly';
   series: ComparisonTrendSeries[];
 }
 

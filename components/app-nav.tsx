@@ -17,10 +17,16 @@ import {
   Ship,
   CalendarCheck,
   Map,
+  TrendingUp,
   PanelLeftClose,
   PanelLeft,
   type LucideIcon,
 } from "lucide-react";
+
+interface NavSection {
+  sectionLabel: string;
+  items: NavItem[];
+}
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useMobileMenu } from "@/components/mobile-menu-provider";
@@ -39,16 +45,42 @@ interface NavItem {
   href: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Overview",             icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Sales Report",         icon: BarChart2,        href: "/dashboard/sales-report" },
-  { label: "Expenses Report",      icon: Receipt,          href: "/dashboard/expenses-report" },
-  { label: "Passenger per Trip",   icon: Users,            href: "/dashboard/passengers-per-trip" },
-  { label: "Cargo per Trip",       icon: Truck,            href: "/dashboard/cargo-per-trip" },
-  { label: "Status",               icon: BellRing,         href: "/dashboard/status" },
-  { label: "Vessels",              icon: Ship,             href: "/dashboard/vessels" },
-  { label: "Advance Booking",      icon: CalendarCheck,    href: "/dashboard/advance-booking" },
-  { label: "Route Map",            icon: Map,              href: "/dashboard/route-map" },
+const NAV_SECTIONS: NavSection[] = [
+  {
+    sectionLabel: "Executive",
+    items: [
+      { label: "Executive Overview", icon: LayoutDashboard, href: "/dashboard" },
+    ],
+  },
+  {
+    sectionLabel: "Analytics",
+    items: [
+      { label: "Sales Analytics",      icon: BarChart2,     href: "/dashboard/analytics/sales" },
+      { label: "Trends & Comparison",  icon: TrendingUp,    href: "/dashboard/analytics/trends" },
+      { label: "Expense Analytics",    icon: Receipt,       href: "/dashboard/analytics/expenses" },
+    ],
+  },
+  {
+    sectionLabel: "Demand",
+    items: [
+      { label: "Passenger Analytics",       icon: Users,        href: "/dashboard/analytics/passengers" },
+      { label: "Cargo Analytics",           icon: Truck,        href: "/dashboard/analytics/cargo" },
+      { label: "Advance Booking Insights",  icon: CalendarCheck, href: "/dashboard/analytics/booking" },
+    ],
+  },
+  {
+    sectionLabel: "Operations",
+    items: [
+      { label: "Live Route Monitor",   icon: Map,     href: "/dashboard/operations/routes" },
+      { label: "Live Status Monitor", icon: BellRing, href: "/dashboard/operations/status" },
+    ],
+  },
+  {
+    sectionLabel: "Assets",
+    items: [
+      { label: "Vessel Analytics", icon: Ship, href: "/dashboard/assets/vessels" },
+    ],
+  },
 ];
 
 interface AppNavProps {
@@ -117,36 +149,49 @@ export function AppNav({ isMobile }: AppNavProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        {!isCollapsed && !isMobile && (
-          <p className="px-3 mt-1 mb-1 text-[11px] font-medium uppercase tracking-widest text-muted-foreground/70">Navigation</p>
-        )}
-        {NAV_ITEMS.map((item) => {
-          const queryString = searchParams.toString();
-          const fullHref = `/${tenantSlug}${item.href}${queryString ? `?${queryString}` : ""}`;
-          const isActive = item.href === "/dashboard" 
-            ? pathname === `/${tenantSlug}/dashboard`
-            : pathname.startsWith(`/${tenantSlug}${item.href}`);
-          
+      <nav className="flex-1 px-2 py-3 overflow-y-auto">
+        {NAV_SECTIONS.map((section, sectionIdx) => {
           return (
-            <Link
-              key={item.label}
-              href={fullHref}
-              className={cn(
-                "flex h-9 items-center gap-2.5 px-3 rounded-md transition-all duration-[120ms] group",
-                isCollapsed && !isMobile && "justify-center px-0",
-                isActive
-                  ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] font-medium"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+            <div key={section.sectionLabel} className={sectionIdx > 0 ? "mt-4" : ""}>
+              {(!isCollapsed || isMobile) && (
+                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                  {section.sectionLabel}
+                </p>
               )}
-              title={item.label}
-            >
-              <item.icon className={cn(
-                "shrink-0 size-4",
-                isActive ? "text-[var(--nav-active-text)]" : "text-muted-foreground group-hover:text-foreground"
-              )} />
-              <span className={cn("text-sm hidden truncate", !isCollapsed && "md:inline", isMobile && "inline")}>{item.label}</span>
-            </Link>
+              {isCollapsed && !isMobile && sectionIdx > 0 && (
+                <div className="mx-auto my-2 h-px w-6 bg-border" />
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const queryString = searchParams.toString();
+                  const fullHref = `/${tenantSlug}${item.href}${queryString ? `?${queryString}` : ""}`;
+                  const isActive = item.href === "/dashboard"
+                    ? pathname === `/${tenantSlug}/dashboard`
+                    : pathname.startsWith(`/${tenantSlug}${item.href}`);
+
+                  return (
+                    <Link
+                      key={item.label}
+                      href={fullHref}
+                      className={cn(
+                        "flex h-9 items-center gap-2.5 px-3 rounded-md transition-all duration-[120ms] group",
+                        isCollapsed && !isMobile && "justify-center px-0",
+                        isActive
+                          ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] font-medium"
+                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      )}
+                      title={item.label}
+                    >
+                      <item.icon className={cn(
+                        "shrink-0 size-4",
+                        isActive ? "text-[var(--nav-active-text)]" : "text-muted-foreground group-hover:text-foreground"
+                      )} />
+                      <span className={cn("text-sm hidden truncate", !isCollapsed && "md:inline", isMobile && "inline")}>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </nav>

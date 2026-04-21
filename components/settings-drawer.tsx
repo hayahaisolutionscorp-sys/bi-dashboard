@@ -4,6 +4,7 @@ import { Settings } from "lucide-react";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -25,6 +26,9 @@ export function SettingsDrawer() {
       <SheetContent side="right" className="w-[320px] bg-card border-l border-border p-0">
         <SheetHeader className="px-5 py-4 border-b border-border">
           <SheetTitle className="text-sm font-medium text-foreground">Settings</SheetTitle>
+          <SheetDescription className="sr-only">
+            Adjust appearance and brand preferences for the dashboard.
+          </SheetDescription>
         </SheetHeader>
 
         <div className="px-5 py-5 space-y-6">
