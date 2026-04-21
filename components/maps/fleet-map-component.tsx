@@ -65,6 +65,7 @@ export function FleetMapComponent() {
     setLoading(true);
     try {
       const routeMapResponse = await RouteMapService.getRouteMapData(
+        activeTenant.api_base_url,
         activeTenant.service_key,
         selectedDate,
       );
@@ -76,7 +77,7 @@ export function FleetMapComponent() {
     } finally {
       setLoading(false);
     }
-  }, [activeTenant?.service_key, selectedDate]);
+  }, [activeTenant?.api_base_url, activeTenant?.service_key, selectedDate]);
 
   React.useEffect(() => {
     void fetchRouteData();

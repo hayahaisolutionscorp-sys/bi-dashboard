@@ -2,6 +2,12 @@ import { API_ENDPOINTS, AYAHAY_API_URL } from "@/constants";
 
 const CLIENT_API_URL = process.env.NEXT_PUBLIC_CLIENT_API_URL || "http://localhost:3000";
 
+function normalizeBaseUrl(url: string): string {
+  if (!url) return url;
+  if (!/^https?:\/\//i.test(url)) return `https://${url}`;
+  return url;
+}
+
 export interface RouteMapTrip {
   trip_id: string;               // Use this as your React key prop
   vessel_name: string;
@@ -107,38 +113,50 @@ async function fetchRouteMapFromUrl(
 }
 
 export const RouteMapService = {
-  getRouteMapData: async (serviceKey?: string, date?: string): Promise<RouteMapResponse> => {
-    const primary = await fetchRouteMapFromUrl(
-      `${AYAHAY_API_URL}${API_ENDPOINTS.ROUTE_MAP}`,
-      serviceKey,
-      date,
-    );
+  getRouteMapData: async (
+    baseUrl?: string,
+    serviceKey?: string,
+    date?: string,
+  ): Promise<RouteMapResponse> => {
+    const tenantBaseUrl = baseUrl ? normalizeBaseUrl(baseUrl) : "";
+
+    const primary = tenantBaseUrl
+      ? await fetchRouteMapFromUrl(
+          `${tenantBaseUrl}${API_ENDPOINTS.ROUTE_MAP}`,
+          serviceKey,
+          date,
+        )
+      : null;
 
     if (
       primary &&
-      (primary.trips.length > 0 || primary.routes.length > 0) &&
-      hasRenderableGeometry(primary)
+      (primary.trips.length > 0 || primary.routes.length > 0)
     ) {
       return primary;
     }
 
-    const fallback = await fetchRouteMapFromUrl(
-      `${CLIENT_API_URL}/bi/route-map`,
-      serviceKey,
-      date,
-    );
+    const localFallbackUrl = `${CLIENT_API_URL}/bi/route-map`;
+    const fallback =
+      !tenantBaseUrl || localFallbackUrl !== `${tenantBaseUrl}${API_ENDPOINTS.ROUTE_MAP}`
+        ? await fetchRouteMapFromUrl(localFallbackUrl, serviceKey, date)
+        : null;
 
-    if (primary && fallback) {
-      return {
-        trips: fallback.trips.length > 0 ? fallback.trips : primary.trips,
-        routes: fallback.routes.length > 0 ? fallback.routes : primary.routes,
-      };
-    }
-
-    if (fallback) {
+    if (
+      fallback &&
+      (fallback.trips.length > 0 || fallback.routes.length > 0)
+    ) {
       return fallback;
     }
 
-    return primary ?? { trips: [], routes: [] };
+    // Last resort only when no tenant-scoped base URL is available.
+    const sharedFallback = !tenantBaseUrl
+      ? await fetchRouteMapFromUrl(
+          `${AYAHAY_API_URL}${API_ENDPOINTS.ROUTE_MAP}`,
+          serviceKey,
+          date,
+        )
+      : null;
+
+    return sharedFallback ?? primary ?? fallback ?? { trips: [], routes: [] };
   }
 };
