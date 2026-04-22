@@ -118,15 +118,13 @@ export const RouteMapService = {
     serviceKey?: string,
     date?: string,
   ): Promise<RouteMapResponse> => {
-    const tenantBaseUrl = baseUrl ? normalizeBaseUrl(baseUrl) : "";
-
-    const primary = tenantBaseUrl
-      ? await fetchRouteMapFromUrl(
-          `${tenantBaseUrl}${API_ENDPOINTS.ROUTE_MAP}`,
-          serviceKey,
-          date,
-        )
-      : null;
+    // Primary: unified hub endpoint on ayahay-api-v2 (AYAHAY_API_URL).
+    // Tenant isolation is enforced server-side via x-service-key — not by URL.
+    const primary = await fetchRouteMapFromUrl(
+      `${AYAHAY_API_URL}${API_ENDPOINTS.ROUTE_MAP}`,
+      serviceKey,
+      date,
+    );
 
     if (
       primary &&
@@ -135,28 +133,22 @@ export const RouteMapService = {
       return primary;
     }
 
-    const localFallbackUrl = `${CLIENT_API_URL}/bi/route-map`;
-    const fallback =
-      !tenantBaseUrl || localFallbackUrl !== `${tenantBaseUrl}${API_ENDPOINTS.ROUTE_MAP}`
-        ? await fetchRouteMapFromUrl(localFallbackUrl, serviceKey, date)
-        : null;
+    // Fallback: tenant-local /bi/route-map on ayahay-client-api.
+    // Only attempted when a real tenant baseUrl is available — never falls back
+    // to CLIENT_API_URL (which resolves to localhost when the env var is unset).
+    if (baseUrl) {
+      const tenantBaseUrl = normalizeBaseUrl(baseUrl);
+      const fallbackUrl = `${tenantBaseUrl}/bi/route-map`;
+      const fallback = await fetchRouteMapFromUrl(fallbackUrl, serviceKey, date);
 
-    if (
-      fallback &&
-      (fallback.trips.length > 0 || fallback.routes.length > 0)
-    ) {
-      return fallback;
+      if (
+        fallback &&
+        (fallback.trips.length > 0 || fallback.routes.length > 0)
+      ) {
+        return fallback;
+      }
     }
 
-    // Last resort only when no tenant-scoped base URL is available.
-    const sharedFallback = !tenantBaseUrl
-      ? await fetchRouteMapFromUrl(
-          `${AYAHAY_API_URL}${API_ENDPOINTS.ROUTE_MAP}`,
-          serviceKey,
-          date,
-        )
-      : null;
-
-    return sharedFallback ?? primary ?? fallback ?? { trips: [], routes: [] };
+    return primary ?? { trips: [], routes: [] };
   }
 };
