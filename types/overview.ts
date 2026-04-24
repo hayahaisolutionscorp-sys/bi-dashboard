@@ -1,3 +1,4 @@
+// ─── Legacy Overview (overview_view-based) ───────────────────────────────────
 export interface OverviewKpi {
   total_revenue: number;
   passenger_revenue: number;
@@ -70,5 +71,92 @@ export interface OverviewData {
 
 export interface OverviewApiResponse {
   data: OverviewData;
+}
+
+// ─── Finance-Accurate Overview (ledger-based) ────────────────────────────────
+
+export type ProfitClass = 'high' | 'low' | 'loss';
+
+export interface RouteMetric {
+  route_name: string;
+  gross_revenue: number;
+  refund_amount: number;
+  net_revenue: number;
+  expenses: number;
+  profit_margin: number;   // 0-1 ratio
+  profit_class: ProfitClass;
+  booking_count: number;
+}
+
+export interface ChannelMetric {
+  channel: string;           // OTC | Online | OTA | Travel Agency
+  gross_revenue: number;
+  net_revenue: number;
+  booking_count: number;
+  avg_ticket_size: number;
+  revenue_share_pct: number; // 0-100
+}
+
+export interface ComparisonMetric {
+  gross_revenue: number;
+  net_revenue: number;
+  booking_count: number;
+  delta_pct: number;
+}
+
+export interface ForecastData {
+  today_projection: number;
+  mtd_projection: number;
+  pacing_status: 'ahead' | 'behind' | 'on-track';
+  elapsed_pct: number;       // 0-1 fraction of current period elapsed
+}
+
+export interface ReconciliationData {
+  payment_mismatch_count: number;
+  refund_mismatch_amount: number;
+  webhook_failures: number;
+  unmatched_items_count: number;
+}
+
+export interface FinanceOverviewKpi {
+  gross_revenue: number;
+  net_revenue: number;
+  refund_amount: number;
+  profit_margin: number;     // 0-1
+  booking_count: number;
+  total_passengers: number;
+  total_trips: number;
+}
+
+export interface FinanceTrendItem {
+  label: string;
+  bucket_index: number;
+  gross_revenue: number;
+  net_revenue: number;
+  /** Refund credit sum for this bucket */
+  refund_amount: number;
+  /** Net revenue for the same bucket in the previous period (yesterday / last month / last year) */
+  comparison_net: number | null;
+}
+
+export interface FinanceOverviewData {
+  kpi: FinanceOverviewKpi;
+  kpi_today: FinanceOverviewKpi;
+  kpi_mtd: FinanceOverviewKpi;
+  kpi_ytd: FinanceOverviewKpi;
+  revenue_by_route: RouteMetric[];
+  revenue_by_channel: ChannelMetric[];
+  comparisons: {
+    yesterday: ComparisonMetric;
+    last_week: ComparisonMetric;
+    last_month: ComparisonMetric;
+  };
+  forecast: ForecastData;
+  reconciliation: ReconciliationData;
+  revenue_trend: FinanceTrendItem[];
+}
+
+export interface FinanceOverviewApiResponse {
+  data: FinanceOverviewData;
 }
 

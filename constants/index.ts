@@ -27,4 +27,5 @@ export const API_ENDPOINTS = {
 	CAPACITY_HEATMAP: "/bi/capacity-heatmap",
 	TOP_AGENTS: "/bi/top-agents",
 	ROUTE_SEA_PATHS: "/public/routes/sea-paths",
+	OVERVIEW_FINANCE: "/bi/overview/finance",
 } as const

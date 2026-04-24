@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from "@/constants"
-import { OverviewData, OverviewApiResponse } from "@/types/overview"
+import { OverviewData, OverviewApiResponse, FinanceOverviewData, FinanceOverviewApiResponse } from "@/types/overview"
 
 function normalizeBaseUrl(url: string): string {
     if (!url) return url
@@ -144,5 +144,28 @@ export const overviewService = {
             console.error(`Overview fetch error [${period}]:`, error)
             throw error
         }
+    },
+
+    getFinanceOverview: async (
+        rawBaseUrl: string,
+        period: 'today' | 'mtd' | 'ytd',
+        serviceKey?: string,
+    ): Promise<FinanceOverviewData> => {
+        const baseUrl = normalizeBaseUrl(rawBaseUrl)
+        const url = `${baseUrl}${API_ENDPOINTS.OVERVIEW_FINANCE}/${period}`
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                ...(serviceKey ? { "x-service-key": serviceKey } : {}),
+            },
+            credentials: "include",
+        })
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            throw new Error(errorData.message || `Failed to fetch finance overview (${response.status})`)
+        }
+        const json: FinanceOverviewApiResponse = await response.json()
+        return json.data
     },
 }

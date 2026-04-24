@@ -1,183 +1,216 @@
 "use client";
+// ─── Executive Overview Dashboard (Finance-Accurate Redesign) ────────────────
+// Source of truth: booking.booking_payment_items (ledger-based)
+// Endpoint: GET /bi/overview/finance/:period
+// ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from "react";
-import { 
-  Wallet, 
-  Calendar, 
-  TrendingUp, 
-  User, 
-  Package, 
-  XCircle, 
-  Route, 
-  PhilippinePeso,
+import { useState, useEffect, useCallback } from "react";
+import {
+  Wallet,
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  RotateCcw,
+  ShieldAlert,
+  Route,
+  Users,
   Ship,
-  AlertTriangle,
-  CheckCircle,
-  Info,
+  XCircle,
+  Minus,
+  RefreshCw,
 } from "lucide-react";
 
-// Components
-import { KpiCard } from "@/components/charts/kpi-card";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// Services & Types
-import { overviewService } from "@/services/overview.service";
-import { dashboardWidgetsService } from "@/services/dashboard-widgets.service";
-import { OverviewData } from "@/types/overview";
+// Types
+import { FinanceOverviewData, OverviewData } from "@/types/overview";
 import {
   RecentActivityItem,
   ScheduleTripItem,
   CapacityHeatmapCell,
   TopAgentItem,
 } from "@/types/dashboard-widgets";
+
+// Services
+import { overviewService } from "@/services/overview.service";
+import { dashboardWidgetsService } from "@/services/dashboard-widgets.service";
+
+// Components
+import { KpiCard } from "@/components/charts/kpi-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RecentActivityFeed } from "@/components/charts/recent-activity-feed";
 import { TodayScheduleTimeline } from "@/components/charts/today-schedule-timeline";
 import { CapacityHeatmap } from "@/components/charts/capacity-heatmap";
 import { TopAgentsTable } from "@/components/charts/top-agents-table";
 import { ShadcnOverviewBarChartHorizontal } from "@/components/charts/shadcn-overview-bar-chart-horizontal";
-import { ShadcnOverviewBarChartVertical } from "@/components/charts/shadcn-overview-bar-chart-vertical";
-import { ShadcnOverviewRegularLineChart } from "@/components/charts/shadcn-overview-regular-line-chart";
-import { ShadnOverviewStackedPieChart } from "@/components/charts/shadn-overview-stacked-pie-chart";
+import { RevenueTrendChart } from "@/components/charts/revenue-trend-chart";
+import { RouteProfitabilityTable } from "@/components/charts/route-profitability-table";
+import { ChannelRevenuePanel } from "@/components/charts/channel-revenue-panel";
+import { ReconciliationAlerts } from "@/components/charts/reconciliation-alerts";
+import { ForecastPacingCard } from "@/components/charts/forecast-pacing-card";
 import { ChartConfig } from "@/components/ui/chart";
 import { useTenant } from "@/components/providers/tenant-provider";
+import { cn } from "@/lib/utils";
 
-function PeriodComparisonCard({
-  title,
-  currentLabel,
-  currentValue,
-  referenceLabel,
-  referenceValue,
-  format,
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const fmtCurrency = (n?: number | null) => `₱${(n ?? 0).toLocaleString()}`;
+
+function computeTrend(
+  current: number,
+  reference: number,
+  label: string,
+): { direction: "up" | "down" | "neutral"; value: string; label: string } | undefined {
+  if (!reference) return undefined;
+  const pct = ((current - reference) / reference) * 100;
+  return {
+    direction: pct > 1 ? "up" : pct < -1 ? "down" : "neutral",
+    value: `${Math.abs(pct).toFixed(1)}%`,
+    label,
+  };
+}
+
+// ─── Comparison Strip ─────────────────────────────────────────────────────────
+
+function ComparisonStrip({
+  label,
+  metric,
+  currentNet,
 }: {
-  title: string;
-  currentLabel: string;
-  currentValue: number;
-  referenceLabel: string;
-  referenceValue: number;
-  format: (n: number) => string;
+  label: string;
+  metric: FinanceOverviewData["comparisons"]["yesterday"];
+  currentNet: number;
 }) {
-  const max = Math.max(currentValue, referenceValue, 1);
-  const currentPct = (currentValue / max) * 100;
-  const refPct = (referenceValue / max) * 100;
-  const delta = referenceValue > 0 ? ((currentValue - referenceValue) / referenceValue) * 100 : 0;
+  const delta = metric.delta_pct;
   const isUp = delta > 1;
   const isDown = delta < -1;
-
+  const fmtShort = (n: number) => {
+    if (n >= 1_000_000) return `₱${(n / 1_000_000).toFixed(2)}M`;
+    if (n >= 1_000) return `₱${(n / 1_000).toFixed(0)}K`;
+    return `₱${n.toLocaleString()}`;
+  };
   return (
-    <div className="rounded-md border border-border bg-card p-3 space-y-2">
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-      <div className="space-y-2">
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{currentLabel}</span>
-            <span className="text-sm font-semibold tabular-nums">{format(currentValue)}</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full bg-[var(--primary)] transition-all duration-500"
-              style={{ width: `${currentPct}%` }}
-            />
-          </div>
+    <div className="rounded-md border border-border bg-card p-3 space-y-1.5">
+      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <p className="text-sm font-bold tabular-nums">{fmtShort(metric.net_revenue)}</p>
+          <p className="text-[10px] text-muted-foreground">net revenue</p>
         </div>
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{referenceLabel}</span>
-            <span className="text-sm font-medium tabular-nums text-muted-foreground">{format(referenceValue)}</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full bg-muted-foreground/40 transition-all duration-500"
-              style={{ width: `${refPct}%` }}
-            />
-          </div>
-        </div>
+        <p className="text-xs tabular-nums text-muted-foreground">{metric.booking_count.toLocaleString()} bookings</p>
+      </div>
+      <div className="h-1 rounded-full bg-muted overflow-hidden">
+        <div
+          className={cn(
+            "h-full rounded-full transition-all duration-500",
+            isUp ? "bg-green-500" : isDown ? "bg-rose-500" : "bg-muted-foreground/50",
+          )}
+          style={{
+            width: `${
+              Math.max(currentNet, metric.net_revenue) > 0
+                ? (Math.min(currentNet, metric.net_revenue) / Math.max(currentNet, metric.net_revenue)) * 100
+                : 0
+            }%`,
+          }}
+        />
       </div>
       <div className="flex items-center gap-1.5">
         {isUp ? (
-          <span className="px-2 py-0.5 text-[11px] font-medium rounded bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-400">
-            +{delta.toFixed(1)}% above
-          </span>
+          <>
+            <TrendingUp className="h-3 w-3 text-green-500" />
+            <span className="text-[11px] font-medium text-green-600 dark:text-green-400">
+              +{delta.toFixed(1)}% vs {label.toLowerCase()}
+            </span>
+          </>
         ) : isDown ? (
-          <span className="px-2 py-0.5 text-[11px] font-medium rounded bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400">
-            {Math.abs(delta).toFixed(1)}% below
-          </span>
+          <>
+            <TrendingDown className="h-3 w-3 text-rose-500" />
+            <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400">
+              {delta.toFixed(1)}% vs {label.toLowerCase()}
+            </span>
+          </>
         ) : (
-          <span className="px-2 py-0.5 text-[11px] font-medium rounded bg-muted text-muted-foreground">
-            On track
-          </span>
+          <>
+            <Minus className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[11px] text-muted-foreground">On track</span>
+          </>
         )}
-        <span className="text-xs text-muted-foreground">vs {referenceLabel}</span>
       </div>
     </div>
   );
 }
 
-function computeTrend(
-  current: number,
-  reference: number,
-  label: string
-): { direction: "up" | "down" | "neutral"; value: string; label: string } | undefined {
-  if (!reference || !current) return undefined;
-  const pct = ((current - reference) / reference) * 100;
-  const direction = pct > 1 ? "up" : pct < -1 ? "down" : "neutral";
-  return { direction, value: `${Math.abs(pct).toFixed(1)}%`, label };
+// ─── Section Header ───────────────────────────────────────────────────────────
+
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="px-3 pt-3 pb-2">
+      <h2 className="text-xs font-semibold">{title}</h2>
+      {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+    </div>
+  );
 }
 
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function DashboardPage() {
-  const { activeTenant, isLoading: isTenantLoading } = useTenant();
+  const { activeTenant } = useTenant();
+
   const [period, setPeriod] = useState<"today" | "mtd" | "ytd">("today");
-  const [data, setData] = useState<OverviewData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [routePage, setRoutePage] = useState(0);
-  const [vesselPage, setVesselPage] = useState(0);
 
-  // Widget states
-  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
-  const [todaySchedule, setTodaySchedule] = useState<ScheduleTripItem[]>([]);
+  // Finance-accurate data (ledger-based)
+  const [financeData, setFinanceData] = useState<FinanceOverviewData | null>(null);
+  const [legacyData, setLegacyData]   = useState<OverviewData | null>(null);
+  const [isLoading, setIsLoading]     = useState(true);
+  const [error, setError]             = useState<string | null>(null);
+
+  // Operational widgets
+  const [recentActivity, setRecentActivity]   = useState<RecentActivityItem[]>([]);
+  const [todaySchedule, setTodaySchedule]     = useState<ScheduleTripItem[]>([]);
   const [capacityHeatmap, setCapacityHeatmap] = useState<CapacityHeatmapCell[]>([]);
-  const [topAgents, setTopAgents] = useState<TopAgentItem[]>([]);
-  const [widgetsLoading, setWidgetsLoading] = useState(true);
+  const [topAgents, setTopAgents]             = useState<TopAgentItem[]>([]);
+  const [widgetsLoading, setWidgetsLoading]   = useState(true);
 
-  // Persistent totals to keep cards stable when switching
-  const [kpiTotals, setKpiTotals] = useState({
-    today: 0,
-    mtd: 0,
-    ytd: 0
-  });
+  // Route table pagination
+  const [routePage, setRoutePage] = useState(0);
+  const ROUTES_PER_PAGE = 6;
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!activeTenant?.api_base_url) return;
-      setIsLoading(true);
-      setError(null);
-      setRoutePage(0); // Reset page on period change
-      setVesselPage(0); // Reset vessel page on period change
-      try {
-        const overview = await overviewService.getOverview(
-          activeTenant.api_base_url, 
-          period, 
-          activeTenant.service_key
-        );
-        setData(overview);
+  // Trend chart pagination
+  const [trendPage, setTrendPage] = useState(0);
+  const TREND_PER_PAGE = 12;
 
-        // Update persistent totals based on incoming data
-        setKpiTotals(prev => ({
-          today: period === "today" ? overview.kpi.total_revenue : (overview.today_total_revenue ?? prev.today),
-          mtd: overview.mtd_total_revenue ?? (period === "mtd" ? overview.kpi.total_revenue : prev.mtd),
-          ytd: overview.ytd_total_revenue ?? (period === "ytd" ? overview.kpi.total_revenue : prev.ytd)
-        }));
-      } catch (err) {
-        setError("Failed to load dashboard data. Please try again later.");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
+  // Channel panel pagination
+  const [channelPage, setChannelPage] = useState(0);
+  const CHANNELS_PER_PAGE = 4;
+
+  // ── Fetch overview ──────────────────────────────────────────────────────────
+  const fetchOverview = useCallback(async () => {
+    if (!activeTenant?.api_base_url) return;
+    setIsLoading(true);
+    setError(null);
+    setRoutePage(0);
+    setTrendPage(0);
+    setChannelPage(0);
+    try {
+      const [finance, legacy] = await Promise.allSettled([
+        overviewService.getFinanceOverview(
+          activeTenant.api_base_url, period, activeTenant.service_key,
+        ),
+        overviewService.getOverview(
+          activeTenant.api_base_url, period, activeTenant.service_key,
+        ),
+      ]);
+      if (finance.status === "fulfilled") setFinanceData(finance.value);
+      if (legacy.status  === "fulfilled") setLegacyData(legacy.value);
+      if (finance.status === "rejected")  console.error("Finance overview error:", finance.reason);
+    } catch (err) {
+      setError("Failed to load dashboard data. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    fetchData();
-  }, [period, activeTenant]);
+  }, [activeTenant, period]);
 
-  // Fetch widget data (once on mount, independent of period)
+  useEffect(() => { fetchOverview(); }, [fetchOverview]);
+
+  // ── Fetch widgets ───────────────────────────────────────────────────────────
   useEffect(() => {
     async function fetchWidgets() {
       if (!activeTenant?.api_base_url) return;
@@ -191,10 +224,8 @@ export default function DashboardPage() {
         ]);
         if (activity.status === "fulfilled") setRecentActivity(activity.value);
         if (schedule.status === "fulfilled") setTodaySchedule(schedule.value);
-        if (heatmap.status === "fulfilled") setCapacityHeatmap(heatmap.value);
-        if (agents.status === "fulfilled") setTopAgents(agents.value);
-      } catch (err) {
-        console.error("Widget fetch error:", err);
+        if (heatmap.status  === "fulfilled") setCapacityHeatmap(heatmap.value);
+        if (agents.status   === "fulfilled") setTopAgents(agents.value);
       } finally {
         setWidgetsLoading(false);
       }
@@ -202,419 +233,406 @@ export default function DashboardPage() {
     fetchWidgets();
   }, [activeTenant]);
 
-  if (error) {
+  // ── Derived values ──────────────────────────────────────────────────────────
+  const fd  = financeData;
+  const kpi = fd?.kpi;
+
+  const today_net = fd?.kpi_today.net_revenue ?? 0;
+  const mtd_net   = fd?.kpi_mtd.net_revenue   ?? 0;
+  const ytd_net   = fd?.kpi_ytd.net_revenue   ?? 0;
+
+  const daysElapsed   = new Date().getDate();
+  const monthsElapsed = new Date().getMonth() + 1;
+  const dailyMtdAvg   = daysElapsed   > 0 ? mtd_net / daysElapsed   : 0;
+  const monthlyYtdAvg = monthsElapsed > 0 ? ytd_net / monthsElapsed : 0;
+
+  const sortedRoutes    = [...(fd?.revenue_by_route ?? [])].sort((a, b) => b.net_revenue - a.net_revenue);
+  const totalRoutePages = Math.ceil(sortedRoutes.length / ROUTES_PER_PAGE);
+  const validRoutePage  = Math.min(routePage, Math.max(0, totalRoutePages - 1));
+  const paginatedRoutes = sortedRoutes.slice(
+    validRoutePage * ROUTES_PER_PAGE,
+    (validRoutePage + 1) * ROUTES_PER_PAGE,
+  );
+
+  const recon = fd?.reconciliation;
+  const reconIssues =
+    (recon?.payment_mismatch_count ?? 0) +
+    (recon?.webhook_failures        ?? 0) +
+    (recon?.unmatched_items_count   ?? 0);
+
+  // Trend pagination
+  const allTrend        = fd?.revenue_trend ?? [];
+  const totalTrendPages = Math.ceil(allTrend.length / TREND_PER_PAGE);
+  const validTrendPage  = Math.min(trendPage, Math.max(0, totalTrendPages - 1));
+  const paginatedTrend  = allTrend.slice(
+    validTrendPage * TREND_PER_PAGE,
+    (validTrendPage + 1) * TREND_PER_PAGE,
+  );
+
+  // Channel pagination
+  const allChannels        = fd?.revenue_by_channel ?? [];
+  const totalChannelPages  = Math.ceil(allChannels.length / CHANNELS_PER_PAGE);
+  const validChannelPage   = Math.min(channelPage, Math.max(0, totalChannelPages - 1));
+  const paginatedChannels  = allChannels.slice(
+    validChannelPage * CHANNELS_PER_PAGE,
+    (validChannelPage + 1) * CHANNELS_PER_PAGE,
+  );
+
+  // ── Error state ─────────────────────────────────────────────────────────────
+  if (error && !financeData) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
-            <XCircle className="h-6 w-6 text-rose-500" />
-          </div>
-          <p className="font-semibold text-slate-800 dark:text-slate-200">Failed to load data</p>
-          <p className="text-sm text-slate-500">{error}</p>
+          <XCircle className="h-10 w-10 text-rose-500" />
+          <p className="font-semibold">Failed to load dashboard data</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <button
+            onClick={fetchOverview}
+            className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Retry
+          </button>
         </div>
       </div>
     );
   }
 
-  const formatCurrency = (val?: number | null) => `₱${(val ?? 0).toLocaleString()}`;
-
-  const daysElapsed = new Date().getDate();
-  const monthsElapsed = new Date().getMonth() + 1;
-  const dailyMtdAvg = daysElapsed > 0 ? kpiTotals.mtd / daysElapsed : 0;
-  const monthlyYtdAvg = monthsElapsed > 0 ? kpiTotals.ytd / monthsElapsed : 0;
-  const activeVessels = data?.revenue_by_vessel.length ?? 0;
-
-  const insights: Array<{ type: "success" | "warning" | "info"; label: string; message: string }> = data ? (() => {
-    const items: Array<{ type: "success" | "warning" | "info"; label: string; message: string }> = [];
-    if (data.revenue_by_route.length > 0) {
-      const top = [...data.revenue_by_route].sort((a, b) => b.total_revenue - a.total_revenue)[0];
-      const routeName = (top as any).route_name ?? top.canonical_route_name ?? "Unknown Route";
-      items.push({ type: "success", label: "Top Route", message: `${routeName} — ${formatCurrency(top.total_revenue)}` });
-    }
-    if (data.revenue_by_vessel.length > 0) {
-      const top = [...data.revenue_by_vessel].sort((a, b) => b.total_revenue - a.total_revenue)[0];
-      items.push({ type: "info", label: "Top Vessel", message: `${top.vessel_name} — ${formatCurrency(top.total_revenue)}` });
-    }
-    const totalTrips = data.kpi.total_trips + data.kpi.canceled_count;
-    const cancelRate = totalTrips > 0 ? (data.kpi.canceled_count / totalTrips) * 100 : 0;
-    items.push(cancelRate > 5
-      ? { type: "warning", label: "High Cancellations", message: `${cancelRate.toFixed(1)}% of bookings canceled this period` }
-      : { type: "success", label: "Cancellations", message: `${data.kpi.canceled_count} canceled — ${cancelRate.toFixed(1)}% rate` }
-    );
-    const totalRev = data.passenger_vs_cargo.passenger_revenue + data.passenger_vs_cargo.cargo_revenue;
-    if (totalRev > 0) {
-      const cargoShare = (data.passenger_vs_cargo.cargo_revenue / totalRev) * 100;
-      items.push({ type: "info", label: "Revenue Mix", message: `Cargo ${cargoShare.toFixed(1)}% · Passengers ${(100 - cargoShare).toFixed(1)}%` });
-    }
-    return items;
-  })() : [];
-
-  const kpis = [
-    { 
-      id: "today", 
-      title: "Sales Today", 
-      icon: Wallet, 
-      color: "text-primary", 
-      bg: "bg-red-50 dark:bg-red-950/20",
-      trend: computeTrend(kpiTotals.today, dailyMtdAvg, "vs daily avg"),
-    },
-    { 
-      id: "mtd", 
-      title: "MTD Revenue", 
-      icon: Calendar, 
-      color: "text-teal-600", 
-      bg: "bg-teal-50 dark:bg-teal-900/20",
-      trend: computeTrend(kpiTotals.mtd, monthlyYtdAvg, "vs monthly avg"),
-    },
-    { 
-      id: "ytd", 
-      title: "YTD Revenue", 
-      icon: TrendingUp, 
-      color: "text-blue-600", 
-      bg: "bg-blue-50 dark:bg-blue-900/20",
-      trend: undefined,
-    }
-  ];
-
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
-      {/* KPI Section */}
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 2xl:gap-3">
-          {kpis.map((kpi) => {
-            const isSelected = period === kpi.id;
-            const displayValue = formatCurrency(kpiTotals[kpi.id as keyof typeof kpiTotals]);
-            
-            return (
-              <KpiCard
-                key={kpi.id}
-                title={kpi.title}
-                value={isLoading && isSelected ? "..." : displayValue}
-                icon={kpi.icon}
-                iconColorClass={kpi.color}
-                iconBgColor={kpi.bg}
-                trend={kpi.trend}
-                variant="reference"
-                isActive={isSelected}
-                showDetails={isSelected}
-                onClick={() => setPeriod(kpi.id as any)}
-                breakdown={isSelected && data?.kpi ? [
-                  { label: "Passengers", value: (data.kpi.total_passengers ?? 0).toLocaleString(), icon: User },
-                  { label: "Cargo", value: `${(data.kpi.total_cargo_units ?? 0).toLocaleString()} units`, icon: Package },
-                  { label: "Canceled", value: (data.kpi.canceled_count ?? 0).toLocaleString(), icon: XCircle, valueColor: "text-rose-500" },
-                  { label: "Total Trips", value: (data.kpi.total_trips ?? 0).toLocaleString(), icon: Route },
-                  { label: "Expenses", value: formatCurrency(data.kpi.total_expenses), icon: PhilippinePeso },
-                ] : []}
-              />
-            );
-          })}
-          {/* Active Vessels Card */}
-          <KpiCard
-            title="Active Vessels"
-            value={isLoading ? "..." : activeVessels.toString()}
-            icon={Ship}
-            iconColorClass="text-violet-500"
-            iconBgColor="bg-violet-50 dark:bg-violet-950/20"
-            variant="reference"
-            breakdown={data?.revenue_by_vessel.length ? [...data.revenue_by_vessel]
-              .sort((a, b) => b.total_revenue - a.total_revenue)
-              .slice(0, 3)
-              .map(v => ({ label: v.vessel_name, value: formatCurrency(v.total_revenue), icon: Ship })) : []}
-          />
-        </section>
 
-      {/* Period Comparison */}
-      {!isLoading && (
-        <section>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-3">
-            <PeriodComparisonCard
-              title="Today vs Daily Avg"
-              currentLabel="Today"
-              currentValue={kpiTotals.today}
-              referenceLabel="MTD daily avg"
-              referenceValue={dailyMtdAvg}
-              format={formatCurrency}
+      {/* ── SECTION 1: Finance KPI Row ──────────────────────────────────────── */}
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 2xl:gap-3">
+
+        {(["today", "mtd", "ytd"] as const).map((p) => {
+          const netVal   = p === "today" ? today_net : p === "mtd" ? mtd_net   : ytd_net;
+          const grossVal = p === "today" ? fd?.kpi_today.gross_revenue  ?? 0
+                         : p === "mtd"   ? fd?.kpi_mtd.gross_revenue    ?? 0
+                         :                 fd?.kpi_ytd.gross_revenue    ?? 0;
+          const refundVal = p === "today" ? fd?.kpi_today.refund_amount ?? 0
+                          : p === "mtd"   ? fd?.kpi_mtd.refund_amount   ?? 0
+                          :                 fd?.kpi_ytd.refund_amount   ?? 0;
+          const margin = grossVal > 0 ? (netVal / grossVal) * 100 : 0;
+
+          const titles: Record<string, string> = {
+            today: "Net Revenue Today", mtd: "MTD Net Revenue", ytd: "YTD Net Revenue",
+          };
+          const trends: Record<string, ReturnType<typeof computeTrend>> = {
+            today: computeTrend(today_net, dailyMtdAvg,   "vs daily avg"),
+            mtd:   computeTrend(mtd_net,   monthlyYtdAvg, "vs monthly avg"),
+            ytd:   undefined,
+          };
+          const colors: Record<string, string> = {
+            today: "text-primary", mtd: "text-teal-600", ytd: "text-blue-600",
+          };
+          const bgs: Record<string, string> = {
+            today: "bg-red-50 dark:bg-red-950/20",
+            mtd:   "bg-teal-50 dark:bg-teal-900/20",
+            ytd:   "bg-blue-50 dark:bg-blue-900/20",
+          };
+          const icons: Record<string, typeof Wallet> = {
+            today: Wallet, mtd: Calendar, ytd: TrendingUp,
+          };
+          const periodKpiCount = (p === "today" ? fd?.kpi_today : p === "mtd" ? fd?.kpi_mtd : fd?.kpi_ytd);
+
+          return (
+            <KpiCard
+              key={p}
+              title={titles[p]}
+              value={isLoading && period === p ? "…" : fmtCurrency(netVal)}
+              icon={icons[p]}
+              iconColorClass={colors[p]}
+              iconBgColor={bgs[p]}
+              trend={trends[p]}
+              variant="reference"
+              isActive={period === p}
+              showDetails={period === p}
+              onClick={() => setPeriod(p)}
+              breakdown={
+                period === p
+                  ? [
+                      { label: "Gross Revenue", value: fmtCurrency(grossVal), icon: Wallet },
+                      {
+                        label: "Refunds",
+                        value: refundVal > 0 ? `-${fmtCurrency(refundVal)}` : "None",
+                        icon: RotateCcw,
+                        valueColor: refundVal > 0 ? "text-rose-500" : undefined,
+                      },
+                      {
+                        label: "Profit Margin",
+                        value: `${margin.toFixed(1)}%`,
+                        icon: TrendingUp,
+                        valueColor:
+                          margin < 0 ? "text-rose-500" : margin < 10 ? "text-amber-500" : "text-green-600",
+                      },
+                      {
+                        label: "Bookings",
+                        value: periodKpiCount?.booking_count.toLocaleString() ?? "—",
+                        icon: Route,
+                      },
+                      {
+                        label: "Passengers",
+                        value: periodKpiCount?.total_passengers.toLocaleString() ?? "—",
+                        icon: Users,
+                      },
+                    ]
+                  : []
+              }
             />
-            <PeriodComparisonCard
-              title="MTD vs Monthly Avg"
-              currentLabel="This month"
-              currentValue={kpiTotals.mtd}
-              referenceLabel="YTD monthly avg"
-              referenceValue={monthlyYtdAvg}
-              format={formatCurrency}
+          );
+        })}
+
+        {/* Active Vessels */}
+        {(() => {
+          const activeVessels = (legacyData?.revenue_by_vessel ?? []).filter(
+            (v) => v.total_revenue > 0,
+          );
+          return (
+            <KpiCard
+              title="Active Vessels"
+              value={isLoading ? "…" : activeVessels.length.toString()}
+              icon={Ship}
+              iconColorClass="text-violet-500"
+              iconBgColor="bg-violet-50 dark:bg-violet-950/20"
+              variant="reference"
+              breakdown={
+                activeVessels.length
+                  ? [...activeVessels]
+                      .sort((a, b) => b.total_revenue - a.total_revenue)
+                      .slice(0, 3)
+                      .map((v) => ({ label: v.vessel_name, value: fmtCurrency(v.total_revenue), icon: Ship }))
+                  : []
+              }
             />
-            {data && (
-              <PeriodComparisonCard
-                title="Passenger vs Cargo Revenue"
-                currentLabel="Passengers"
-                currentValue={data.passenger_vs_cargo.passenger_revenue}
-                referenceLabel="Cargo"
-                referenceValue={data.passenger_vs_cargo.cargo_revenue}
-                format={formatCurrency}
-              />
+          );
+        })()}
+
+        {/* Data Health */}
+        <KpiCard
+          title="Data Health"
+          value={isLoading ? "…" : reconIssues === 0 ? "Clean" : `${reconIssues} issues`}
+          icon={ShieldAlert}
+          iconColorClass={
+            reconIssues === 0 ? "text-green-600" : reconIssues < 5 ? "text-amber-500" : "text-rose-500"
+          }
+          iconBgColor={
+            reconIssues === 0
+              ? "bg-green-50 dark:bg-green-950/20"
+              : reconIssues < 5
+              ? "bg-amber-50 dark:bg-amber-950/20"
+              : "bg-rose-50 dark:bg-rose-950/20"
+          }
+          variant="reference"
+          breakdown={
+            recon
+              ? [
+                  {
+                    label: "Payment mismatches",
+                    value: recon.payment_mismatch_count.toString(),
+                    icon: ShieldAlert,
+                    valueColor: recon.payment_mismatch_count > 0 ? "text-rose-500" : undefined,
+                  },
+                  {
+                    label: "Refund gap",
+                    value: fmtCurrency(recon.refund_mismatch_amount),
+                    icon: RotateCcw,
+                    valueColor: recon.refund_mismatch_amount > 0 ? "text-amber-500" : undefined,
+                  },
+                  {
+                    label: "Webhook failures",
+                    value: recon.webhook_failures.toString(),
+                    icon: ShieldAlert,
+                    valueColor: recon.webhook_failures > 0 ? "text-rose-500" : undefined,
+                  },
+                ]
+              : []
+          }
+        />
+      </section>
+
+      {/* ── SECTION 2: Period Comparisons + Forecast ───────────────────────── */}
+      {!isLoading && fd && (
+        <section className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <ComparisonStrip label="Yesterday"  metric={fd.comparisons.yesterday}  currentNet={kpi?.net_revenue ?? 0} />
+          <ComparisonStrip label="Last Week"  metric={fd.comparisons.last_week}  currentNet={kpi?.net_revenue ?? 0} />
+          <ComparisonStrip label="Last Month" metric={fd.comparisons.last_month} currentNet={kpi?.net_revenue ?? 0} />
+          <ForecastPacingCard forecast={fd.forecast} kpiNetToday={today_net} kpiNetMtd={mtd_net} />
+        </section>
+      )}
+
+      {/* ── SECTION 3: Revenue Trend + Channel Performance ─────────────────── */}
+      <section className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <div className="rounded-md border border-border bg-card overflow-hidden">
+          <div className="flex items-center justify-between px-3 pt-3 pb-1.5">
+            <div>
+              <h2 className="text-xs font-semibold">Revenue Trend (Gross vs Net)</h2>
+              <p className="text-[11px] text-muted-foreground">Ledger-sourced — includes refund impact</p>
+            </div>
+            {totalTrendPages > 1 && (
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  disabled={validTrendPage === 0}
+                  onClick={() => setTrendPage((p) => Math.max(0, p - 1))}
+                  className="px-2 py-1 text-xs rounded border border-border disabled:opacity-40 hover:bg-muted transition-colors"
+                >‹</button>
+                <span className="text-[11px] text-muted-foreground px-1">
+                  {validTrendPage + 1}/{totalTrendPages}
+                </span>
+                <button
+                  disabled={validTrendPage >= totalTrendPages - 1}
+                  onClick={() => setTrendPage((p) => Math.min(totalTrendPages - 1, p + 1))}
+                  className="px-2 py-1 text-xs rounded border border-border disabled:opacity-40 hover:bg-muted transition-colors"
+                >›</button>
+              </div>
             )}
           </div>
-        </section>
-      )}
-
-      {/* Charts Section */}
-      <section className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:grid-cols-4">
-          {isLoading || !data ? (
-            <>
-              <Skeleton className="h-[200px] w-full rounded-md md:h-[240px] 2xl:h-[280px]" />
-              <Skeleton className="h-[200px] w-full rounded-md md:h-[240px] 2xl:h-[280px]" />
-              <Skeleton className="h-[200px] w-full rounded-md md:h-[240px] 2xl:h-[280px]" />
-              <Skeleton className="h-[200px] w-full rounded-md md:h-[240px] 2xl:h-[280px]" />
-            </>
+          {isLoading ? (
+            <div className="p-4"><Skeleton className="h-60 w-full rounded" /></div>
           ) : (
-            <>
-              {/* Revenue Trend */}
-              <div className="h-full flex flex-col rounded-md border border-border bg-card overflow-hidden">
-                <ShadcnOverviewRegularLineChart
-                  title="Booking Revenue Trend"
-                  description="Revenue performance over time"
-                  data={data.revenue_trend}
-                  config={{
-                    total_revenue: {
-                      label: "Revenue",
-                      color: "var(--chart-1)",
-                    },
-                  }}
-                  dataKey="total_revenue"
-                  labelKey="label"
-                  color="var(--chart-1)"
-                />
-              </div>
-
-              {/* Revenue by Route */}
-              {(() => {
-                const filteredRoutes = [...data.revenue_by_route].sort((a, b) => b.total_revenue - a.total_revenue);
-                const ROUTES_PER_PAGE = 3;
-                const totalRoutePages = Math.ceil(filteredRoutes.length / ROUTES_PER_PAGE);
-                
-                const validRoutePage = Math.min(routePage, Math.max(0, totalRoutePages - 1));
-                const paginatedRoutes = filteredRoutes
-                  .slice(validRoutePage * ROUTES_PER_PAGE, (validRoutePage + 1) * ROUTES_PER_PAGE)
-                  .map((d, i) => ({ ...d, fill: `var(--chart-${(i % 5) + 1})` }));
-
-                const routeConfig = {
-                  total_revenue: {
-                    label: "Revenue",
-                  },
-                } satisfies ChartConfig;
-                
-                return (
-                  <div className="h-full flex flex-col rounded-md border border-border bg-card overflow-hidden">
-                    <ShadcnOverviewBarChartHorizontal
-                      title="Revenue by Route"
-                      description="Performance across different routes"
-                      data={paginatedRoutes}
-                      config={routeConfig}
-                      dataKey="total_revenue"
-                      labelKey="route_name"
-                      colorKey="total_revenue"
-                      hideYAxis={true}
-                      pagination={{
-                        currentPage: validRoutePage,
-                        totalPages: totalRoutePages,
-                        onNext: () => setRoutePage(validRoutePage + 1),
-                        onPrev: () => setRoutePage(validRoutePage - 1),
-                      }}
-                    />
-                  </div>
-                );
-              })()}
-
-              {/* Revenue per Vessel */}
-              {(() => {
-                const filteredVessels = [...data.revenue_by_vessel].sort((a, b) => b.total_revenue - a.total_revenue);
-                const VESSELS_PER_PAGE = 10;
-                const totalVesselPages = Math.ceil(filteredVessels.length / VESSELS_PER_PAGE);
-
-                const validVesselPage = Math.min(vesselPage, Math.max(0, totalVesselPages - 1));
-                const paginatedVessels = filteredVessels
-                  .slice(validVesselPage * VESSELS_PER_PAGE, (validVesselPage + 1) * VESSELS_PER_PAGE)
-                  .map((d, i) => ({ ...d, fill: `var(--chart-${(i % 5) + 1})` }));
-
-                const vesselConfig = {
-                  total_revenue: {
-                    label: "Revenue",
-                  },
-                } satisfies ChartConfig;
-
-                return (
-                  <div className="h-full flex flex-col rounded-md border border-border bg-card overflow-hidden">
-                    <ShadcnOverviewBarChartVertical
-                      title="Revenue per Vessel"
-                      description="Performance breakdown by ship"
-                      data={paginatedVessels}
-                      config={vesselConfig}
-                      dataKey="total_revenue"
-                      labelKey="vessel_name"
-                      colorKey="total_revenue"
-                      pagination={{
-                        currentPage: validVesselPage,
-                        totalPages: totalVesselPages,
-                        onNext: () => setVesselPage(validVesselPage + 1),
-                        onPrev: () => setVesselPage(validVesselPage - 1),
-                      }}
-                    />
-                  </div>
-                );
-              })()}
-
-              {/* Revenue Split */}
-              {(() => {
-                const outerData = [
-                  { 
-                    name: "Passengers", 
-                    value: data.passenger_vs_cargo.passenger_revenue, 
-                    fill: "var(--chart-1)",
-                    isInner: false,
-                    category: 'pax',
-                    sourceBreakdown: Object.entries(data.passenger_vs_cargo.by_source || {}).map(([source, sData]) => ({
-                      source,
-                      revenue: Object.values(sData.pax || {}).reduce((acc: number, curr) => acc + (curr.revenue || 0), 0)
-                    })).filter(s => s.revenue > 0)
-                  },
-                  { 
-                    name: "Cargo", 
-                    value: data.passenger_vs_cargo.cargo_revenue, 
-                    fill: "var(--chart-2)",
-                    isInner: false,
-                    category: 'cargo',
-                    sourceBreakdown: [
-                      ...Object.entries(data.passenger_vs_cargo.cargo_class_breakdown?.rolling || {}).map(([name, rev]) => ({
-                        source: `Vehicle: ${name.replace(/\b\w/g, c => c.toUpperCase())}`,
-                        revenue: rev as number
-                      })),
-                      ...Object.entries(data.passenger_vs_cargo.cargo_class_breakdown?.loose || {}).map(([name, rev]) => ({
-                        source: `Goods: ${name.replace(/\b\w/g, c => c.toUpperCase())}`,
-                        revenue: rev as number
-                      }))
-                    ]
-                    .filter(s => s.revenue > 0)
-                    .sort((a, b) => b.revenue - a.revenue)
-                  }
-                ];
-
-                const paxColors: Record<string, string> = {
-                  adult: "var(--chart-1)", student: "var(--chart-2)", child: "var(--chart-3)",
-                  senior: "var(--chart-4)", pwd: "var(--chart-5)", regular: "var(--chart-1)",
-                  driver: "var(--chart-2)", helper: "var(--chart-3)"
-                };
-                const cargoColors: Record<string, string> = { loose: "var(--chart-4)", rolling: "var(--chart-5)" };
-
-                const innerData = [
-                  ...Object.entries(data.passenger_vs_cargo.pax_breakdown || {})
-                    .filter(([_, v]) => (v as number) > 0)
-                    .map(([k, v]) => ({
-                      name: k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '),
-                      value: v as number,
-                      fill: paxColors[k.toLowerCase()] || "var(--chart-1)",
-                      isInner: true,
-                      category: 'pax',
-                      sourceBreakdown: Object.entries(data.passenger_vs_cargo.by_source || {}).map(([source, sData]) => ({
-                        source,
-                        revenue: sData.pax?.[k]?.revenue || sData.pax?.[k.toUpperCase()]?.revenue || 0
-                      })).filter(s => s.revenue > 0)
-                    })),
-                  ...Object.entries(data.passenger_vs_cargo.cargo_breakdown || {})
-                    .filter(([_, v]) => (v as number) > 0)
-                    .map(([k, v]) => ({
-                      name: k === 'rolling' ? 'Rolling (Vehicles)' : k === 'loose' ? 'Loose Goods' : k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '),
-                      value: v as number,
-                      fill: cargoColors[k.toLowerCase()] || "var(--chart-4)",
-                      isInner: true,
-                      category: 'cargo',
-                      sourceBreakdown: Object.entries(data.passenger_vs_cargo.cargo_class_breakdown?.[k.toLowerCase() as 'rolling' | 'loose'] || {})
-                        .map(([className, revenue]) => ({
-                          source: k === 'rolling'
-                            ? `Vehicle: ${className.replace(/\b\w/g, c => c.toUpperCase())}`
-                            : `Goods: ${className.replace(/\b\w/g, c => c.toUpperCase())}`,
-                          revenue: revenue as number
-                        }))
-                        .filter(s => s.revenue > 0)
-                        .sort((a, b) => b.revenue - a.revenue)
-                    }))
-                ];
-
-                const pieConfig = {
-                  value: { label: "Revenue" },
-                  Passengers: { label: "Passengers", color: "var(--chart-1)" },
-                  Cargo: { label: "Cargo", color: "var(--chart-2)" },
-                } satisfies ChartConfig;
-
-                return (
-                  <div className="h-full flex flex-col rounded-md border border-border bg-card overflow-visible">
-                    <ShadnOverviewStackedPieChart
-                      title="Revenue Source Breakdown"
-                      description="Split between passengers and cargo types"
-                      innerData={innerData}
-                      outerData={outerData}
-                      config={pieConfig}
-                      innerDataKey="value"
-                      outerDataKey="value"
-                      nameKey="name"
-                    />
-                  </div>
-                );
-              })()}
-            </>
+            <RevenueTrendChart data={paginatedTrend} period={period} />
           )}
-        </section>
+        </div>
 
-      {/* Operational Insights */}
-      {!isLoading && insights.length > 0 && (
+        <div className="rounded-md border border-border bg-card overflow-hidden">
+          <div className="flex items-center justify-between px-3 pt-3 pb-1.5">
+            <div>
+              <h2 className="text-xs font-semibold">Revenue by Channel</h2>
+              <p className="text-[11px] text-muted-foreground">Normalised sources — revenue, bookings &amp; avg ticket size</p>
+            </div>
+            {totalChannelPages > 1 && (
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  disabled={validChannelPage === 0}
+                  onClick={() => setChannelPage((p) => Math.max(0, p - 1))}
+                  className="px-2 py-1 text-xs rounded border border-border disabled:opacity-40 hover:bg-muted transition-colors"
+                >‹</button>
+                <span className="text-[11px] text-muted-foreground px-1">
+                  {validChannelPage + 1}/{totalChannelPages}
+                </span>
+                <button
+                  disabled={validChannelPage >= totalChannelPages - 1}
+                  onClick={() => setChannelPage((p) => Math.min(totalChannelPages - 1, p + 1))}
+                  className="px-2 py-1 text-xs rounded border border-border disabled:opacity-40 hover:bg-muted transition-colors"
+                >›</button>
+              </div>
+            )}
+          </div>
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded" />)}
+            </div>
+          ) : (
+            <ChannelRevenuePanel channels={paginatedChannels} allChannels={allChannels} />
+          )}
+        </div>
+      </section>
+
+      {/* ── SECTION 4: Route Profitability ─────────────────────────────────── */}
+      <section>
+        <div className="rounded-md border border-border bg-card overflow-hidden">
+          <div className="flex items-center justify-between px-3 pt-3 pb-1.5">
+            <div>
+              <h2 className="text-xs font-semibold">Route Profitability</h2>
+              <p className="text-[11px] text-muted-foreground">
+                Gross → Net margin · 🟢 &gt;25% · 🟡 10–25% · 🔴 loss
+              </p>
+            </div>
+            {totalRoutePages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={validRoutePage === 0}
+                  onClick={() => setRoutePage((p) => Math.max(0, p - 1))}
+                  className="px-2 py-1 text-xs rounded border border-border disabled:opacity-40 hover:bg-muted transition-colors"
+                >‹</button>
+                <span className="text-[11px] text-muted-foreground px-1">
+                  {validRoutePage + 1}/{totalRoutePages}
+                </span>
+                <button
+                  disabled={validRoutePage >= totalRoutePages - 1}
+                  onClick={() => setRoutePage((p) => Math.min(totalRoutePages - 1, p + 1))}
+                  className="px-2 py-1 text-xs rounded border border-border disabled:opacity-40 hover:bg-muted transition-colors"
+                >›</button>
+              </div>
+            )}
+          </div>
+          {isLoading ? (
+            <div className="p-4 space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded" />)}
+            </div>
+          ) : (
+            <RouteProfitabilityTable routes={paginatedRoutes} maxRows={ROUTES_PER_PAGE} />
+          )}
+        </div>
+      </section>
+
+      {/* ── SECTION 5: Reconciliation & Data Health ────────────────────────── */}
+      <section>
+        <div className="rounded-md border border-border bg-card overflow-hidden">
+          <SectionHeader
+            title="Reconciliation & Data Health"
+            subtitle="Financial integrity checks — mismatches trigger accounting risk"
+          />
+          {isLoading ? (
+            <div className="p-4 grid grid-cols-4 gap-2">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded" />)}
+            </div>
+          ) : recon ? (
+            <ReconciliationAlerts data={recon} />
+          ) : null}
+        </div>
+      </section>
+
+      {/* ── SECTION 6: Vessel Revenue Bar Chart ────────────────────────────── */}
+      {!isLoading && legacyData?.revenue_by_vessel && (
         <section>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-4">
-            {insights.map((insight, i) => {
-              const styles = {
-                success: {
-                  bg: "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/50",
-                  icon: CheckCircle,
-                  iconColor: "text-green-600 dark:text-green-400",
-                  badge: "bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-400",
-                },
-                warning: {
-                  bg: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50",
-                  icon: AlertTriangle,
-                  iconColor: "text-amber-600 dark:text-amber-400",
-                  badge: "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400",
-                },
-                info: {
-                  bg: "bg-[var(--info-bg)] border-[var(--info-border)]",
-                  icon: Info,
-                  iconColor: "text-[var(--info-text)]",
-                  badge: "bg-[var(--info-bg)] text-[var(--info-text)]",
-                },
-              }[insight.type];
-              const InsightIcon = styles.icon;
-              return (
-                <div key={i} className={`flex items-start gap-2 rounded-md border p-3 ${styles.bg}`}>
-                  <InsightIcon className={`h-4 w-4 mt-0.5 shrink-0 ${styles.iconColor}`} />
-                  <div className="min-w-0">
-                    <span className={`inline-block px-2 py-0.5 text-[11px] font-medium rounded mb-1 ${styles.badge}`}>
-                      {insight.label}
-                    </span>
-                    <p className="text-sm text-foreground leading-snug">{insight.message}</p>
+          <div className="rounded-md border border-border bg-card overflow-hidden">
+            <SectionHeader title="Revenue per Vessel" subtitle="Gross revenue from BI view" />
+            {(() => {
+              const sorted = [...legacyData.revenue_by_vessel]
+                .filter((d) => d.total_revenue > 0)
+                .sort((a, b) => b.total_revenue - a.total_revenue)
+                .slice(0, 8);
+
+              if (sorted.length === 0) {
+                return (
+                  <div className="flex items-center justify-center h-16 text-sm text-muted-foreground px-4 pb-4">
+                    No vessel revenue recorded for this period
                   </div>
+                );
+              }
+
+              const max = sorted[0].total_revenue;
+              const colors = ["bg-chart-1", "bg-chart-2", "bg-chart-3", "bg-chart-4", "bg-chart-5"];
+              return (
+                <div className="px-5 pb-5 space-y-3">
+                  {sorted.map((d, i) => {
+                    const pct = max > 0 ? (d.total_revenue / max) * 100 : 0;
+                    return (
+                      <div key={d.vessel_name} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-foreground truncate max-w-[60%]">{d.vessel_name}</span>
+                          <span className="text-muted-foreground font-mono">{fmtCurrency(d.total_revenue)}</span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${colors[i % colors.length]}`}
+                            style={{ width: `${pct}%`, backgroundColor: `var(--chart-${(i % 5) + 1})` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               );
-            })}
+            })()}
           </div>
         </section>
       )}
 
-      {/* Live Activity + Today's Schedule */}
+      {/* ── SECTION 7: Live Activity + Today's Schedule ────────────────────── */}
       <section className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:gap-3">
-        {/* Live Activity Feed */}
         <div className="rounded-md border border-border bg-card overflow-hidden flex flex-col">
-          <div className="px-3 pt-3 pb-1.5 flex items-center justify-between">
-            <div>
-              <h2 className="text-xs font-semibold">Live Activity Feed</h2>
-              <p className="text-[11px] text-muted-foreground">Recent bookings across all routes</p>
-            </div>
-          </div>
+          <SectionHeader title="Live Activity Feed" subtitle="Recent bookings across all routes" />
           {widgetsLoading ? (
             <div className="p-4 space-y-3">
               {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded" />)}
@@ -624,12 +642,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Today's Schedule Timeline */}
         <div className="rounded-md border border-border bg-card overflow-hidden flex flex-col">
-          <div className="px-3 pt-3 pb-1.5">
-            <h2 className="text-xs font-semibold">Today's Schedule</h2>
-            <p className="text-[11px] text-muted-foreground">All trips departing today</p>
-          </div>
+          <SectionHeader title="Today's Schedule" subtitle="All trips departing today" />
           {widgetsLoading ? (
             <div className="p-4 space-y-3">
               {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded" />)}
@@ -640,30 +654,25 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Capacity Heatmap */}
+      {/* ── SECTION 8: Capacity Heatmap ────────────────────────────────────── */}
       <section>
         <div className="rounded-md border border-border bg-card overflow-hidden">
-          <div className="px-3 pt-3 pb-1.5">
-            <h2 className="text-xs font-semibold">Capacity Utilization Heatmap</h2>
-            <p className="text-[11px] text-muted-foreground">Passenger load by route and date (current month)</p>
-          </div>
+          <SectionHeader
+            title="Capacity Utilization Heatmap"
+            subtitle="Passenger load by route and date (current month)"
+          />
           {widgetsLoading ? (
-            <div className="p-4">
-              <Skeleton className="h-40 w-full rounded" />
-            </div>
+            <div className="p-4"><Skeleton className="h-40 w-full rounded" /></div>
           ) : (
             <CapacityHeatmap cells={capacityHeatmap} />
           )}
         </div>
       </section>
 
-      {/* Top Travel Agents */}
+      {/* ── SECTION 9: Top Travel Agents ───────────────────────────────────── */}
       <section>
         <div className="rounded-md border border-border bg-card overflow-hidden">
-          <div className="px-3 pt-3 pb-1.5">
-            <h2 className="text-xs font-semibold">Top Travel Agents</h2>
-            <p className="text-[11px] text-muted-foreground">Agents ranked by revenue (current month)</p>
-          </div>
+          <SectionHeader title="Top Travel Agents" subtitle="Agents ranked by revenue (current month)" />
           {widgetsLoading ? (
             <div className="p-4 space-y-2">
               {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded" />)}
