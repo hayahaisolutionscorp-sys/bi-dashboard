@@ -28,4 +28,22 @@ export const API_ENDPOINTS = {
 	TOP_AGENTS: "/bi/top-agents",
 	ROUTE_SEA_PATHS: "/public/routes/sea-paths",
 	OVERVIEW_FINANCE: "/bi/overview/finance",
+
+	// ── Analytics (Finance-Grade) ─────────────────────────────────────────────
+	ANALYTICS_EXECUTIVE_OVERVIEW: "/bi/analytics/executive/overview",
+	ANALYTICS_EXECUTIVE_KPIS: "/bi/analytics/executive/kpis",
+	ANALYTICS_EXECUTIVE_FORECAST: "/bi/analytics/executive/forecast",
+	ANALYTICS_FINANCIALS_REVENUE: "/bi/analytics/financials/revenue",
+	ANALYTICS_FINANCIALS_PROFITABILITY: "/bi/analytics/financials/profitability",
+	ANALYTICS_FINANCIALS_EXPENSES: "/bi/analytics/financials/expenses",
+	ANALYTICS_FINANCIALS_RECONCILIATION: "/bi/analytics/financials/reconciliation",
+	ANALYTICS_SALES_OVERVIEW: "/bi/analytics/sales/overview",
+	ANALYTICS_SALES_CHANNELS: "/bi/analytics/sales/channels",
+	ANALYTICS_SALES_INSIGHTS: "/bi/analytics/sales/insights",
+	ANALYTICS_DEMAND_PASSENGERS: "/bi/analytics/demand/passengers",
+	ANALYTICS_DEMAND_CARGO: "/bi/analytics/demand/cargo",
+	ANALYTICS_DEMAND_TRENDS: "/bi/analytics/demand/trends",
+	ANALYTICS_OPERATIONS_SCHEDULE: "/bi/analytics/operations/schedule",
+	ANALYTICS_OPERATIONS_LIVE: "/bi/analytics/operations/live",
+	ANALYTICS_ASSETS_VESSELS: "/bi/analytics/assets/vessels",
 } as const

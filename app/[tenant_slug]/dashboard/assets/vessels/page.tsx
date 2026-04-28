@@ -1,255 +1,89 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { SimpleKpiCard } from "@/components/charts/simple-kpi-card";
-import { VesselsService } from "@/services/vessels.service";
-import { VesselsResponse } from "@/types/vessels";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { DateRange } from "react-day-picker";
-import { useParams } from "next/navigation";
+import { Ship, Wallet, BarChart2, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
-import { Ship, TrendingUp, Users, Banknote, Wrench, Compass } from "lucide-react";
-import { useTenant } from "@/components/providers/tenant-provider";
-
-// Shadcn Charts
+import { SimpleKpiCard } from "@/components/charts/simple-kpi-card";
+import { BiFilterBar } from "@/components/bi-filter-bar";
 import { ShadcnBarChartHorizontal } from "@/components/charts/shadcn-bar-chart.horizontal";
-import { ShadcnBarChartMultiple } from "@/components/charts/shadcn-bar-chart-multiple";
-import { ShadcnBarChartVertical } from "@/components/charts/shadcn-bar-chart-vertical";
-import { ShadcnLineChartRegular } from "@/components/charts/shadcn-line-chart-regular";
-import { Heatmap } from "@/components/charts/heatmap";
-import { ChartConfig } from "@/components/ui/chart";
+import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
+import { useVessels } from "@/services/bi/bi.hooks";
 
-export default function VesselsPage() {
-  const { activeTenant, isLoading: isTenantLoading } = useTenant();
-  const params = useParams();
-  const tenant_slug = params.tenant_slug as string;
+const fmtM = (n: number) => n >= 1_000_000 ? `₱${(n / 1_000_000).toFixed(2)}M` : `₱${n.toLocaleString()}`;
 
-  const [data, setData] = useState<VesselsResponse["data"] | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-    const now = new Date();
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(now.getMonth() - 2);
-    return { from: threeMonthsAgo, to: now };
-  });
+export default function VesselsAssetsPage() {
+  const { data, isLoading } = useVessels();
+  const s = data?.summary;
 
-  const [fleetPage, setFleetPage] = useState(0);
-  const itemsPerPage = 10;
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!activeTenant?.api_base_url) return;
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await VesselsService.getVesselsDashboard(
-          activeTenant.api_base_url, 
-          tenant_slug, 
-          dateRange, 
-          activeTenant.service_key
-        );
-        setData(response.data);
-        if (isInitialLoad) {
-          setTimeout(() => setIsInitialLoad(false), 500);
-        }
-      } catch (err) {
-        setError("Failed to load vessels report. Please try again.");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    if (tenant_slug) fetchData();
-  }, [tenant_slug, dateRange, activeTenant]);
-
-  const handleClearFilter = () => {
-    const now = new Date();
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(now.getMonth() - 2);
-    setDateRange({ from: threeMonthsAgo, to: now });
-  };
-
-  const mapIcon = (iconName: string): any => {
-    const map: Record<string, any> = {
-      ship: Ship,
-      activity: TrendingUp,
-      users: Users,
-      banknote: Banknote,
-      wrench: Wrench,
-      navigation: Compass,
-    };
-    return map[iconName] || TrendingUp;
-  };
-
-  const getTrendData = () => {
-    if (!data?.tripDensity) return [];
-    const aggregated = data.tripDensity.reduce((acc, curr) => {
-      if (!acc[curr.date]) acc[curr.date] = { date: curr.date, trip_count: 0 };
-      acc[curr.date].trip_count += curr.trip_count;
-      return acc;
-    }, {} as Record<string, { date: string; trip_count: number }>);
-
-    return Object.values(aggregated).sort((a, b) => a.date.localeCompare(b.date));
-  };
-
-  const getPaginatedFleetData = () => {
-    if (!data?.fleetLoadFactor) return [];
-    const sorted = [...data.fleetLoadFactor].sort((a, b) => 
-      a.vessel_name.localeCompare(b.vessel_name)
-    );
-    const start = fleetPage * itemsPerPage;
-    return sorted.slice(start, start + itemsPerPage);
-  };
-
-  const totalFleetPages = data?.fleetLoadFactor ? Math.ceil(data.fleetLoadFactor.length / itemsPerPage) : 0;
-
-  // Derive correct fleet counts from successfulTripsCount (pre-seeded with all registered vessels),
-  // overriding kpiData values when the backend returns 0 due to no trips in the period.
-  const derivedKpiData = useMemo(() => {
-    if (!data) return [];
-    const stc = data.successfulTripsCount ?? [];
-    const computedTotalFleet = stc.length;
-    const computedActiveFleet = stc.filter(
-      v => v.successful_trips.length + (v.cancelled_trips?.length ?? 0) > 0
-    ).length;
-    return data.kpiData.map(kpi => {
-      if (kpi.title === "Total Fleet" && computedTotalFleet > 0)
-        return { ...kpi, value: computedTotalFleet };
-      if (kpi.title === "Active Fleet")
-        return { ...kpi, value: computedActiveFleet };
-      return kpi;
-    });
-  }, [data]);
-
-
-  if (error) {
-    return (
-      <div className="flex h-[400px] items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
-            <Ship className="h-6 w-6 text-rose-500" />
-          </div>
-          <p className="font-semibold text-slate-800 dark:text-slate-200">Failed to load data</p>
-          <p className="text-sm text-slate-500">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
+  const vesselRevBar = (data?.breakdown ?? [])
+    .slice().sort((a, b) => b.net_revenue - a.net_revenue)
+    .map((v) => ({ label: v.vessel_name, revenue: v.net_revenue }));
 
   return (
-    <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
-      {/* Header Section */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-            <span className="font-medium">Date Range:</span>
-            <DateRangePicker date={dateRange} onDateChange={setDateRange} />
-          </div>
+    <div className="flex flex-col gap-4 p-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-base font-semibold">Vessel Assets</h1>
+        <BiFilterBar />
+      </div>
 
-          <button
-            type="button"
-            onClick={handleClearFilter}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-secondary self-end sm:self-auto"
-          >
-            Reset Filter
-          </button>
-        </div>
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <SimpleKpiCard label="Total Vessels"    value={isLoading ? "…" : (s?.total_vessels ?? 0).toString()}          icon={Ship}     colorClass="text-violet-500" />
+        <SimpleKpiCard label="Total Revenue"    value={isLoading ? "…" : fmtM(s?.total_revenue ?? 0)}                 icon={Wallet}   colorClass="text-primary" />
+        <SimpleKpiCard label="Total Trips"      value={isLoading ? "…" : (s?.total_trips ?? 0).toLocaleString()}      icon={BarChart2} colorClass="text-teal-600" />
+        <SimpleKpiCard label="Total Passengers" value={isLoading ? "…" : (s?.total_passengers ?? 0).toLocaleString()} icon={Users}    colorClass="text-blue-600" />
+      </section>
 
-      {/* KPI Row */}
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-[repeat(auto-fit,minmax(0,1fr))] 2xl:gap-3">
-          {isInitialLoad || !data ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-xl" />
-            ))
+      <section>
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
+          {isLoading ? (
+            <div className="p-4 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-8 w-full rounded" />)}</div>
+          ) : vesselRevBar.length === 0 ? (
+            <NoDataPlaceholder height="200px" message="No vessel revenue data" />
           ) : (
-            (derivedKpiData).map((kpi, idx) => {
-              const colors = ["text-blue-500", "text-green-500", "text-orange-500", "text-purple-500", "text-yellow-500", "text-red-500"];
-              return (
-                <SimpleKpiCard
-                  key={idx}
-                  label={kpi.title}
-                  value={String(kpi.value)}
-                  icon={mapIcon(kpi.icon)}
-                  colorClass={colors[idx % colors.length]}
-                  indicatorText={kpi.change}
-                  indicatorDirection={kpi.trend}
-                  subtext={kpi.description}
-                />
-              );
-            })
+            <ShadcnBarChartHorizontal data={vesselRevBar} config={{ revenue: { label: "Net Revenue", color: "var(--chart-1)" } }} title="Revenue by Vessel" description="Net revenue per vessel" dataKey="revenue" labelKey="label" />
           )}
-        </section>
-        
-      {/* Charts Section */}
-      <section className="grid grid-cols-1 gap-2 2xl:gap-3">
-          
-          <div className="rounded-xl border border-border bg-card">
-            {isLoading ? (
-              <Skeleton className="h-[280px] w-full rounded-xl md:h-[360px] 2xl:h-[420px]" />
-            ) : !data || !data.fleetLoadFactor || data.fleetLoadFactor.length === 0 ? (
-              <NoDataPlaceholder height="360px" />
-            ) : (
-              <div className="flex h-[280px] md:h-[360px] 2xl:h-[420px] min-h-0 flex-col">
-                <ShadcnBarChartVertical
-                  title="Fleet Load Factor"
-                  description="Passenger utilization per vessel"
-                  data={getPaginatedFleetData()}
-                  labelKey="vessel_name"
-                  dataKey="pax_utilization"
-                  config={{
-                    pax_utilization: { label: "Passenger %", color: "#3b82f6" }
-                  }}
-                  minPointSize={5}
-                  pagination={{
-                    currentPage: fleetPage,
-                    totalPages: totalFleetPages,
-                    onNext: () => setFleetPage(p => Math.min(totalFleetPages - 1, p + 1)),
-                    onPrev: () => setFleetPage(p => Math.max(0, p - 1)),
-                  }}
-                />
-              </div>
-            )}
-          </div>
-          
-          {/* Trip Efficiency (Revenue per Trip) */}
-          {/* <div className="rounded-xl border border-border bg-card p-2 min-h-[400px]">
-            {isLoading ? (
-              <Skeleton className="h-[380px] w-full rounded-xl" />
-            ) : !data || !data.tripEfficiency || data.tripEfficiency.length === 0 ? (
-              <NoDataPlaceholder height="380px" />
-            ) : (
-              <ShadcnBarChartHorizontal
-                title="Trip Efficiency"
-                description="Average revenue generated per trip by vessel"
-                data={data.tripEfficiency}
-                dataKey="avg_revenue_per_trip"
-                labelKey="vessel_name"
-                hideYAxis={false}
-                config={{
-                  avg_revenue_per_trip: { label: "Avg Revenue", color: "#f59e0b" }
-                }}
-              />
-            )}
-          </div> */}
+        </div>
+      </section>
 
-          <div className="rounded-xl border border-border bg-card">
-            {isLoading ? (
-              <Skeleton className="h-[240px] w-full rounded-xl md:h-[320px] 2xl:h-[380px]" />
-            ) : !data || !data.successfulTripsCount || data.successfulTripsCount.length === 0 ? (
-              <NoDataPlaceholder height="320px" />
-            ) : (
-              <Heatmap
-                title="Trip Density Heatmap"
-                description="Daily completed trips per vessel"
-                data={data.successfulTripsCount}
-                dateRange={dateRange as { from: Date; to: Date }}
-              />
-            )}
+      <section>
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="px-4 pt-4 pb-2">
+            <h2 className="text-xs font-semibold">Vessel Performance Table</h2>
           </div>
-
+          {isLoading ? (
+            <div className="p-4 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded" />)}</div>
+          ) : (data?.breakdown ?? []).length === 0 ? (
+            <NoDataPlaceholder height="160px" message="No vessel data" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">Vessel</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">Trips</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">Passengers</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">Net Revenue</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">Net Income</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">Avg Rev/Trip</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data?.breakdown ?? [])
+                    .slice().sort((a, b) => b.net_revenue - a.net_revenue)
+                    .map((v) => (
+                      <tr key={v.ship_id} className="border-b border-border/60 hover:bg-muted/30">
+                        <td className="px-3 py-2 font-medium">{v.vessel_name}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{v.trip_count}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{v.pax_count.toLocaleString()}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtM(v.net_revenue)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtM(v.net_income)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtM(v.avg_revenue_per_trip)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

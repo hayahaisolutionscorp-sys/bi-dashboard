@@ -49,6 +49,22 @@ import { ForecastPacingCard } from "@/components/charts/forecast-pacing-card";
 import { ChartConfig } from "@/components/ui/chart";
 import { useTenant } from "@/components/providers/tenant-provider";
 import { cn } from "@/lib/utils";
+import {
+  useExecutiveAISummary,
+  useExecutiveKPIs,
+  useFleetAnalytics,
+  useForecastMetrics,
+  useRouteInsights,
+} from "@/hooks/use-executive-intelligence";
+import { ExecutiveAlertBanner, type ExecutiveAlert } from "@/components/executive/executive-alert-banner";
+import { ExecutiveDecisionCards } from "@/components/executive/executive-decision-cards";
+import { StrategicKPILayer } from "@/components/executive/strategic-kpi-layer";
+import { ForecastIntelligencePanel } from "@/components/executive/forecast-intelligence-panel";
+import { ExecutiveComparisonPanel } from "@/components/executive/executive-comparison-panel";
+import { ExecutiveAISummaryCard } from "@/components/executive/executive-ai-summary-card";
+import { TopDriversPanel } from "@/components/executive/top-drivers-panel";
+import { TimeIntelligenceLayer } from "@/components/executive/time-intelligence-layer";
+import { StrategicRouteIntelligenceMap } from "@/components/executive/strategic-route-intelligence-map";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -257,6 +273,7 @@ export default function DashboardPage() {
   const recon = fd?.reconciliation;
   const reconIssues =
     (recon?.payment_mismatch_count ?? 0) +
+    (recon?.refund_mismatch_booking_count ?? 0) +
     (recon?.webhook_failures        ?? 0) +
     (recon?.unmatched_items_count   ?? 0);
 
@@ -277,6 +294,24 @@ export default function DashboardPage() {
     validChannelPage * CHANNELS_PER_PAGE,
     (validChannelPage + 1) * CHANNELS_PER_PAGE,
   );
+
+  // Executive intelligence selectors
+  const executiveKpis = useExecutiveKPIs(fd, legacyData);
+  const routeInsights = useRouteInsights(fd, todaySchedule);
+  const forecastMetrics = useForecastMetrics(fd, routeInsights);
+  const fleetAnalytics = useFleetAnalytics(todaySchedule, capacityHeatmap);
+  const aiSummary = useExecutiveAISummary(fd, routeInsights, fleetAnalytics);
+
+  const executiveAlerts: ExecutiveAlert[] = [
+    ...(routeInsights.decisions
+      .filter((c) => c.severity === "critical")
+      .slice(0, 2)
+      .map((c) => ({ message: `${c.title}: ${c.delta}`, severity: "critical" as const }))),
+    ...(routeInsights.decisions
+      .filter((c) => c.severity === "warning")
+      .slice(0, 1)
+      .map((c) => ({ message: `${c.title}: ${c.delta}`, severity: "warning" as const }))),
+  ];
 
   // ── Error state ─────────────────────────────────────────────────────────────
   if (error && !financeData) {
@@ -406,48 +441,6 @@ export default function DashboardPage() {
             />
           );
         })()}
-
-        {/* Data Health */}
-        <KpiCard
-          title="Data Health"
-          value={isLoading ? "…" : reconIssues === 0 ? "Clean" : `${reconIssues} issues`}
-          icon={ShieldAlert}
-          iconColorClass={
-            reconIssues === 0 ? "text-green-600" : reconIssues < 5 ? "text-amber-500" : "text-rose-500"
-          }
-          iconBgColor={
-            reconIssues === 0
-              ? "bg-green-50 dark:bg-green-950/20"
-              : reconIssues < 5
-              ? "bg-amber-50 dark:bg-amber-950/20"
-              : "bg-rose-50 dark:bg-rose-950/20"
-          }
-          variant="reference"
-          breakdown={
-            recon
-              ? [
-                  {
-                    label: "Payment mismatches",
-                    value: recon.payment_mismatch_count.toString(),
-                    icon: ShieldAlert,
-                    valueColor: recon.payment_mismatch_count > 0 ? "text-rose-500" : undefined,
-                  },
-                  {
-                    label: "Refund gap",
-                    value: fmtCurrency(recon.refund_mismatch_amount),
-                    icon: RotateCcw,
-                    valueColor: recon.refund_mismatch_amount > 0 ? "text-amber-500" : undefined,
-                  },
-                  {
-                    label: "Webhook failures",
-                    value: recon.webhook_failures.toString(),
-                    icon: ShieldAlert,
-                    valueColor: recon.webhook_failures > 0 ? "text-rose-500" : undefined,
-                  },
-                ]
-              : []
-          }
-        />
       </section>
 
       {/* ── SECTION 2: Period Comparisons + Forecast ───────────────────────── */}
@@ -682,6 +675,43 @@ export default function DashboardPage() {
           )}
         </div>
       </section>
+
+      {/* ── SECTION 10: EXECUTIVE DECISION INTELLIGENCE ───────────────────── */}
+      {!isLoading && fd && (
+        <section className="space-y-2">
+          <ExecutiveAlertBanner alerts={executiveAlerts} />
+          <ExecutiveDecisionCards cards={routeInsights.decisions} />
+          <StrategicKPILayer items={executiveKpis.strategic} efficiency={executiveKpis.efficiencyIndex} />
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
+            <div className="xl:col-span-2 space-y-2">
+              <ForecastIntelligencePanel
+                confidenceBand={forecastMetrics.confidenceBand}
+                drivers={forecastMetrics.drivers}
+                risk={forecastMetrics.risk}
+              />
+              <ExecutiveComparisonPanel rows={forecastMetrics.comparison} />
+              <TopDriversPanel
+                drivers={routeInsights.topDrivers}
+                detractors={routeInsights.topDetractors}
+                growth={routeInsights.growthContributors}
+              />
+            </div>
+            <div className="space-y-2">
+              <ExecutiveAISummaryCard
+                summary={aiSummary.summary}
+                topDriver={aiSummary.topDriver}
+                topDetractor={aiSummary.topDetractor}
+                risk={aiSummary.risk}
+              />
+              <TimeIntelligenceLayer
+                intraday={fleetAnalytics.intradayPace}
+                dayOfWeekText={fleetAnalytics.dayOfWeekText}
+              />
+            </div>
+          </div>
+          <StrategicRouteIntelligenceMap rows={routeInsights.mapRows} />
+        </section>
+      )}
     </div>
   );
 }

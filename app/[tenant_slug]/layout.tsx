@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { useMobileMenu } from "@/components/mobile-menu-provider";
 import dynamic from "next/dynamic";
+import { BiFilterProvider } from "@/components/providers/bi-filter-provider";
 
 const AppNav = dynamic(() => import("@/components/app-nav").then((mod) => mod.AppNav), {
   ssr: false,
@@ -55,8 +56,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <MobileMenuProvider>
-      <LayoutContent>{children}</LayoutContent>
-    </MobileMenuProvider>
+    <BiFilterProvider>
+      <MobileMenuProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </MobileMenuProvider>
+    </BiFilterProvider>
   );
 }

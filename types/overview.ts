@@ -114,6 +114,7 @@ export interface ForecastData {
 export interface ReconciliationData {
   payment_mismatch_count: number;
   refund_mismatch_amount: number;
+  refund_mismatch_booking_count: number;
   webhook_failures: number;
   unmatched_items_count: number;
 }

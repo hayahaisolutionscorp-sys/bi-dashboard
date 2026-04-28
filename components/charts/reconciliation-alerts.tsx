@@ -34,7 +34,7 @@ export function ReconciliationAlerts({ data }: Props) {
     {
       label:    "Refund Gap",
       value:    formatCurrency(data.refund_mismatch_amount),
-      detail:   "credit items vs payment_refunds table",
+      detail:   `${(data.refund_mismatch_booking_count ?? 0).toLocaleString()} booking(s) affected`,
       severity: data.refund_mismatch_amount === 0 ? "ok" : data.refund_mismatch_amount < 10_000 ? "warn" : "error",
       icon:     data.refund_mismatch_amount === 0 ? CheckCircle : AlertTriangle,
     },
