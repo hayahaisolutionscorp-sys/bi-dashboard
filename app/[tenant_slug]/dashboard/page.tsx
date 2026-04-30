@@ -171,6 +171,7 @@ export default function DashboardPage() {
   const { activeTenant } = useTenant();
 
   const [period, setPeriod] = useState<"today" | "mtd" | "ytd">("today");
+  const [dateType, setDateType] = useState<"booking" | "departure">("booking");
 
   // Finance-accurate data (ledger-based)
   const [financeData, setFinanceData] = useState<FinanceOverviewData | null>(null);
@@ -208,7 +209,7 @@ export default function DashboardPage() {
     try {
       const [finance, legacy] = await Promise.allSettled([
         overviewService.getFinanceOverview(
-          activeTenant.api_base_url, period, activeTenant.service_key,
+          activeTenant.api_base_url, period, activeTenant.service_key, dateType,
         ),
         overviewService.getOverview(
           activeTenant.api_base_url, period, activeTenant.service_key,
@@ -222,7 +223,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTenant, period]);
+  }, [activeTenant, period, dateType]);
 
   useEffect(() => { fetchOverview(); }, [fetchOverview]);
 
@@ -335,6 +336,35 @@ export default function DashboardPage() {
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-2 p-2 sm:p-3 lg:p-4 2xl:p-5 2xl:gap-3">
+
+      {/* ── Date Type Toggle ────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">Finance KPIs filtered by:</p>
+        <div className="flex items-center rounded-md border border-border overflow-hidden text-xs">
+          <button
+            onClick={() => setDateType("booking")}
+            className={cn(
+              "px-3 py-1.5 transition-colors",
+              dateType === "booking"
+                ? "bg-primary text-primary-foreground font-medium"
+                : "bg-card text-muted-foreground hover:bg-muted",
+            )}
+          >
+            Booking Date
+          </button>
+          <button
+            onClick={() => setDateType("departure")}
+            className={cn(
+              "px-3 py-1.5 transition-colors",
+              dateType === "departure"
+                ? "bg-primary text-primary-foreground font-medium"
+                : "bg-card text-muted-foreground hover:bg-muted",
+            )}
+          >
+            Departure Date
+          </button>
+        </div>
+      </div>
 
       {/* ── SECTION 1: Finance KPI Row ──────────────────────────────────────── */}
       <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 2xl:gap-3">

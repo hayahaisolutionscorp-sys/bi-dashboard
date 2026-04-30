@@ -59,8 +59,8 @@ export function RecentActivityFeed({ items }: { items: RecentActivityItem[] }) {
   return (
     <div>
       <ul className="divide-y divide-border">
-        {paged.map((item) => (
-          <li key={item.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+        {paged.map((item, idx) => (
+          <li key={`${item.id}-${idx}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
             <span className={`flex-shrink-0 rounded-full p-1.5 ${typeColor(item.type)}`}>
               {typeIcon(item.type)}
             </span>

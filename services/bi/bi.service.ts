@@ -47,6 +47,7 @@ async function apiFetch<T>(
     if (filter.dest_port_ids?.length) {
       filter.dest_port_ids.forEach((id) => url.searchParams.append("dest_port_ids", String(id)));
     }
+    if (filter.date_type) url.searchParams.set("date_type", filter.date_type);
   }
 
   if (extraParams) {

@@ -150,10 +150,12 @@ export const overviewService = {
         rawBaseUrl: string,
         period: 'today' | 'mtd' | 'ytd',
         serviceKey?: string,
+        dateType?: 'booking' | 'departure',
     ): Promise<FinanceOverviewData> => {
         const baseUrl = normalizeBaseUrl(rawBaseUrl)
-        const url = `${baseUrl}${API_ENDPOINTS.OVERVIEW_FINANCE}/${period}`
-        const response = await fetch(url, {
+        const urlObj = new URL(`${baseUrl}${API_ENDPOINTS.OVERVIEW_FINANCE}/${period}`)
+        if (dateType) urlObj.searchParams.set('date_type', dateType)
+        const response = await fetch(urlObj.toString(), {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
