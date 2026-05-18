@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { AlertTriangle, Home, ArrowLeft } from "lucide-react";
 
@@ -13,7 +15,7 @@ export default function NotFound() {
         <h2 className="mb-6 text-xl font-medium text-slate-600 dark:text-slate-400">Page Not Found</h2>
         
         <p className="mb-8 text-sm text-slate-500 dark:text-slate-500">
-          Oops! The page you are looking for doesn't exist, has been moved, or is temporarily unavailable.
+          Oops! The page you are looking for doesn&apos;t exist, has been moved, or is temporarily unavailable.
         </p>
         
         <div className="flex w-full flex-col gap-3 sm:flex-row">
