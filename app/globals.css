@@ -53,27 +53,27 @@
   --radius: 1rem;
 
   /* Surfaces — 5-stop depth system */
-  --background:        oklch(0.125 0.035 258);
-  --foreground:        oklch(0.955 0.012 250);
-  --card:              oklch(0.17 0.035 258);
+  --background:        #020817;
+  --foreground:        #F8FAFC;
+  --card:              #071122;
   --card-foreground:   oklch(0.94 0 0);
-  --popover:           oklch(0.18 0.035 258);
+  --popover:           #071122;
   --popover-foreground: oklch(0.94 0 0);
 
   /* Borders / inputs */
-  --border: oklch(0.94 0.02 250 / 0.12);
-  --input:  oklch(0.23 0.035 258);
+  --border: rgb(255 255 255 / 0.06);
+  --input:  rgb(15 23 42 / 0.72);
 
   /* Muted */
-  --muted:             oklch(0.22 0.035 258);
-  --muted-foreground:  oklch(0.72 0.025 250);
-  --secondary:         oklch(0.22 0.035 258);
+  --muted:             rgb(15 23 42 / 0.72);
+  --muted-foreground:  #94A3B8;
+  --secondary:         #071122;
   --secondary-foreground: oklch(0.94 0 0);
 
   /* ── Brand seed — override these three to change the entire color theme ── */
-  --brand-l: 0.52;
-  --brand-c: 0.20;
-  --brand-h: 240;
+  --brand-l: 0.78;
+  --brand-c: 0.17;
+  --brand-h: 220;
 
   /* Computed primary scale — do not edit these directly */
   --primary:              oklch(var(--brand-l) var(--brand-c) var(--brand-h));
@@ -83,9 +83,9 @@
   --accent:               oklch(calc(var(--brand-l) + 0.08) calc(var(--brand-c) * 0.8) var(--brand-h));
   --accent-foreground:    oklch(calc(var(--brand-l) + 0.28) calc(var(--brand-c) * 0.7) var(--brand-h));
   --ring:                 oklch(var(--brand-l) var(--brand-c) var(--brand-h) / 0.5);
-  --surface:              oklch(0.17 0.035 258 / 0.76);
-  --surface-elevated:     oklch(0.21 0.04 258 / 0.86);
-  --border-subtle:        oklch(0.94 0.02 250 / 0.12);
+  --surface:              rgb(15 23 42 / 0.72);
+  --surface-elevated:     rgb(7 17 34 / 0.88);
+  --border-subtle:        rgb(255 255 255 / 0.06);
   --chart-primary:        var(--primary);
   --glow-color:           oklch(var(--brand-l) var(--brand-c) var(--brand-h) / 0.32);
   --sidebar-primary:      oklch(var(--brand-l) var(--brand-c) var(--brand-h));
@@ -114,36 +114,36 @@
   --chart-5: oklch(0.62 0.18 320);
 
   /* Sidebar — deepest surface */
-  --sidebar:           oklch(0.135 0.04 258 / 0.82);
+  --sidebar:           rgb(2 8 23 / 0.86);
   --sidebar-foreground: oklch(0.94 0 0);
   --sidebar-border:    oklch(0.18 0 0);
 }
 
 .dark {
-  --background:        oklch(0.125 0.035 258);
-  --foreground:        oklch(0.955 0.012 250);
-  --card:              oklch(0.17 0.035 258);
+  --background:        #020817;
+  --foreground:        #F8FAFC;
+  --card:              #071122;
   --card-foreground:   oklch(0.94 0 0);
-  --popover:           oklch(0.18 0.035 258);
+  --popover:           #071122;
   --popover-foreground: oklch(0.94 0 0);
-  --border:            oklch(0.94 0.02 250 / 0.12);
-  --input:             oklch(0.23 0.035 258);
-  --muted:             oklch(0.22 0.035 258);
-  --muted-foreground:  oklch(0.72 0.025 250);
-  --secondary:         oklch(0.22 0.035 258);
+  --border:            rgb(255 255 255 / 0.06);
+  --input:             rgb(15 23 42 / 0.72);
+  --muted:             rgb(15 23 42 / 0.72);
+  --muted-foreground:  #94A3B8;
+  --secondary:         #071122;
   --secondary-foreground: oklch(0.94 0 0);
   --destructive:       oklch(0.62 0.22 28);
-  --chart-1: oklch(0.58 0.20 240);
-  --chart-2: oklch(0.68 0.16 145);
-  --chart-3: oklch(0.74 0.16 75);
-  --chart-4: oklch(0.65 0.18 195);
-  --chart-5: oklch(0.62 0.18 320);
-  --surface:              oklch(0.17 0.035 258 / 0.76);
-  --surface-elevated:     oklch(0.21 0.04 258 / 0.86);
-  --border-subtle:        oklch(0.94 0.02 250 / 0.12);
+  --chart-1: #00D1FF;
+  --chart-2: #00E676;
+  --chart-3: #FFB020;
+  --chart-4: #3B82F6;
+  --chart-5: #8B5CF6;
+  --surface:              rgb(15 23 42 / 0.72);
+  --surface-elevated:     rgb(7 17 34 / 0.88);
+  --border-subtle:        rgb(255 255 255 / 0.06);
   --chart-primary:        var(--primary);
   --glow-color:           oklch(var(--brand-l) var(--brand-c) var(--brand-h) / 0.32);
-  --sidebar:           oklch(0.135 0.04 258 / 0.82);
+  --sidebar:           rgb(2 8 23 / 0.86);
   --sidebar-foreground: oklch(0.94 0 0);
   --sidebar-border:    oklch(0.18 0 0);
   /* primary, accent, ring, nav tokens all derive from --brand-* (set in :root) */
@@ -265,9 +265,10 @@
 @layer utilities {
   .bi-app-bg {
     background:
-      radial-gradient(circle at 12% 8%, var(--glow-color), transparent 30rem),
-      radial-gradient(circle at 85% 4%, var(--glow-color), transparent 34rem),
-      linear-gradient(135deg, var(--background), var(--background) 48%, oklch(0.095 0.035 258));
+      radial-gradient(circle at 16% 4%, rgb(0 209 255 / 0.16), transparent 32rem),
+      radial-gradient(circle at 78% 0%, rgb(59 130 246 / 0.13), transparent 34rem),
+      radial-gradient(circle at 50% 100%, rgb(139 92 246 / 0.08), transparent 38rem),
+      linear-gradient(135deg, #020817, #071122 48%, #020817);
   }
 
   .light .bi-app-bg {
@@ -281,8 +282,8 @@
     border: 1px solid var(--border-subtle);
     background:
       linear-gradient(135deg, var(--surface-elevated), var(--surface)),
-      radial-gradient(circle at top right, var(--glow-color), transparent 20rem);
-    box-shadow: 0 24px 70px -42px rgb(37 99 235 / 0.46), inset 0 1px 0 rgb(255 255 255 / 0.10);
+      radial-gradient(circle at top right, rgb(0 209 255 / 0.10), transparent 20rem);
+    box-shadow: 0 24px 70px -44px rgb(0 209 255 / 0.50), inset 0 1px 0 rgb(255 255 255 / 0.10);
     backdrop-filter: blur(22px) saturate(145%);
   }
 
@@ -292,8 +293,8 @@
 
   .bi-panel-hover:hover {
     transform: translateY(-2px);
-    border-color: var(--primary);
-    box-shadow: 0 28px 80px -42px rgb(37 99 235 / 0.62), inset 0 1px 0 rgb(255 255 255 / 0.14);
+    border-color: rgb(0 209 255 / 0.42);
+    box-shadow: 0 28px 80px -44px rgb(0 209 255 / 0.64), inset 0 1px 0 rgb(255 255 255 / 0.14);
   }
 
   .bi-noise {
@@ -312,6 +313,33 @@
     background-size: 100% 100%, 18px 18px;
     border-radius: inherit;
   }
+
+  .command-grid {
+    background-image:
+      radial-gradient(circle, rgb(148 163 184 / 0.14) 1px, transparent 1.3px),
+      linear-gradient(rgb(0 209 255 / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(0 209 255 / 0.06) 1px, transparent 1px);
+    background-size: 28px 28px, 56px 56px, 56px 56px;
+    mask-image: linear-gradient(to bottom, black, transparent 88%);
+  }
+
+  .floating-particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 9999px;
+    background: rgb(0 209 255 / 0.55);
+    box-shadow: 0 0 18px rgb(0 209 255 / 0.9);
+    animation: float-particle 9s ease-in-out infinite;
+  }
+
+  .delay-700 { animation-delay: 700ms; }
+  .delay-1000 { animation-delay: 1000ms; }
+}
+
+@keyframes float-particle {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.22; }
+  50% { transform: translate3d(18px, -26px, 0); opacity: 0.75; }
 }
 
 /* React Day Picker Styles */

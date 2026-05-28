@@ -47,6 +47,7 @@ export function FleetMapComponent({ compact = false }: { compact?: boolean }) {
     ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
     : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
   const mapRef = useRef<MapRef>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
   const [showAllRoutes, setShowAllRoutes] = useState<boolean>(false);
   
@@ -124,6 +125,18 @@ export function FleetMapComponent({ compact = false }: { compact?: boolean }) {
       if (intervalId) clearInterval(intervalId);
     };
   }, [fetchRouteData, selectedDate, todayStr]);
+
+  React.useEffect(() => {
+    const element = mapContainerRef.current;
+    if (!element) return;
+
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.getMap().resize();
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   const handleRefresh = useCallback(() => {
     void fetchRouteData(true);
@@ -545,7 +558,7 @@ export function FleetMapComponent({ compact = false }: { compact?: boolean }) {
   }, [selectedRouteId, showAllRoutes, DEFINED_ROUTES]);
 
   return (
-    <div className={cn(
+    <div ref={mapContainerRef} className={cn(
       "relative h-full w-full overflow-hidden rounded-xl border bg-[#f0f7ff]",
       compact ? "min-h-[420px]" : "min-h-[500px]",
     )}>

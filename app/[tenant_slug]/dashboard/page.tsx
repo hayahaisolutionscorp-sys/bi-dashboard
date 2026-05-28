@@ -7,6 +7,7 @@ import {
   Bot,
   Boxes,
   CircleAlert,
+  CalendarDays,
   Gauge,
   Radio,
   RefreshCw,
@@ -81,9 +82,9 @@ function Panel({ children, className }: { children: ReactNode; className?: strin
   );
 }
 
-function SectionTitle({ label, title, meta }: { label: string; title: string; meta?: string }) {
+function SectionTitle({ label, title, meta, dense = false }: { label: string; title: string; meta?: string; dense?: boolean }) {
   return (
-    <div className="flex flex-col gap-1 px-5 pt-5 sm:flex-row sm:items-end sm:justify-between">
+    <div className={cn("flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between", dense ? "px-4 pt-4" : "px-5 pt-5")}>
       <div>
         <p className="text-[10px] font-semibold uppercase text-cyan-700 dark:text-cyan-200/70">{label}</p>
         <h2 className="text-base font-semibold text-foreground dark:text-white">{title}</h2>
@@ -93,9 +94,9 @@ function SectionTitle({ label, title, meta }: { label: string; title: string; me
   );
 }
 
-function Sparkline({ tone = "#00C2FF" }: { tone?: string }) {
+function Sparkline({ tone = "#00C2FF", compact = false }: { tone?: string; compact?: boolean }) {
   return (
-    <svg viewBox="0 0 148 52" className="h-14 w-36 overflow-visible" aria-hidden="true">
+    <svg viewBox="0 0 148 52" className={cn("overflow-visible", compact ? "h-10 w-28" : "h-14 w-36")} aria-hidden="true">
       <defs>
         <linearGradient id={`spark-${tone.replace("#", "")}`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor={tone} stopOpacity="0.32" />
@@ -141,28 +142,28 @@ function MetricCard({
     <motion.div
       whileHover={{ y: -5 }}
       className={cn(
-        "group relative min-h-[188px] overflow-hidden rounded-2xl border border-border/70 bg-card/70 p-5 text-left backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-white/[0.055]",
+        "group relative min-h-[132px] overflow-hidden rounded-2xl border border-border/70 bg-card/70 p-4 text-left backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-white/[0.055]",
         "shadow-[0_24px_70px_-50px_rgba(0,194,255,0.65)]",
         active && "border-cyan-300/50 bg-cyan-300/10 shadow-[0_0_46px_rgba(0,194,255,0.18)]",
       )}
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-      <div className="absolute -right-12 -top-10 h-32 w-32 rounded-full blur-3xl" style={{ backgroundColor: `${accent}24` }} />
+      <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full blur-3xl" style={{ backgroundColor: `${accent}24` }} />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-muted-foreground">{title}</p>
-          <p className="mt-4 text-3xl font-semibold text-foreground tabular-nums dark:text-white">{value}</p>
+          <p className="mt-2 text-[1.65rem] font-semibold leading-none text-foreground tabular-nums dark:text-white">{value}</p>
         </div>
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-border/70 bg-muted/50 dark:border-white/10 dark:bg-black/20" style={{ color: accent }}>
-          <Icon className="size-5" />
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border/70 bg-muted/50 dark:border-white/10 dark:bg-black/20" style={{ color: accent }}>
+          <Icon className="size-4" />
         </span>
       </div>
-      <div className="relative mt-4 flex items-end justify-between gap-4">
+      <div className="relative mt-3 pr-24">
         <div className="min-w-0">
           {trend && (
             <p
               className={cn(
-                "flex items-center gap-1.5 text-xs font-semibold",
+                "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs font-semibold",
                 trend.direction === "down" ? "text-red-600 dark:text-red-300" : trend.direction === "up" ? "text-emerald-600 dark:text-emerald-300" : "text-muted-foreground",
               )}
             >
@@ -171,15 +172,17 @@ function MetricCard({
               <span className="font-medium text-muted-foreground">{trend.label}</span>
             </p>
           )}
-          <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{subtitle}</p>
+          <p className="mt-1 line-clamp-2 text-xs leading-4 text-muted-foreground">{subtitle}</p>
         </div>
-        <Sparkline tone={accent} />
+        <div className="pointer-events-none absolute bottom-0 right-0 opacity-90">
+          <Sparkline tone={accent} compact />
+        </div>
       </div>
     </motion.div>
   );
 }
 
-function IntelligenceHero({
+function CommandStatusStrip({
   period,
   setPeriod,
   dateType,
@@ -195,67 +198,74 @@ function IntelligenceHero({
   aiSummary: string;
 }) {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/80 p-5 shadow-[0_30px_120px_-70px_rgba(0,194,255,0.45)] backdrop-blur-2xl dark:border-cyan-200/15 dark:bg-[#071B2A]/80 dark:shadow-[0_30px_120px_-70px_rgba(0,194,255,0.72)] sm:p-6">
-      <div className="absolute inset-0 command-grid opacity-70" />
-      <div className="absolute -right-20 -top-24 h-80 w-80 rounded-full bg-cyan-400/12 blur-3xl" />
-      <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-        <div className="max-w-4xl">
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-700 dark:border-cyan-300/25 dark:bg-cyan-300/10 dark:text-cyan-100">
-              <Sparkles className="size-3.5" />
-              Maritime Intelligence Command Center
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-200">
-              <Radio className="size-3.5 animate-pulse" />
-              Live sync active
-            </span>
+    <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/80 p-3 shadow-[0_24px_80px_-58px_rgba(0,209,255,0.55)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#071122]/86 sm:p-4">
+      <div className="absolute inset-0 command-grid opacity-45" />
+      <div className="absolute -right-16 -top-24 h-56 w-56 rounded-full bg-cyan-400/12 blur-3xl" />
+      <div className="relative grid gap-3 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(240px,0.9fr)_minmax(0,1.2fr)]">
+          <div className="rounded-xl border border-border/60 bg-background/35 px-4 py-3 dark:border-white/10 dark:bg-black/20">
+            <div className="flex items-center gap-2">
+              <span className="grid size-8 place-items-center rounded-xl border border-cyan-500/25 bg-cyan-500/10 text-cyan-700 dark:border-cyan-300/25 dark:text-cyan-100">
+                <Sparkles className="size-4" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="text-base font-semibold leading-tight text-foreground dark:text-white sm:text-lg">Maritime Intelligence Command</h1>
+                <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">Executive overview | real-time finance, demand, and fleet telemetry</p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 font-medium text-emerald-700 dark:text-emerald-200">
+                <Radio className="size-3.5 animate-pulse" />
+                Live sync active
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-muted-foreground dark:border-white/10 dark:bg-white/[0.045]">
+                <CalendarDays className="size-3.5" />
+                {dateType === "booking" ? "Booking date" : "Departure date"}
+              </span>
+            </div>
           </div>
-          <h1 className="max-w-4xl text-4xl font-semibold text-foreground dark:text-white sm:text-5xl lg:text-6xl">
-            HAYAHAI BI Analytics
-          </h1>
-          <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
-            AI-powered maritime business intelligence for executive revenue control, demand forecasting, route performance, vessel utilization, and operational risk.
-          </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-3">
             {kpis.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setPeriod(item.key)}
                 className={cn(
-                  "rounded-2xl border px-4 py-3 text-left transition-all",
+                  "rounded-xl border px-3 py-3 text-left transition-all",
                   period === item.key
-                    ? "border-cyan-500/45 bg-cyan-500/10 text-foreground shadow-[0_0_30px_rgba(0,194,255,0.14)] dark:border-cyan-300/45 dark:bg-cyan-300/12 dark:text-white"
-                    : "border-border/70 bg-card/60 text-muted-foreground hover:border-cyan-500/30 dark:border-white/10 dark:bg-white/[0.045] dark:hover:border-cyan-300/30",
+                    ? "border-cyan-500/45 bg-cyan-500/10 text-foreground shadow-[0_0_26px_rgba(0,209,255,0.16)] dark:border-cyan-300/45 dark:bg-cyan-300/12 dark:text-white"
+                    : "border-border/70 bg-card/60 text-muted-foreground hover:border-cyan-500/30 dark:border-white/10 dark:bg-white/[0.045]",
                 )}
               >
-                <p className="text-[10px] font-semibold uppercase text-muted-foreground">{item.label}</p>
-                <p className="mt-1 text-lg font-semibold tabular-nums">{fmtCurrency(item.value)}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{item.label}</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">{fmtCurrency(item.value)}</p>
               </button>
             ))}
           </div>
         </div>
-        <div className="w-full max-w-md rounded-2xl border border-border/70 bg-background/40 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-black/20">
-          <div className="flex items-center gap-2 text-xs font-semibold text-cyan-700 dark:text-cyan-100">
-            <Bot className="size-4" />
-            Executive AI Brief
+        <div className="rounded-xl border border-border/70 bg-background/40 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-black/20">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-cyan-700 dark:text-cyan-100">
+              <Bot className="size-4" />
+              Compact AI Brief
+            </div>
+            <div className="flex rounded-lg border border-border/70 bg-muted/40 p-0.5 text-[11px] dark:border-white/10 dark:bg-black/25">
+              <button
+                onClick={() => setDateType("booking")}
+                className={cn("rounded-md px-2.5 py-1.5", dateType === "booking" ? "bg-cyan-500/10 text-cyan-700 dark:bg-cyan-300/15 dark:text-cyan-100" : "text-muted-foreground")}
+              >
+                Booking
+              </button>
+              <button
+                onClick={() => setDateType("departure")}
+                className={cn("rounded-md px-2.5 py-1.5", dateType === "departure" ? "bg-cyan-500/10 text-cyan-700 dark:bg-cyan-300/15 dark:text-cyan-100" : "text-muted-foreground")}
+              >
+                Departure
+              </button>
+            </div>
           </div>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
             {aiSummary || "Awaiting live bookings, route, and fleet telemetry for executive briefing."}
           </p>
-          <div className="mt-4 flex rounded-xl border border-border/70 bg-muted/40 p-1 text-xs dark:border-white/10 dark:bg-black/25">
-            <button
-              onClick={() => setDateType("booking")}
-              className={cn("flex-1 rounded-lg px-3 py-2", dateType === "booking" ? "bg-cyan-500/10 text-cyan-700 dark:bg-cyan-300/15 dark:text-cyan-100" : "text-muted-foreground")}
-            >
-              Booking Date
-            </button>
-            <button
-              onClick={() => setDateType("departure")}
-              className={cn("flex-1 rounded-lg px-3 py-2", dateType === "departure" ? "bg-cyan-500/10 text-cyan-700 dark:bg-cyan-300/15 dark:text-cyan-100" : "text-muted-foreground")}
-            >
-              Departure Date
-            </button>
-          </div>
         </div>
       </div>
     </section>
@@ -265,9 +275,13 @@ function IntelligenceHero({
 function AIInsightPanel({
   decisions,
   risk,
+  className,
+  compact = false,
 }: {
   decisions: Array<{ title: string; value: string; delta: string; severity: "normal" | "warning" | "critical" }>;
   risk: "Low" | "Medium" | "High";
+  className?: string;
+  compact?: boolean;
 }) {
   const riskScore = risk === "High" ? 82 : risk === "Medium" ? 54 : 22;
   const fallback = [
@@ -280,11 +294,14 @@ function AIInsightPanel({
   const rows = decisions.length ? decisions.slice(0, 5) : fallback;
 
   return (
-    <Panel>
-      <SectionTitle label="Section 2" title="AI Insight Panel" meta={`Operational risk ${riskScore}/100 | ${risk.toLowerCase()}`} />
-      <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5">
+    <Panel className={className}>
+      <SectionTitle dense={compact} label="AI Insights" title="AI Maritime Insights" meta={`Risk ${riskScore}/100 | ${risk.toLowerCase()}`} />
+      <div className={cn("grid gap-3", compact ? "p-4" : "p-5 md:grid-cols-2 xl:grid-cols-5")}>
         {rows.map((item, index) => (
-          <div key={`${item.title}-${index}`} className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/70 p-4 dark:border-white/10 dark:bg-white/[0.045]">
+          <div key={`${item.title}-${index}`} className={cn(
+            "group relative overflow-hidden rounded-2xl border border-border/70 bg-card/70 transition-all hover:-translate-y-0.5 hover:border-cyan-500/30 dark:border-white/10 dark:bg-white/[0.045]",
+            compact ? "p-3.5" : "p-4",
+          )}>
             <span
               className={cn(
                 "absolute right-4 top-4 size-2 rounded-full",
@@ -292,8 +309,8 @@ function AIInsightPanel({
               )}
             />
             <p className="pr-6 text-xs font-semibold text-foreground dark:text-white">{item.title}</p>
-            <p className="mt-3 text-2xl font-semibold text-cyan-700 tabular-nums dark:text-cyan-100">{item.value}</p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.delta}</p>
+            <p className={cn("font-semibold text-cyan-700 tabular-nums dark:text-cyan-100", compact ? "mt-2 text-xl" : "mt-3 text-2xl")}>{item.value}</p>
+            <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-foreground">{item.delta}</p>
           </div>
         ))}
       </div>
@@ -309,9 +326,9 @@ function MaritimeOperationsMap({
   vessels: ScheduleTripItem[];
 }) {
   return (
-    <Panel className="xl:col-span-7">
-      <SectionTitle label="Section 3" title="Maritime Operations Map" meta={`${vessels.length} live vessel schedules | ${routes.length} intelligent route lanes`} />
-      <div className="relative m-5 mt-4 h-[500px] overflow-hidden rounded-2xl border border-cyan-200/10 bg-[#06131F]">
+    <Panel className="flex min-h-[620px] flex-col xl:col-span-7">
+      <SectionTitle dense label="Operations" title="Live Maritime Operations Map" meta={`${vessels.length} schedules | ${routes.length} route lanes`} />
+      <div className="relative m-4 mt-3 min-h-[460px] flex-1 overflow-hidden rounded-2xl border border-cyan-200/10 bg-[#06131F]">
         <FleetMapComponent compact />
       </div>
     </Panel>
@@ -322,10 +339,12 @@ function ForecastIntelligence({
   forecast,
   efficiency,
   drivers,
+  className,
 }: {
   forecast: FinanceOverviewData["forecast"] | undefined;
   efficiency: { score: number; trend: number };
   drivers: Array<{ route_name: string; projected: number; share_pct: number }>;
+  className?: string;
 }) {
   const cards = [
     { label: "Revenue Prediction", value: fmtCurrency(forecast?.mtd_projection), icon: Wallet, tone: "text-cyan-700 dark:text-cyan-200", detail: forecast?.pacing_status ?? "calibrating" },
@@ -335,21 +354,21 @@ function ForecastIntelligence({
   ];
 
   return (
-    <Panel className="xl:col-span-5">
-      <SectionTitle label="Section 5" title="Forecast Intelligence" meta="AI-powered operational forecasting" />
-      <div className="grid gap-3 p-5 sm:grid-cols-2">
+    <Panel className={cn("xl:col-span-4", className)}>
+      <SectionTitle dense label="Forecast" title="Forecast Intelligence" meta="AI operational pacing" />
+      <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
         {cards.map((item) => (
-          <div key={item.label} className="rounded-2xl border border-border/70 bg-card/70 p-4 dark:border-white/10 dark:bg-white/[0.045]">
+          <div key={item.label} className="rounded-2xl border border-border/70 bg-card/70 p-3.5 dark:border-white/10 dark:bg-white/[0.045]">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
               <item.icon className={cn("size-4", item.tone)} />
             </div>
-            <p className="mt-3 text-2xl font-semibold text-foreground tabular-nums dark:text-white">{item.value}</p>
+            <p className="mt-2 text-xl font-semibold text-foreground tabular-nums dark:text-white">{item.value}</p>
             <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
           </div>
         ))}
       </div>
-      <div className="border-t border-border/70 px-5 pb-5 pt-4 dark:border-white/10">
+      <div className="border-t border-border/70 px-4 pb-4 pt-3 dark:border-white/10">
         <p className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Demand Forecast Drivers</p>
         <div className="space-y-3">
           {(drivers.length ? drivers.slice(0, 4) : [{ route_name: "Manila - Cebu", projected: 64_000, share_pct: 42 }]).map((driver) => (
@@ -500,14 +519,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="relative flex flex-col gap-5 px-3 pb-8 sm:px-5 lg:px-6">
+    <div className="relative flex flex-col gap-3 px-3 pb-6 sm:px-5 lg:px-6">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <span className="floating-particle left-[18%] top-[18%]" />
         <span className="floating-particle left-[73%] top-[32%] delay-700" />
         <span className="floating-particle left-[46%] top-[72%] delay-1000" />
       </div>
 
-      <IntelligenceHero
+      <CommandStatusStrip
         period={period}
         setPeriod={setPeriod}
         dateType={dateType}
@@ -520,7 +539,7 @@ export default function DashboardPage() {
         aiSummary={aiSummary.summary}
       />
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <MetricCard
           title="Net Revenue"
           value={isLoading ? "..." : fmtCurrency(fd?.kpi.net_revenue)}
@@ -572,61 +591,60 @@ export default function DashboardPage() {
         />
       </section>
 
-      <AIInsightPanel decisions={routeInsights.decisions} risk={forecastMetrics.risk} />
-
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <MaritimeOperationsMap routes={routeInsights.mapRows} vessels={todaySchedule} />
-        <ForecastIntelligence forecast={fd?.forecast} efficiency={executiveKpis.efficiencyIndex} drivers={forecastMetrics.drivers} />
+        <AIInsightPanel compact className="xl:col-span-5" decisions={routeInsights.decisions} risk={forecastMetrics.risk} />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Panel className="xl:col-span-7">
-          <SectionTitle label="Section 4" title="Advanced Revenue Charts" meta="Forecast overlays, ledger trend, confidence movement" />
-          {isLoading ? <div className="p-5"><Skeleton className="h-72 rounded-2xl bg-muted dark:bg-white/10" /></div> : <RevenueTrendChart data={trendData} period={period} />}
-        </Panel>
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <Panel className="xl:col-span-5">
-          <SectionTitle label="Advanced Charts" title="Channel Demand Mix" meta="Passenger, cargo, agent, and direct channels" />
+          <SectionTitle dense label="Analytics" title="Revenue Trend" meta="Ledger trend and pacing movement" />
+          {isLoading ? <div className="p-4"><Skeleton className="h-64 rounded-2xl bg-muted dark:bg-white/10" /></div> : <RevenueTrendChart data={trendData} period={period} />}
+        </Panel>
+        <Panel className="xl:col-span-3">
+          <SectionTitle dense label="Channels" title="Demand Mix" meta="Source yield" />
           {isLoading ? (
-            <div className="space-y-3 p-5">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-12 rounded-xl bg-muted dark:bg-white/10" />)}</div>
+            <div className="space-y-3 p-4">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-12 rounded-xl bg-muted dark:bg-white/10" />)}</div>
           ) : (
             <ChannelRevenuePanel channels={channels} allChannels={fd?.revenue_by_channel ?? []} />
           )}
         </Panel>
+        <ForecastIntelligence forecast={fd?.forecast} efficiency={executiveKpis.efficiencyIndex} drivers={forecastMetrics.drivers} />
         <Panel className="xl:col-span-12">
-          <SectionTitle label="Route Profitability" title="Executive Route Intelligence" meta="Revenue, margin, risk, and booking quality" />
+          <SectionTitle dense label="Routes" title="Executive Route Intelligence" meta="Revenue, margin, risk, and booking quality" />
           {isLoading ? (
-            <div className="space-y-2 p-5">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-10 rounded-xl bg-muted dark:bg-white/10" />)}</div>
+            <div className="space-y-2 p-4">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-10 rounded-xl bg-muted dark:bg-white/10" />)}</div>
           ) : (
             <RouteProfitabilityTable routes={sortedRoutes.slice(0, 8)} maxRows={8} />
           )}
         </Panel>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <Panel className="xl:col-span-7">
-          <SectionTitle label="Demand Intelligence" title="Capacity Utilization Heatmap" meta="Passenger load by route and date" />
-          {widgetsLoading ? <div className="p-5"><Skeleton className="h-44 rounded-2xl bg-muted dark:bg-white/10" /></div> : <CapacityHeatmap cells={capacityHeatmap} />}
+          <SectionTitle dense label="Demand" title="Capacity Utilization Heatmap" meta="Passenger load by route and date" />
+          {widgetsLoading ? <div className="p-4"><Skeleton className="h-44 rounded-2xl bg-muted dark:bg-white/10" /></div> : <CapacityHeatmap cells={capacityHeatmap} />}
         </Panel>
         <Panel className="xl:col-span-5">
-          <SectionTitle label="Live Status Monitoring" title="Today's Vessel Timeline" meta="Departures, utilization, and operational state" />
+          <SectionTitle dense label="Status" title="Today's Vessel Timeline" meta="Departures, utilization, and state" />
           {widgetsLoading ? (
-            <div className="space-y-3 p-5">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-14 rounded-xl bg-muted dark:bg-white/10" />)}</div>
+            <div className="space-y-3 p-4">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-14 rounded-xl bg-muted dark:bg-white/10" />)}</div>
           ) : (
             <TodayScheduleTimeline trips={todaySchedule} />
           )}
         </Panel>
         <Panel className="xl:col-span-6">
-          <SectionTitle label="Live Route Monitoring" title="Activity Stream" meta="Bookings and cargo movement" />
+          <SectionTitle dense label="Activity" title="Live Activity Feed" meta="Bookings and cargo movement" />
           {widgetsLoading ? (
-            <div className="space-y-3 p-5">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-12 rounded-xl bg-muted dark:bg-white/10" />)}</div>
+            <div className="space-y-3 p-4">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-12 rounded-xl bg-muted dark:bg-white/10" />)}</div>
           ) : (
             <RecentActivityFeed items={recentActivity} />
           )}
         </Panel>
         <Panel className="xl:col-span-6">
-          <SectionTitle label="Sales Analytics" title="Top Agent Performance" meta="Agent-led revenue contribution" />
+          <SectionTitle dense label="Sales" title="Top Agent Performance" meta="Agent-led revenue contribution" />
           {widgetsLoading ? (
-            <div className="space-y-3 p-5">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-12 rounded-xl bg-muted dark:bg-white/10" />)}</div>
+            <div className="space-y-3 p-4">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-12 rounded-xl bg-muted dark:bg-white/10" />)}</div>
           ) : (
             <TopAgentsTable agents={topAgents} />
           )}
