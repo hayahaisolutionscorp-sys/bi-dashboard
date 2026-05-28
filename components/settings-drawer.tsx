@@ -17,7 +17,7 @@ export function SettingsDrawer() {
     <Sheet>
       <SheetTrigger asChild>
         <button
-          className="p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-colors"
+          className="rounded-2xl p-2.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label="Open settings"
         >
           <Settings className="size-4" />

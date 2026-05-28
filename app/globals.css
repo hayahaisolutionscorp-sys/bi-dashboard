@@ -49,25 +49,25 @@
 }
 
 :root {
-  /* ── Enterprise Dark Design System ── */
-  --radius: 0.375rem; /* Tighter = more precise/enterprise feel */
+  /* ── Premium BI Design System ── */
+  --radius: 1rem;
 
   /* Surfaces — 5-stop depth system */
-  --background:        oklch(0.055 0 0);   /* #0a0a0a — true deep dark */
-  --foreground:        oklch(0.94 0 0);    /* #f0f0f0 — slightly warmer than pure white */
-  --card:              oklch(0.10 0 0);    /* #161616 — card surface */
+  --background:        oklch(0.125 0.035 258);
+  --foreground:        oklch(0.955 0.012 250);
+  --card:              oklch(0.17 0.035 258);
   --card-foreground:   oklch(0.94 0 0);
-  --popover:           oklch(0.10 0 0);
+  --popover:           oklch(0.18 0.035 258);
   --popover-foreground: oklch(0.94 0 0);
 
   /* Borders / inputs */
-  --border: oklch(0.20 0 0);              /* #2e2e2e */
-  --input:  oklch(0.16 0 0);              /* Slightly darker than border for input bg */
+  --border: oklch(0.94 0.02 250 / 0.12);
+  --input:  oklch(0.23 0.035 258);
 
   /* Muted */
-  --muted:             oklch(0.14 0 0);
-  --muted-foreground:  oklch(0.50 0 0);   /* #777 — subtle secondary text */
-  --secondary:         oklch(0.14 0 0);
+  --muted:             oklch(0.22 0.035 258);
+  --muted-foreground:  oklch(0.72 0.025 250);
+  --secondary:         oklch(0.22 0.035 258);
   --secondary-foreground: oklch(0.94 0 0);
 
   /* ── Brand seed — override these three to change the entire color theme ── */
@@ -83,6 +83,11 @@
   --accent:               oklch(calc(var(--brand-l) + 0.08) calc(var(--brand-c) * 0.8) var(--brand-h));
   --accent-foreground:    oklch(calc(var(--brand-l) + 0.28) calc(var(--brand-c) * 0.7) var(--brand-h));
   --ring:                 oklch(var(--brand-l) var(--brand-c) var(--brand-h) / 0.5);
+  --surface:              oklch(0.17 0.035 258 / 0.76);
+  --surface-elevated:     oklch(0.21 0.04 258 / 0.86);
+  --border-subtle:        oklch(0.94 0.02 250 / 0.12);
+  --chart-primary:        var(--primary);
+  --glow-color:           oklch(var(--brand-l) var(--brand-c) var(--brand-h) / 0.32);
   --sidebar-primary:      oklch(var(--brand-l) var(--brand-c) var(--brand-h));
   --sidebar-primary-foreground: oklch(0.98 0 0);
   --sidebar-accent:       oklch(calc(var(--brand-l) - 0.36) calc(var(--brand-c) * 0.4) var(--brand-h));
@@ -90,8 +95,8 @@
   --sidebar-ring:         oklch(var(--brand-l) var(--brand-c) var(--brand-h));
 
   /* Active nav item */
-  --nav-active-bg:        oklch(calc(var(--brand-l) - 0.38) calc(var(--brand-c) * 0.35) var(--brand-h));
-  --nav-active-text:      oklch(calc(var(--brand-l) + 0.24) calc(var(--brand-c) * 0.7) var(--brand-h));
+  --nav-active-bg:        oklch(var(--brand-l) calc(var(--brand-c) * 0.62) var(--brand-h) / 0.18);
+  --nav-active-text:      oklch(calc(var(--brand-l) + 0.22) calc(var(--brand-c) * 0.72) var(--brand-h));
 
   /* Info semantic — follows brand */
   --info-bg:              oklch(calc(var(--brand-l) - 0.38) calc(var(--brand-c) * 0.35) var(--brand-h));
@@ -103,29 +108,29 @@
 
   /* Chart palette — brand-derived, updates automatically when brand color changes */
   --chart-1: var(--primary);
-  --chart-2: color-mix(in oklch, var(--primary) 80%, white);
-  --chart-3: color-mix(in oklch, var(--primary) 60%, white);
-  --chart-4: color-mix(in oklch, var(--primary) 40%, white);
-  --chart-5: color-mix(in oklch, var(--primary) 20%, white);
+  --chart-2: oklch(0.68 0.16 145);
+  --chart-3: oklch(0.74 0.16 75);
+  --chart-4: oklch(0.65 0.18 195);
+  --chart-5: oklch(0.62 0.18 320);
 
   /* Sidebar — deepest surface */
-  --sidebar:           oklch(0.075 0 0);  /* ~#0d0d0d */
+  --sidebar:           oklch(0.135 0.04 258 / 0.82);
   --sidebar-foreground: oklch(0.94 0 0);
   --sidebar-border:    oklch(0.18 0 0);
 }
 
 .dark {
-  --background:        oklch(0.055 0 0);
-  --foreground:        oklch(0.94 0 0);
-  --card:              oklch(0.10 0 0);
+  --background:        oklch(0.125 0.035 258);
+  --foreground:        oklch(0.955 0.012 250);
+  --card:              oklch(0.17 0.035 258);
   --card-foreground:   oklch(0.94 0 0);
-  --popover:           oklch(0.10 0 0);
+  --popover:           oklch(0.18 0.035 258);
   --popover-foreground: oklch(0.94 0 0);
-  --border:            oklch(0.20 0 0);
-  --input:             oklch(0.16 0 0);
-  --muted:             oklch(0.14 0 0);
-  --muted-foreground:  oklch(0.50 0 0);
-  --secondary:         oklch(0.14 0 0);
+  --border:            oklch(0.94 0.02 250 / 0.12);
+  --input:             oklch(0.23 0.035 258);
+  --muted:             oklch(0.22 0.035 258);
+  --muted-foreground:  oklch(0.72 0.025 250);
+  --secondary:         oklch(0.22 0.035 258);
   --secondary-foreground: oklch(0.94 0 0);
   --destructive:       oklch(0.62 0.22 28);
   --chart-1: oklch(0.58 0.20 240);
@@ -133,33 +138,43 @@
   --chart-3: oklch(0.74 0.16 75);
   --chart-4: oklch(0.65 0.18 195);
   --chart-5: oklch(0.62 0.18 320);
-  --sidebar:           oklch(0.075 0 0);
+  --surface:              oklch(0.17 0.035 258 / 0.76);
+  --surface-elevated:     oklch(0.21 0.04 258 / 0.86);
+  --border-subtle:        oklch(0.94 0.02 250 / 0.12);
+  --chart-primary:        var(--primary);
+  --glow-color:           oklch(var(--brand-l) var(--brand-c) var(--brand-h) / 0.32);
+  --sidebar:           oklch(0.135 0.04 258 / 0.82);
   --sidebar-foreground: oklch(0.94 0 0);
   --sidebar-border:    oklch(0.18 0 0);
   /* primary, accent, ring, nav tokens all derive from --brand-* (set in :root) */
 }
 
 .light {
-  --background:        oklch(0.96 0 0);
-  --foreground:        oklch(0.13 0 0);
-  --card:              oklch(1 0 0);
+  --background:        oklch(0.965 0.018 252);
+  --foreground:        oklch(0.19 0.035 252);
+  --card:              oklch(0.995 0.006 252);
   --card-foreground:   oklch(0.13 0 0);
   --popover:           oklch(1 0 0);
   --popover-foreground: oklch(0.13 0 0);
-  --border:            oklch(0.90 0 0);
-  --input:             oklch(0.97 0 0);
-  --muted:             oklch(0.96 0 0);
-  --muted-foreground:  oklch(0.60 0 0);
-  --secondary:         oklch(0.96 0 0);
+  --border:            oklch(0.78 0.03 252 / 0.42);
+  --input:             oklch(0.985 0.012 252);
+  --muted:             oklch(0.94 0.018 252);
+  --muted-foreground:  oklch(0.52 0.035 252);
+  --secondary:         oklch(0.94 0.018 252);
   --secondary-foreground: oklch(0.13 0 0);
   --primary-foreground: oklch(0.98 0 0);
   --destructive:       oklch(0.55 0.22 28);
   --chart-1: var(--primary);
-  --chart-2: color-mix(in oklch, var(--primary) 80%, oklch(0.13 0 0));
-  --chart-3: color-mix(in oklch, var(--primary) 60%, oklch(0.13 0 0));
-  --chart-4: color-mix(in oklch, var(--primary) 40%, oklch(0.13 0 0));
-  --chart-5: color-mix(in oklch, var(--primary) 20%, oklch(0.13 0 0));
-  --sidebar:           oklch(1 0 0);
+  --chart-2: oklch(0.58 0.16 145);
+  --chart-3: oklch(0.64 0.14 75);
+  --chart-4: oklch(0.56 0.16 195);
+  --chart-5: oklch(0.57 0.16 320);
+  --surface:              oklch(1 0.006 252 / 0.74);
+  --surface-elevated:     oklch(1 0.006 252 / 0.92);
+  --border-subtle:        oklch(0.72 0.035 252 / 0.35);
+  --chart-primary:        var(--primary);
+  --glow-color:           oklch(calc(var(--brand-l) - 0.07) var(--brand-c) var(--brand-h) / 0.22);
+  --sidebar:           oklch(1 0.006 252 / 0.76);
   --sidebar-foreground: oklch(0.13 0 0);
   --sidebar-border:    oklch(0.90 0 0);
 
@@ -189,7 +204,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-size: 14px; /* Tighter base for dense dashboard layouts */
+    font-size: 14px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "tnum" 1, "ss01" 1, "cv02" 1, "cv03" 1;
@@ -205,7 +220,7 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.22 0 0);
+    background: var(--glow-color);
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -244,6 +259,58 @@
   [data-metric], .tabular {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
+  }
+}
+
+@layer utilities {
+  .bi-app-bg {
+    background:
+      radial-gradient(circle at 12% 8%, var(--glow-color), transparent 30rem),
+      radial-gradient(circle at 85% 4%, var(--glow-color), transparent 34rem),
+      linear-gradient(135deg, var(--background), var(--background) 48%, oklch(0.095 0.035 258));
+  }
+
+  .light .bi-app-bg {
+    background:
+      radial-gradient(circle at 12% 8%, var(--glow-color), transparent 28rem),
+      radial-gradient(circle at 90% 2%, rgb(59 130 246 / 0.10), transparent 34rem),
+      linear-gradient(135deg, oklch(0.985 0.012 252), var(--background) 52%, oklch(0.93 0.018 252));
+  }
+
+  .bi-panel {
+    border: 1px solid var(--border-subtle);
+    background:
+      linear-gradient(135deg, var(--surface-elevated), var(--surface)),
+      radial-gradient(circle at top right, var(--glow-color), transparent 20rem);
+    box-shadow: 0 24px 70px -42px rgb(37 99 235 / 0.46), inset 0 1px 0 rgb(255 255 255 / 0.10);
+    backdrop-filter: blur(22px) saturate(145%);
+  }
+
+  .bi-panel-hover {
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+
+  .bi-panel-hover:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+    box-shadow: 0 28px 80px -42px rgb(37 99 235 / 0.62), inset 0 1px 0 rgb(255 255 255 / 0.14);
+  }
+
+  .bi-noise {
+    position: relative;
+  }
+
+  .bi-noise::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.055;
+    background-image:
+      linear-gradient(115deg, transparent 0 44%, rgb(255 255 255 / 0.20) 45% 46%, transparent 47%),
+      radial-gradient(circle at 20% 30%, currentColor 0 1px, transparent 1px);
+    background-size: 100% 100%, 18px 18px;
+    border-radius: inherit;
   }
 }
 

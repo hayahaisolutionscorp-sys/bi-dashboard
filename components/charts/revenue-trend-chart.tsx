@@ -11,7 +11,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Dot,
 } from "recharts";
 import { FinanceTrendItem } from "@/types/overview";
 import { cn } from "@/lib/utils";
@@ -90,9 +89,9 @@ function detectAnomalies(
 
 // ─── Custom Dot (anomaly indicators) ──────────────────────────────────────────
 
-function AnomalyDot(props: any) {
+function AnomalyDot(props: { cx?: number; cy?: number; payload?: ChartRow }) {
   const { cx, cy, payload } = props;
-  if (!payload?.anomaly || payload.is_forecast) return null;
+  if (cx == null || cy == null || !payload?.anomaly || payload.is_forecast) return null;
   const color = payload.anomaly === "drop" ? "#f43f5e" : "#f59e0b";
   return (
     <circle
@@ -108,10 +107,20 @@ function AnomalyDot(props: any) {
 
 // ─── Custom Tooltip ──────────────────────────────────────────────────────────
 
-function CustomTooltip({ active, payload, label, period }: any) {
+function CustomTooltip({
+  active,
+  payload,
+  label,
+  period,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: ChartRow }>;
+  label?: string;
+  period: "today" | "mtd" | "ytd";
+}) {
   if (!active || !payload?.length) return null;
 
-  const d: ChartRow = payload[0]?.payload;
+  const d = payload[0]?.payload;
   if (!d) return null;
 
   const gross  = d.display_gross  ?? 0;
@@ -123,7 +132,7 @@ function CustomTooltip({ active, payload, label, period }: any) {
     comp != null && comp > 0 ? ((net - comp) / comp) * 100 : null;
 
   return (
-    <div className="rounded-md border border-border bg-popover shadow-md px-3 py-2 text-xs min-w-[180px]">
+    <div className="min-w-[200px] rounded-2xl border border-border/70 bg-popover/95 px-4 py-3 text-xs shadow-2xl backdrop-blur-xl">
       <p className="font-semibold text-foreground mb-2">{label}</p>
 
       {d.is_forecast ? (
@@ -284,19 +293,19 @@ export function RevenueTrendChart({ data, period, className }: Props) {
     <div className={cn("flex flex-col gap-0", className)}>
 
       {/* ── Summary Strip ──────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border gap-2 flex-wrap">
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-4 flex-wrap">
         <div className="flex items-center gap-4">
           {/* Net total */}
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Net Revenue</p>
-            <p className="text-sm font-bold tabular-nums text-teal-600 dark:text-teal-400">
+            <p className="text-lg font-semibold tabular-nums text-teal-600 dark:text-teal-400">
               {fmtShort(totalNet)}
             </p>
           </div>
           {/* Gross total */}
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gross</p>
-            <p className="text-sm font-semibold tabular-nums text-muted-foreground">
+            <p className="text-lg font-semibold tabular-nums text-muted-foreground">
               {fmtShort(totalGross)}
             </p>
           </div>
@@ -340,10 +349,10 @@ export function RevenueTrendChart({ data, period, className }: Props) {
         <button
           onClick={() => setCumulative((c) => !c)}
           className={cn(
-            "flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium border transition-colors",
+            "flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[11px] font-medium transition-colors",
             cumulative
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background border-border text-muted-foreground hover:bg-muted",
+              ? "border-primary bg-primary text-primary-foreground shadow-[0_0_20px_var(--glow-color)]"
+              : "border-border bg-muted/30 text-muted-foreground hover:bg-muted",
           )}
         >
           {cumulative ? (
@@ -356,7 +365,7 @@ export function RevenueTrendChart({ data, period, className }: Props) {
       </div>
 
       {/* ── Legend ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 px-3 py-1.5 text-[10px] text-muted-foreground flex-wrap">
+      <div className="flex items-center gap-4 px-5 py-3 text-[10px] text-muted-foreground flex-wrap">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2 w-5 rounded-sm bg-rose-200 dark:bg-rose-900/50" />
           Gross (refund zone)
@@ -396,18 +405,18 @@ export function RevenueTrendChart({ data, period, className }: Props) {
       </div>
 
       {/* ── Chart ──────────────────────────────────────────────────────────── */}
-      <div style={{ height: 240 }}>
+      <div className="px-2 pb-4" style={{ height: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 12, right: 20, left: 4, bottom: 4 }}>
             <defs>
               {/* Gross fill — light rose, shows the refund zone above net */}
               <linearGradient id="rtGross" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="rgb(251 113 133)" stopOpacity={0.25} />
+                <stop offset="5%"  stopColor="rgb(251 113 133)" stopOpacity={0.18} />
                 <stop offset="95%" stopColor="rgb(251 113 133)" stopOpacity={0.05} />
               </linearGradient>
               {/* Net fill — teal, covers the bottom portion of the gross area */}
               <linearGradient id="rtNet" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="rgb(45 212 191)" stopOpacity={0.45} />
+                <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.36} />
                 <stop offset="95%" stopColor="rgb(45 212 191)" stopOpacity={0.08} />
               </linearGradient>
               {/* Forecast net fill */}
@@ -418,10 +427,10 @@ export function RevenueTrendChart({ data, period, className }: Props) {
             </defs>
 
             <CartesianGrid
-              strokeDasharray="3 3"
+              strokeDasharray="4 8"
               stroke="currentColor"
               className="text-border"
-              opacity={0.4}
+              opacity={0.34}
             />
 
             <XAxis
@@ -485,11 +494,12 @@ export function RevenueTrendChart({ data, period, className }: Props) {
               name="Net Revenue"
               fill="url(#rtNet)"
               stroke="rgb(20 184 166)"
-              strokeWidth={2}
+              strokeWidth={2.6}
               dot={<AnomalyDot />}
-              activeDot={{ r: 4, fill: "rgb(20 184 166)", stroke: "white", strokeWidth: 1.5 }}
+              activeDot={{ r: 5, fill: "var(--primary)", stroke: "white", strokeWidth: 1.5 }}
               connectNulls
-              isAnimationActive={false}
+              isAnimationActive
+              animationDuration={800}
             />
 
             {/* ── Comparison line (previous period) ── */}
@@ -505,7 +515,8 @@ export function RevenueTrendChart({ data, period, className }: Props) {
                 dot={false}
                 activeDot={false}
                 connectNulls
-                isAnimationActive={false}
+                isAnimationActive
+                animationDuration={800}
               />
             )}
 
@@ -522,7 +533,8 @@ export function RevenueTrendChart({ data, period, className }: Props) {
                 dot={false}
                 activeDot={{ r: 3 }}
                 connectNulls
-                isAnimationActive={false}
+                isAnimationActive
+                animationDuration={800}
               />
             )}
           </ComposedChart>

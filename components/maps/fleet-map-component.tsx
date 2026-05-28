@@ -12,9 +12,34 @@ import { RouteMapService, RouteMapTrip, RouteMapRoute } from "@/services/route-m
 import { useTenant } from "@/components/providers/tenant-provider";
 import { useTheme } from "next-themes";
 
+interface LiveVessel {
+  id: string;
+  routeId: number;
+  name: string;
+  origin: string;
+  destination: string;
+  passengers: string;
+  cargo: string;
+  duration: number;
+  startTime: number;
+  eta: string;
+  position: [number, number] | null;
+  bearing?: number;
+  isArrived: boolean;
+  tripStatus: string;
+  utilization: number;
+  scheduledDeparture: string;
+}
 
+interface RouteHoverEvent {
+  features?: Array<{
+    layer?: { id?: string };
+    properties?: Record<string, unknown>;
+  }>;
+  point: { x: number; y: number };
+}
 
-export function FleetMapComponent() {
+export function FleetMapComponent({ compact = false }: { compact?: boolean }) {
   const { activeTenant } = useTenant();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -27,7 +52,7 @@ export function FleetMapComponent() {
   
   // Vessel Animation State
   // Initial demo vessel: Cebu - Manila (ID 5: Index 4)
-  const [vessels, setVessels] = useState<any[]>([]);
+  const [vessels, setVessels] = useState<LiveVessel[]>([]);
   const [hoveredVesselId, setHoveredVesselId] = useState<string | null>(null);
   const animationRef = useRef<number>(0);
 
@@ -54,7 +79,7 @@ export function FleetMapComponent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const fetchRouteData = useCallback(async (forceRefresh = false) => {
+  const fetchRouteData = useCallback(async (_forceRefresh = false) => {
     if (!activeTenant?.service_key) {
       setApiTrips([]);
       setApiRoutes([]);
@@ -324,8 +349,8 @@ export function FleetMapComponent() {
     }
   }, [selectedRouteId, showAllRoutes, DEFINED_ROUTES]);
 
-  const handleRouteHover = useCallback((event: any) => {
-    const feature = event.features?.find((item: any) => item.layer?.id === 'routes-hit-layer');
+  const handleRouteHover = useCallback((event: RouteHoverEvent) => {
+    const feature = event.features?.find((item) => item.layer?.id === 'routes-hit-layer');
     if (!feature) {
       setHoveredRouteInfo(null);
       return;
@@ -520,7 +545,10 @@ export function FleetMapComponent() {
   }, [selectedRouteId, showAllRoutes, DEFINED_ROUTES]);
 
   return (
-    <div className="relative w-full h-full min-h-[500px] bg-[#f0f7ff] overflow-hidden rounded-xl border">
+    <div className={cn(
+      "relative h-full w-full overflow-hidden rounded-xl border bg-[#f0f7ff]",
+      compact ? "min-h-[420px]" : "min-h-[500px]",
+    )}>
         <MapGL
             ref={mapRef}
             initialViewState={{
@@ -727,8 +755,9 @@ export function FleetMapComponent() {
 
       {/* Right Sidebar Overlay - Routes Selection */}
       <aside className={cn(
-        "absolute top-6 right-6 bottom-6 bg-background/95 backdrop-blur-md rounded-3xl flex flex-col z-10 shadow-xl shadow-blue-900/5 border border-border/40 overflow-hidden transition-all duration-300",
-        isSidebarOpen ? "w-[340px]" : "w-[48px]"
+        "absolute bg-background/95 backdrop-blur-md flex flex-col z-10 shadow-xl shadow-blue-900/5 border border-border/40 overflow-hidden transition-all duration-300",
+        compact ? "right-3 top-3 bottom-3 rounded-2xl" : "right-6 top-6 bottom-6 rounded-3xl",
+        isSidebarOpen ? (compact ? "w-[260px]" : "w-[340px]") : "w-[48px]"
       )}>
         {/* Collapse toggle — always visible */}
         <button
@@ -757,7 +786,7 @@ export function FleetMapComponent() {
         {/* Expanded sidebar content */}
         {isSidebarOpen && (<>
         {/* Sidebar Header */}
-        <div className="p-5 pt-12 border-b border-border/40 space-y-3">
+        <div className={cn("border-b border-border/40 space-y-3", compact ? "p-3 pt-10" : "p-5 pt-12")}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-xl bg-primary/10">
@@ -783,7 +812,7 @@ export function FleetMapComponent() {
           </div>
 
           {/* Date picker + zoom controls row */}
-          <div className="flex items-center gap-2">
+          <div className={cn("items-center gap-2", compact ? "grid grid-cols-[1fr_auto]" : "flex")}>
             <input
               type="date"
               value={selectedDate}
@@ -858,7 +887,7 @@ export function FleetMapComponent() {
         </div>
 
         {/* Route list */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+        <div className={cn("flex-1 overflow-y-auto space-y-2.5", compact ? "p-3" : "p-4")}>
           {loading ? (
             Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="border rounded-2xl p-4 animate-pulse bg-muted/30 border-border/30">
@@ -902,7 +931,8 @@ export function FleetMapComponent() {
                 <div
                   key={route.id}
                   className={cn(
-                    "border rounded-2xl p-4 transition-all cursor-pointer group hover:shadow-md",
+                    "border rounded-2xl transition-all cursor-pointer group hover:shadow-md",
+                    compact ? "p-3" : "p-4",
                     isSelected
                       ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20"
                       : "bg-card/60 border-border/50 hover:bg-card text-foreground"
@@ -963,7 +993,7 @@ export function FleetMapComponent() {
         </div>
 
         {/* Footer legend */}
-        <div className="p-4 border-t border-border/40">
+        <div className={cn("border-t border-border/40", compact ? "p-3" : "p-4")}>
           <p className="text-[10px] font-bold text-foreground/60 uppercase tracking-widest mb-2.5">Active Sea Routes</p>
           <div className="flex items-center gap-2 mb-3">
             <span className="h-0.5 w-8 rounded-full bg-blue-600" />

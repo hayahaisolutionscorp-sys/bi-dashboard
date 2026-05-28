@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { authService } from "@/services/auth.service";
 import { User } from "@/types/auth";
@@ -20,8 +21,10 @@ import {
   TrendingUp,
   PanelLeftClose,
   PanelLeft,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface NavSection {
   sectionLabel: string;
@@ -107,39 +110,44 @@ export function AppNav({ isMobile }: AppNavProps) {
   return (
     <aside 
       className={cn(
-        "bg-sidebar border-r border-sidebar-border flex flex-col h-screen transition-all duration-300",
-        isMobile ? "w-full" : isCollapsed ? "w-16" : "w-[220px]"
+        "flex h-screen flex-col transition-all duration-300",
+        "bg-sidebar/80 backdrop-blur-2xl",
+        isMobile
+          ? "w-full border-r border-sidebar-border"
+          : isCollapsed
+          ? "w-[84px] px-3 py-4"
+          : "w-[292px] px-4 py-4"
       )}
     >
       {/* Header */}
-      <div className="h-12 border-b border-sidebar-border px-3">
-        <div className="flex h-full items-center gap-2.5">
+      <div className="bi-panel bi-noise rounded-[22px] px-3 py-3">
+        <div className="flex items-center gap-2.5">
           <div className={cn(
             "flex items-center gap-2.5 flex-1 min-w-0",
             isCollapsed && !isMobile && "justify-center"
           )}>
-            {(!isCollapsed || isMobile) && (
-              <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md bg-primary/10 p-1">
-                <img
-                  src="/images/logo/hayahai_logo_v2_nodp_nopropeller_final_300px.png"
-                  alt="Ayahay BI logo"
-                  className="h-full w-full object-contain"
-                />
-              </div>
-            )}
+            <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/25 bg-primary/15 shadow-[0_0_28px_var(--glow-color)]">
+              <Image
+                src="/images/logo/hayahai_logo_v2_nodp_nopropeller_final_300px.png"
+                alt="Ayahay BI logo"
+                width={28}
+                height={28}
+                className="object-contain"
+              />
+            </div>
             <div className={cn(
               "hidden min-w-0",
               !isCollapsed && "md:block",
               isMobile && "block"
             )}>
-              <h1 className="text-sm font-medium leading-tight text-sidebar-foreground tracking-tight truncate">HAYAHAI BI</h1>
-              <p className="text-[10px] leading-tight text-muted-foreground uppercase tracking-widest">Analytics</p>
+              <h1 className="text-sm font-semibold leading-tight text-sidebar-foreground tracking-tight truncate">HAYAHAI BI</h1>
+              <p className="text-[10px] leading-tight text-muted-foreground uppercase tracking-[0.28em]">Analytics</p>
             </div>
           </div>
           {!isMobile && (
             <button
               onClick={toggleCollapse}
-              className="shrink-0 p-1.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground rounded-md transition-colors"
+              className="shrink-0 rounded-xl p-2 text-muted-foreground hover:bg-primary/10 hover:text-foreground"
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {isCollapsed ? <PanelLeft className="size-4" /> : <PanelLeftClose className="size-4" />}
@@ -149,12 +157,12 @@ export function AppNav({ isMobile }: AppNavProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-3 overflow-y-auto">
+      <nav className="mt-4 flex-1 overflow-y-auto rounded-[24px] border border-sidebar-border/50 bg-background/20 px-2.5 py-3 shadow-inner shadow-black/10">
         {NAV_SECTIONS.map((section, sectionIdx) => {
           return (
-            <div key={section.sectionLabel} className={sectionIdx > 0 ? "mt-4" : ""}>
+            <div key={section.sectionLabel} className={sectionIdx > 0 ? "mt-5" : ""}>
               {(!isCollapsed || isMobile) && (
-                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/60">
                   {section.sectionLabel}
                 </p>
               )}
@@ -174,19 +182,29 @@ export function AppNav({ isMobile }: AppNavProps) {
                       key={item.label}
                       href={fullHref}
                       className={cn(
-                        "flex h-9 items-center gap-2.5 px-3 rounded-md transition-all duration-[120ms] group",
+                        "group relative flex h-11 items-center gap-3 overflow-hidden rounded-2xl px-3 transition-all duration-200",
                         isCollapsed && !isMobile && "justify-center px-0",
                         isActive
-                          ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] font-medium"
-                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                          ? "text-[var(--nav-active-text)] font-medium"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                       )}
                       title={item.label}
                     >
+                      {isActive && (
+                        <motion.span
+                          layoutId="active-nav-pill"
+                          className="absolute inset-0 rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/18 via-primary/10 to-transparent shadow-[0_0_30px_var(--glow-color)]"
+                          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                        />
+                      )}
+                      {isActive && (
+                        <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary shadow-[0_0_18px_var(--glow-color)]" />
+                      )}
                       <item.icon className={cn(
-                        "shrink-0 size-4",
+                        "relative z-10 shrink-0 size-4 transition-transform group-hover:scale-110",
                         isActive ? "text-[var(--nav-active-text)]" : "text-muted-foreground group-hover:text-foreground"
                       )} />
-                      <span className={cn("text-sm hidden truncate", !isCollapsed && "md:inline", isMobile && "inline")}>{item.label}</span>
+                      <span className={cn("relative z-10 hidden truncate text-sm", !isCollapsed && "md:inline", isMobile && "inline")}>{item.label}</span>
                     </Link>
                   );
                 })}
@@ -197,19 +215,28 @@ export function AppNav({ isMobile }: AppNavProps) {
       </nav>
 
       {/* User Profile Dropdown */}
-      <div className="p-2 border-t border-sidebar-border">
+      <div className="mt-4">
+        {(!isCollapsed || isMobile) && (
+          <div className="mb-3 rounded-[20px] border border-primary/20 bg-primary/10 p-3 text-primary shadow-[0_0_26px_var(--glow-color)]">
+            <div className="flex items-center gap-2 text-xs font-medium">
+              <Sparkles className="size-3.5" />
+              AI sync operational
+            </div>
+            <p className="mt-1 text-[11px] leading-4 text-muted-foreground">Finance ledger, routes, and vessel telemetry are streaming.</p>
+          </div>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className={cn(
-              "flex items-center gap-2 px-2 py-2 cursor-pointer hover:bg-muted/60 rounded-md transition-colors",
+              "bi-panel flex cursor-pointer items-center gap-2 rounded-[22px] px-3 py-3 transition-colors hover:border-primary/35",
               isCollapsed && !isMobile && "justify-center"
             )}>
-              <Avatar className="size-7 rounded-md shrink-0">
+              <Avatar className="size-10 rounded-2xl shrink-0 border border-primary/20">
                 <AvatarImage src={user?.email === "admin@ayahay.com" ? "https://lh3.googleusercontent.com/aida-public/AB6AXuARVrNVO7BNdOULCPAUPGEjeVDRD9yeFmcbvwCRRhx3AUZzmvt_rR1RG9PhiL0UJ7QvUvjltX0GmzWPX7ApIvlpskLNZHlJ5QGsoALBl5rp87XuL_civpgJU1EVTDjE8VNX_g8rB6tzgUKuhFA418qe8MTSvy_xuLvXZme7H8WHxOasrOiE8-bQN9kMmLzWd1su-wQ7HEF2VPD7kp2rvB40GLemOquKndY9fq4vzWgbYKjB0vH89_saV2KN8SRyjKZ-oDHUbqSv-A" : ""} />
-                <AvatarFallback className="rounded-md bg-primary/10 text-primary text-[11px] font-medium">{(user?.first_name?.[0] || "") + (user?.last_name?.[0] || "") || "US"}</AvatarFallback>
+                <AvatarFallback className="rounded-2xl bg-primary/10 text-primary text-[11px] font-semibold">{(user?.first_name?.[0] || "") + (user?.last_name?.[0] || "") || "US"}</AvatarFallback>
               </Avatar>
               <div className={cn("hidden flex-1 min-w-0 text-left", !isCollapsed && "md:block", isMobile && "block")}>
-                <p className="text-xs font-medium truncate text-foreground">
+                <p className="text-sm font-medium truncate text-foreground">
                   {user?.first_name
                     ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ''}`
                     : (user?.name || user?.email || 'User')}

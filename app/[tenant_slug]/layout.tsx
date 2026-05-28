@@ -21,7 +21,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { isOpen, setIsOpen } = useMobileMenu();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="bi-app-bg flex h-screen overflow-hidden bg-background">
       {/* Mobile Drawer */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent side="left" className="p-0 w-64 bg-sidebar border-sidebar-border">
@@ -40,7 +40,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <AppNav />
       </div>
 
-      <main className="flex-1 min-w-0 flex flex-col overflow-y-auto bg-background">
+      <main className="flex-1 min-w-0 flex flex-col overflow-y-auto">
         <DashboardHeader />
         <div className="flex-1 min-w-0">
           {children}
