@@ -5,15 +5,14 @@ import {
   CalendarDays, 
   FilterX, 
   AlertTriangle,
-  Navigation,
   Ship,
   CheckCircle2,
   XCircle,
-  Wrench
+  Wrench,
+  type LucideIcon
 } from "lucide-react";
 import { SimpleKpiCard } from "@/components/charts/simple-kpi-card";
 import { ShadcnLineChartMultiple } from "@/components/charts/shadcn-line-chart-multiple";
-import { ShadcnPieChartLegend } from "@/components/charts/shadcn-pie-chart-legend";
 import { NoDataPlaceholder } from "@/components/charts/no-data-placeholder";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
@@ -40,7 +39,16 @@ export default function StatusPage() {
 
   useEffect(() => {
     async function fetchData() {
-      if (!activeTenant?.api_base_url) return;
+      if (isTenantLoading) return;
+
+      if (!activeTenant?.api_base_url) {
+        setData(null);
+        setError("No active tenant API is available.");
+        setIsLoading(false);
+        setIsInitialLoad(false);
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
       try {
@@ -54,9 +62,7 @@ export default function StatusPage() {
           activeTenant.service_key
         );
         setData(result);
-        if (isInitialLoad) {
-          setTimeout(() => setIsInitialLoad(false), 500);
-        }
+        setTimeout(() => setIsInitialLoad(false), 500);
       } catch (err) {
         console.error(err);
         setError("Failed to load status report. Please try again.");
@@ -68,7 +74,7 @@ export default function StatusPage() {
     if (dateRange?.from && dateRange?.to) {
       fetchData();
     }
-  }, [dateRange, activeTenant]);
+  }, [dateRange, activeTenant, isTenantLoading]);
 
   const handleClearFilter = () => {
     const now = new Date();
@@ -97,13 +103,10 @@ export default function StatusPage() {
     });
   }, [data]);
 
-  const getBookingTrendData = () => {
-    // New structure: data.bookingTrendData is an array of objects
-    // [{ "date": "...", "confirm": 0, "cancelled": 0 }, ...]
-    const rawData = (data as any)?.bookingTrendData || [];
-    
-    // Ensure data is mapped correctly and non-null
-    const mappedData = rawData.map((item: any) => ({
+  const bookingTrend = useMemo(() => {
+    const rawData = data?.bookingTrendData || [];
+
+    const mappedData = rawData.map((item) => ({
       date: item.date || "",
       confirm: item.confirm ?? 0,
       cancelled: item.cancelled ?? 0
@@ -124,17 +127,6 @@ export default function StatusPage() {
       config, 
       series 
     };
-  };
-
-  const bookingTrend = useMemo(() => getBookingTrendData(), [data]);
-
-  const passengerClassConfig = useMemo(() => {
-    const config: any = {};
-    const colors = ["#2563eb", "#10b981", "#f59e0b", "#8b5cf6", "#f43f5e"];
-    data?.passengerClassData?.forEach((d, i) => {
-      config[d.name] = { label: d.name, color: colors[i % colors.length] };
-    });
-    return config;
   }, [data]);
 
   if (error) {
@@ -186,7 +178,7 @@ export default function StatusPage() {
               key={index}
               label={kpi.label}
               value={String(kpi.value)}
-              icon={kpi.icon as any}
+              icon={kpi.icon as LucideIcon}
               indicatorText={kpi.indicatorText}
               indicatorDirection={kpi.indicatorDirection}
               subtext={kpi.indicatorSubtext}

@@ -1,4 +1,4 @@
-export const AYAHAY_API_URL = process.env.NEXT_PUBLIC_API_V2_URL || "http://localhost:3000";
+export const HAYAHAI_API_URL = process.env.NEXT_PUBLIC_API_V2_URL || "http://localhost:3000";
 
 export const API_ENDPOINTS = {
 	AUTH: "/bi/auth",

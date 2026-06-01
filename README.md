@@ -1,4 +1,4 @@
-# Ayahay BI Dashboard
+# Hayahai BI Dashboard
 
 A comprehensive Business Intelligence dashboard built with Next.js 15, designed for real-time monitoring and analysis of maritime operations. This dashboard provides deep insights into sales, expenses, cargo, passengers, and fleet status through interactive visualizations and mapping.
 
@@ -38,7 +38,7 @@ A comprehensive Business Intelligence dashboard built with Next.js 15, designed 
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd ayahay-bi-dashboard
+   cd hayahai-bi-dashboard
    ```
 
 2. Install dependencies:
@@ -91,4 +91,4 @@ We welcome contributions! Please follow these steps:
 5. Open a Pull Request.
 
 ---
-© 2026 Ayahay Technologies. All rights reserved.
+© 2026 Hayahai Technologies. All rights reserved.

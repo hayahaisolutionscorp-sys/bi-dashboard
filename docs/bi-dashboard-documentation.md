@@ -104,6 +104,12 @@ The dashboard communicates with **two backend services**:
 | `ayahay-client-api` | `NEXT_PUBLIC_CLIENT_API_URL` | All BI reports, financial data, auth, export |
 | `ayahay-api-v2` | `NEXT_PUBLIC_API_V2_URL` | Unified trip/route projection for the Route Map |
 
+Local development note: if another app is already using `localhost:3000`,
+run `ayahay-client-api` on a free port and update
+`NEXT_PUBLIC_CLIENT_API_URL` to that exact origin. BI overview and analytics
+endpoints must resolve to `ayahay-client-api`; API-v2 only owns the unified
+route-map projection.
+
 ### 2.2 API Conventions
 
 BI endpoints follow a hybrid contract pattern:

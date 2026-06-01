@@ -47,7 +47,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
     if (current) {
       // Allow NEXT_PUBLIC_CLIENT_API_URL to override api_base_url in local dev
-      // so localhost browsers can reach a local ayahay-client-api instance
+      // so localhost browsers can reach a local hayahai-client-api instance
       const clientApiOverride = process.env.NEXT_PUBLIC_CLIENT_API_URL;
       setActiveTenant(
         clientApiOverride

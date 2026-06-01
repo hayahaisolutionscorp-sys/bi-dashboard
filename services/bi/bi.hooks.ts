@@ -37,7 +37,7 @@ function useAnalytics<T>(
   fetcher: (baseUrl: string, filter: BiAnalyticsFilter, serviceKey: string) => Promise<T>,
   filterOverride?: Partial<BiAnalyticsFilter>,
 ): UseAnalyticsState<T> {
-  const { activeTenant } = useTenant();
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const { filter: globalFilter } = useBiFilter();
 
   const [data, setData] = useState<T | null>(null);
@@ -52,7 +52,14 @@ function useAnalytics<T>(
   fetcherRef.current = fetcher;
 
   useEffect(() => {
-    if (!activeTenant?.api_base_url) return;
+    if (isTenantLoading) return;
+
+    if (!activeTenant?.api_base_url) {
+      setData(null);
+      setError("No active tenant API is available.");
+      setIsLoading(false);
+      return;
+    }
 
     let cancelled = false;
     setIsLoading(true);
@@ -74,7 +81,7 @@ function useAnalytics<T>(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTenant?.api_base_url, activeTenant?.service_key, fetchKey, JSON.stringify(mergedFilter)]);
+  }, [activeTenant?.api_base_url, activeTenant?.service_key, isTenantLoading, fetchKey, JSON.stringify(mergedFilter)]);
 
   const refetch = useCallback(() => setFetchKey((k) => k + 1), []);
 
@@ -196,13 +203,21 @@ export function useSchedule(filterOverride?: Partial<BiAnalyticsFilter>) {
 }
 
 export function useLive(refreshIntervalMs = 20000) {
-  const { activeTenant } = useTenant();
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const [data, setData] = useState<LiveResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchLive = useCallback(async () => {
-    if (!activeTenant?.api_base_url) return;
+    if (isTenantLoading) return;
+
+    if (!activeTenant?.api_base_url) {
+      setData(null);
+      setError("No active tenant API is available.");
+      setIsLoading(false);
+      return;
+    }
+
     setError(null);
     try {
       const result = await biService.getLive(activeTenant.api_base_url, activeTenant.service_key);
@@ -212,7 +227,7 @@ export function useLive(refreshIntervalMs = 20000) {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTenant?.api_base_url, activeTenant?.service_key]);
+  }, [activeTenant?.api_base_url, activeTenant?.service_key, isTenantLoading]);
 
   useEffect(() => {
     fetchLive();

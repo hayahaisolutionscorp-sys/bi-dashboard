@@ -323,6 +323,9 @@ Relevant frontend env:
 For Executive Overview specifically:
 - data host is activeTenant.api_base_url from login tenant payload
 - NEXT_PUBLIC_API_V2_URL is not the primary host for /bi/overview endpoints
+- local development can override tenant api_base_url with NEXT_PUBLIC_CLIENT_API_URL;
+  make sure this points to a running ayahay-client-api process, not another
+  Next.js app on the same port.
 
 Operational reminder:
 - NEXT_PUBLIC_* vars are build-time in Next.js

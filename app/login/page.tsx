@@ -2,9 +2,22 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, LogIn, Ship, Check, AlertCircle } from "lucide-react";
+import {
+    AlertCircle,
+    Anchor,
+    ArrowRight,
+    CheckCircle2,
+    Eye,
+    EyeOff,
+    LockKeyhole,
+    Mail,
+    Route,
+    Ship,
+    ShieldCheck,
+    Waves,
+} from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { authService } from "@/services/auth.service";
-import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -36,152 +49,249 @@ export default function LoginPage() {
                 .replace(/\s+/g, '-')
                 .replace(/-+/g, '-');
             router.push(`/${slug}/dashboard`);
-        } catch (err: any) {
-            setError(err.message || "Invalid credentials. Please try again.");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Invalid credentials. Please try again.");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="flex flex-col lg:flex-row min-h-screen w-full font-display bg-[#f6f8f8] dark:bg-[#102022] text-[#111718] dark:text-[#f0f4f4]">
-            {/* Left Side: Visual Narrative */}
-            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-                {/* Background Image */}
-                <div 
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105" 
-                    style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCCfnRDKcA1kXfM5ydH86c2pfJ--iTfSPjGVcsXKonZ0cngZkOEm-SLZzM2ddaKS_8tydMEiSZVbxLqOyk-m_jyyii9hdE8Vfah828WyzulfRSy1Yk_t-zN4nIZHegcy96VEMimimh6WNlGs6iV3-4M7WPrLocM-ZM_iOycm6iAKN76kxqNEU7WchkrUf0zh8VBy-aBpf3yo4KwaeHJVnyHTIWeP1t10mLJ1U4ErqWt8RLc09GTjCFMESWEIyLCcj5qi_s6-20glQ')" }}
-                />
-                {/* Teal Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#102022]/90 via-primary/40 to-transparent"></div>
-                
-                {/* Overlay Content */}
-                <div className="relative z-10 flex flex-col justify-end p-16 w-full text-white">
-                    <div className="max-w-md">
-                        <h3 className="text-3xl font-black leading-snug mb-2 tracking-tight uppercase">
-                            Ayahay Business<br/>Intelligence Dashboard
-                        </h3>
-                        <p className="text-base font-normal text-white/90 leading-relaxed italic">
-                            "Ang Pagsakay Dapat Ayahay"
-                        </p>
-                    </div>
-                    <div className="mt-12 flex items-center gap-4">
-                        <div className="w-12 h-1 bg-primary rounded-full"></div>
-                        <span className="text-sm font-bold uppercase tracking-widest text-primary">Ayahay BI Dashboard</span>
-                    </div>
-                </div>
+        <main className="relative min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_18%_12%,var(--accent),transparent_26%),linear-gradient(135deg,var(--background),var(--muted))] text-foreground">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-chart-4 to-chart-2" />
+            <div className="absolute right-6 top-6 z-20">
+                <ThemeToggle />
             </div>
 
-            {/* Right Side: Interaction Panel */}
-            <div className="flex flex-col flex-1 justify-center items-center bg-white dark:bg-[#102022] px-6 py-12 lg:px-24">
-                <div className="w-full max-w-[440px] flex flex-col gap-10">
-                    {/* Logo & Header */}
-                    <div className="flex flex-col gap-8">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-primary p-2 rounded-lg">
-                                <Ship className="text-white size-8 fill-current" />
+            <div className="mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 items-center gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[0.95fr_400px] lg:px-8 lg:py-8">
+                <section className="relative hidden min-h-[500px] overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-br from-sky-400 via-primary to-blue-700 p-7 shadow-xl shadow-primary/15 dark:border-white/10 dark:from-slate-900 dark:via-sky-950 dark:to-blue-950 lg:block">
+                    <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,0.18)_44%,transparent_45%)]" />
+                    <div className="relative z-10 flex h-full flex-col justify-between">
+                        <div className="flex items-center justify-between text-white">
+                            <div className="flex items-center gap-3">
+                                <div className="grid size-11 place-items-center rounded-2xl bg-white/16 ring-1 ring-white/25 backdrop-blur">
+                                    <Ship className="size-6" aria-hidden="true" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black uppercase">Hayahai BI</p>
+                                    <p className="text-xs font-semibold text-white/80">Maritime intelligence</p>
+                                </div>
                             </div>
-                            <span className="text-2xl font-black text-[#111718] dark:text-white tracking-tighter uppercase">Ayahay BI DASHBOARD</span>
+                            <div className="rounded-full border border-white/25 bg-white/12 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white/90 backdrop-blur">
+                                Fleet ready
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-2">
-                            <h1 className="text-3xl font-black text-[#111718] dark:text-white leading-tight">Welcome back</h1>
-                            <p className="text-[#618689] dark:text-gray-400 text-base">Enter your credentials to access the maritime intelligence dashboard.</p>
+
+                        <div className="relative mx-auto h-[245px] w-full max-w-[500px]">
+                            <div className="absolute left-4 top-6 flex items-center gap-3 rounded-2xl bg-white/95 px-3.5 py-2.5 text-slate-950 shadow-lg shadow-blue-950/10 dark:bg-slate-950/90 dark:text-white">
+                                <ShieldCheck className="size-4 text-emerald-500" aria-hidden="true" />
+                                <div>
+                                    <p className="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-300">Secure Access</p>
+                                    <p className="text-xs font-black">Role-based dashboards</p>
+                                </div>
+                            </div>
+
+                            <div className="absolute right-0 top-14 rounded-2xl bg-white/95 p-3 shadow-xl shadow-blue-950/15 dark:bg-slate-950/90">
+                                <div className="mb-3 flex items-center gap-2 text-slate-900 dark:text-white">
+                                    <Route className="size-3.5 text-primary" aria-hidden="true" />
+                                    <span className="text-[11px] font-black uppercase">Route Pulse</span>
+                                </div>
+                                <div className="flex h-20 w-32 items-end gap-1.5">
+                                    {[46, 70, 54, 88, 62, 96].map((height) => (
+                                        <span
+                                            key={height}
+                                            className="w-full rounded-t-lg bg-gradient-to-t from-primary to-cyan-300"
+                                            style={{ height: `${height}%` }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="absolute bottom-2 left-1/2 h-28 w-[420px] -translate-x-1/2 rounded-t-[52%] bg-sky-200/25 blur-sm dark:bg-cyan-500/10" />
+                            <svg
+                                className="absolute bottom-2 left-1/2 h-44 w-[410px] -translate-x-1/2 text-white drop-shadow-xl"
+                                viewBox="0 0 560 270"
+                                role="img"
+                                aria-label="Passenger and cargo vessel illustration"
+                            >
+                                <path d="M42 164h415l-35 58H92z" fill="currentColor" opacity=".96" />
+                                <path d="M102 119h128v45H82z" fill="currentColor" opacity=".78" />
+                                <path d="M244 86h106v78H226z" fill="currentColor" opacity=".9" />
+                                <path d="M365 126h86v38h-86z" fill="currentColor" opacity=".82" />
+                                <path d="M260 104h18v18h-18zm34 0h18v18h-18zm34 0h18v18h-18zm-132 31h20v14h-20zm-36 0h20v14h-20zm-36 0h20v14h-20z" fill="var(--primary)" />
+                                <path d="M310 86V45m0 0 112 81M310 45l-86 119" stroke="currentColor" strokeWidth="10" strokeLinecap="round" opacity=".74" />
+                                <path d="M32 230c44 18 88-18 132 0s88-18 132 0 88-18 132 0 68-8 100-2" fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round" opacity=".55" />
+                            </svg>
+
+                            <div className="absolute bottom-5 left-2 flex items-center gap-2 rounded-2xl bg-white/88 px-3.5 py-2.5 text-slate-800 shadow-lg shadow-blue-950/10 ring-1 ring-white/60 backdrop-blur dark:bg-slate-950/82 dark:text-white dark:ring-white/15">
+                                <Anchor className="size-4 text-primary dark:text-cyan-300" aria-hidden="true" />
+                                <span className="text-xs font-black">Cruise, RoRo, LCT, and cargo insights</span>
+                            </div>
+                        </div>
+
+                        <div className="max-w-xl text-white">
+                            <div className="mb-3 flex flex-wrap gap-2">
+                                {["Passenger load", "Cargo revenue", "Voyage status"].map((item) => (
+                                    <span key={item} className="rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-bold text-white ring-1 ring-white/25 backdrop-blur">
+                                        {item}
+                                    </span>
+                                ))}
+                            </div>
+                            <h1 className="max-w-lg text-3xl font-black leading-tight tracking-tight">
+                                Business intelligence for shipping lines that move people and cargo.
+                            </h1>
+                            <p className="mt-3 max-w-md text-sm font-medium leading-6 text-white/85">
+                                Monitor routes, vessels, bookings, and operating signals from one secure command deck.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section
+                    className="mx-auto flex min-w-0 max-w-full flex-col sm:max-w-[400px]"
+                    style={{ width: "min(100%, calc(100vw - 2rem))" }}
+                >
+                    <div className="mb-5 flex items-center gap-3 lg:hidden">
+                        <div className="grid size-11 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                            <Ship className="size-6" aria-hidden="true" />
+                        </div>
+                        <div>
+                            <p className="text-base font-black uppercase text-foreground">Hayahai BI Dashboard</p>
+                            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">Maritime intelligence</p>
                         </div>
                     </div>
 
-                    {/* Error Alert */}
-                    {error && (
-                        <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg flex items-center gap-3 text-sm font-medium animate-in fade-in slide-in-from-top-2">
-                            <AlertCircle className="size-5" />
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Login Form */}
-                    <form className="flex flex-col gap-6" onSubmit={handleLogin}>
-                        {/* Email Input */}
-                        <div className="relative w-full h-16 group">
-                            <input 
-                                id="email" 
-                                type="email" 
-                                placeholder="Email Address" 
-                                className="peer block w-full h-full px-4 pt-6 pb-2 text-base font-medium text-[#111718] dark:text-white bg-[#f0f4f4] dark:bg-[#1a2e31] border-none rounded-lg focus:ring-2 focus:ring-primary placeholder-transparent outline-none transition-all"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                disabled={isLoading}
-                                required
-                            />
-                            <label 
-                                htmlFor="email"
-                                className="absolute left-4 top-0 pointer-events-none transition-all duration-200 origin-left text-sm font-medium text-[#618689] peer-placeholder-shown:translate-y-[1.2rem] peer-placeholder-shown:scale-100 peer-focus:translate-y-[0.25rem] peer-focus:scale-85 peer-focus:text-primary peer-current:translate-y-[0.25rem] peer-current:scale-85"
-                            >
-                                Email Address
-                            </label>
+                    <div
+                        className="min-w-0 rounded-3xl border border-border bg-card/90 p-5 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-6 dark:shadow-black/25"
+                        style={{ width: "min(100%, calc(100vw - 2rem))" }}
+                    >
+                        <div className="mb-5">
+                            <div className="mb-5 hidden items-center gap-3 lg:flex">
+                                <div className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                                    <Ship className="size-5" aria-hidden="true" />
+                                </div>
+                                <div>
+                                    <p className="text-base font-black uppercase tracking-tight text-foreground">Hayahai BI Dashboard</p>
+                                    <p className="text-[11px] font-bold uppercase text-slate-600 dark:text-slate-300">Shipping command center</p>
+                                </div>
+                            </div>
+                            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-[11px] font-black uppercase text-accent-foreground">
+                                <Waves className="size-3.5" aria-hidden="true" />
+                                Welcome aboard
+                            </p>
+                            <h2 className="break-words text-2xl font-black leading-tight tracking-tight text-foreground sm:text-[28px]">Sign in to your dashboard</h2>
+                            <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                                Access vessel performance, route intelligence, sales reports, and operational status.
+                            </p>
                         </div>
 
-                        {/* Password Input */}
-                        <div className="relative w-full h-16 group">
-                            <input 
-                                id="password" 
-                                type={showPassword ? "text" : "password"} 
-                                placeholder="Password" 
-                                className="peer block w-full h-full px-4 pt-6 pb-2 text-base font-medium text-[#111718] dark:text-white bg-[#f0f4f4] dark:bg-[#1a2e31] border-none rounded-lg focus:ring-2 focus:ring-primary placeholder-transparent outline-none transition-all pr-12"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                        {error && (
+                            <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-600 animate-in fade-in slide-in-from-top-2 dark:text-red-300">
+                                <AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        <form className="space-y-4" onSubmit={handleLogin}>
+                            <div className="space-y-2">
+                                <label htmlFor="email" className="text-sm font-bold text-foreground">
+                                    Email address
+                                </label>
+                                <div className="relative">
+                                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-600 dark:text-slate-300" aria-hidden="true" />
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        placeholder="operations@hayahai.com"
+                                        autoComplete="email"
+                                        className="h-11 w-full rounded-xl border border-border bg-input px-10 text-sm font-semibold text-foreground placeholder:text-slate-500 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60 dark:placeholder:text-slate-400"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        disabled={isLoading}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label htmlFor="password" className="text-sm font-bold text-foreground">
+                                    Password
+                                </label>
+                                <div className="relative">
+                                    <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-600 dark:text-slate-300" aria-hidden="true" />
+                                    <input
+                                        id="password"
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="Enter password"
+                                        autoComplete="current-password"
+                                        className="h-11 w-full rounded-xl border border-border bg-input px-10 pr-12 text-sm font-semibold text-foreground placeholder:text-slate-500 shadow-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60 dark:placeholder:text-slate-400"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        disabled={isLoading}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-lg text-slate-600 hover:bg-muted hover:text-foreground dark:text-slate-300"
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? <EyeOff className="size-5" aria-hidden="true" /> : <Eye className="size-5" aria-hidden="true" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <label className="flex cursor-pointer items-center gap-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    <input
+                                        type="checkbox"
+                                        className="size-4 rounded border-border bg-input accent-primary focus:ring-2 focus:ring-primary"
+                                    />
+                                    Remember this device
+                                </label>
+                                <a href="#" className="text-sm font-black text-primary hover:text-primary-hover hover:underline underline-offset-4">
+                                    Forgot password?
+                                </a>
+                            </div>
+
+                            <button
+                                type="submit"
                                 disabled={isLoading}
-                                required
-                            />
-                            <label 
-                                htmlFor="password"
-                                className="absolute left-4 top-0 pointer-events-none transition-all duration-200 origin-left text-sm font-medium text-[#618689] peer-placeholder-shown:translate-y-[1.2rem] peer-placeholder-shown:scale-100 peer-focus:translate-y-[0.25rem] peer-focus:scale-85 peer-focus:text-primary peer-current:translate-y-[0.25rem] peer-current:scale-85"
+                                className="group flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
                             >
-                                Password
-                            </label>
-                            <button 
-                                type="button" 
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#618689] hover:text-primary transition-colors"
-                            >
-                                {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                                <span>{isLoading ? "Signing in..." : "Sign in"}</span>
+                                <ArrowRight className="size-5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                             </button>
+                        </form>
+
+                        <div className="mt-5 grid gap-2.5 rounded-2xl border border-border bg-muted/45 p-3 text-xs text-slate-700 dark:text-slate-300">
+                            {[
+                                "Encrypted session for tenant dashboards",
+                                "Built for passenger, RoRo, LCT, and cargo operations",
+                            ].map((item) => (
+                                <div key={item} className="flex items-center gap-3">
+                                    <CheckCircle2 className="size-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                                    <span className="min-w-0 font-medium">{item}</span>
+                                </div>
+                            ))}
                         </div>
 
-                        <div className="flex items-center justify-between">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input 
-                                    type="checkbox" 
-                                    className="w-4 h-4 rounded text-primary border-gray-300 focus:ring-primary" 
-                                />
-                                <span className="text-sm text-[#618689] dark:text-gray-400 font-medium">Remember me</span>
-                            </label>
-                            <a href="#" className="text-sm font-bold text-primary hover:underline underline-offset-4">Forgot Password?</a>
-                        </div>
-
-                        {/* Sign In Button */}
-                        <button 
-                            type="submit" 
-                            disabled={isLoading}
-                            className="w-full h-14 bg-gradient-to-r from-primary to-[#3f68e4] hover:brightness-110 active:scale-[0.98] transition-all text-white font-bold text-lg rounded-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                        >
-                            <span>{isLoading ? "Logging In..." : "Login In"}</span>
-                            {/* <LogIn className="size-5" /> */}
-                        </button>
-                    </form>
-
-                    {/* Footer Links */}
-                    <div className="flex flex-col gap-4 text-center pt-4 border-t border-[#f0f4f4] dark:border-[#1a2e31]">
-                        <p className="text-[#618689] dark:text-gray-400 text-sm">
-                            Don&apos;t have an account? 
-                            <a href="#" className="text-[#111718] dark:text-white font-bold hover:text-primary transition-colors ml-1">Request Access</a>
-                        </p>
-                        <div className="flex justify-center gap-6">
-                            <a href="#" className="text-xs text-[#618689] dark:text-gray-500 hover:text-primary transition-colors font-medium">Help Center</a>
-                            <a href="#" className="text-xs text-[#618689] dark:text-gray-500 hover:text-primary transition-colors font-medium">Terms of Service</a>
-                            <a href="#" className="text-xs text-[#618689] dark:text-gray-500 hover:text-primary transition-colors font-medium">Privacy Policy</a>
+                        <div className="mt-5 border-t border-border pt-4 text-center">
+                            <p className="text-xs text-slate-700 dark:text-slate-300">
+                                Don&apos;t have an account?
+                                <a href="#" className="ml-1 font-black text-foreground hover:text-primary">
+                                    Request access
+                                </a>
+                            </p>
+                            <div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                <a href="#" className="hover:text-primary">Help Center</a>
+                                <a href="#" className="hover:text-primary">Terms</a>
+                                <a href="#" className="hover:text-primary">Privacy</a>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
-        </div>
+        </main>
     );
 }

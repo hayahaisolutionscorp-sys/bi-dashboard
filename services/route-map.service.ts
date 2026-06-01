@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, AYAHAY_API_URL } from "@/constants";
+import { API_ENDPOINTS, HAYAHAI_API_URL } from "@/constants";
 
 const CLIENT_API_URL = process.env.NEXT_PUBLIC_CLIENT_API_URL || "http://localhost:3000";
 
@@ -118,10 +118,10 @@ export const RouteMapService = {
     serviceKey?: string,
     date?: string,
   ): Promise<RouteMapResponse> => {
-    // Primary: unified hub endpoint on ayahay-api-v2 (AYAHAY_API_URL).
+    // Primary: unified hub endpoint on hayahai-api-v2 (HAYAHAI_API_URL).
     // Tenant isolation is enforced server-side via x-service-key — not by URL.
     const primary = await fetchRouteMapFromUrl(
-      `${AYAHAY_API_URL}${API_ENDPOINTS.ROUTE_MAP}`,
+      `${HAYAHAI_API_URL}${API_ENDPOINTS.ROUTE_MAP}`,
       serviceKey,
       date,
     );
@@ -133,7 +133,7 @@ export const RouteMapService = {
       return primary;
     }
 
-    // Fallback: tenant-local /bi/route-map on ayahay-client-api.
+    // Fallback: tenant-local /bi/route-map on hayahai-client-api.
     // Only attempted when a real tenant baseUrl is available — never falls back
     // to CLIENT_API_URL (which resolves to localhost when the env var is unset).
     if (baseUrl) {

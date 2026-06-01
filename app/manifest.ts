@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Ayahay BI Dashboard',
-    short_name: 'Ayahay BI',
-    description: 'The Ayahay Business Intelligence and Admin Dashboard',
+    name: 'Hayahai BI Dashboard',
+    short_name: 'Hayahai BI',
+    description: 'The Hayahai Business Intelligence and Admin Dashboard',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

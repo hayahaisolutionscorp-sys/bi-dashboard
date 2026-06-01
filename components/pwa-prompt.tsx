@@ -77,7 +77,7 @@ export function PWAPrompt() {
         </div>
         <div className="flex-1">
           <h3 className="font-semibold text-sm">Download App</h3>
-          <p className="text-xs text-muted-foreground leading-snug mt-0.5">Install Ayahay BI on your device for quick access.</p>
+          <p className="text-xs text-muted-foreground leading-snug mt-0.5">Install Hayahai BI on your device for quick access.</p>
         </div>
         <div className="flex items-center gap-2 pl-3 border-l">
           <Button size="sm" onClick={handleInstallClick} className="flex gap-2 w-full justify-center">

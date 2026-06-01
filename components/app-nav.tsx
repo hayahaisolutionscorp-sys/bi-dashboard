@@ -114,7 +114,7 @@ export function AppNav({ isMobile }: AppNavProps) {
             <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/25 bg-primary/15 shadow-[0_0_28px_var(--glow-color)]">
               <Image
                 src="/images/logo/hayahai_logo_v2_nodp_nopropeller_final_300px.png"
-                alt="Ayahay BI logo"
+                alt="Hayahai BI logo"
                 width={28}
                 height={28}
                 className="object-contain"

@@ -96,7 +96,7 @@ function SectionTitle({ label, title, meta, dense = false }: { label: string; ti
 
 function Sparkline({ tone = "#00C2FF", compact = false }: { tone?: string; compact?: boolean }) {
   return (
-    <svg viewBox="0 0 148 52" className={cn("overflow-visible", compact ? "h-10 w-28" : "h-14 w-36")} aria-hidden="true">
+    <svg viewBox="0 0 148 52" className={cn("overflow-visible", compact ? "h-12 w-36" : "h-14 w-36")} aria-hidden="true">
       <defs>
         <linearGradient id={`spark-${tone.replace("#", "")}`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor={tone} stopOpacity="0.32" />
@@ -142,40 +142,42 @@ function MetricCard({
     <motion.div
       whileHover={{ y: -5 }}
       className={cn(
-        "group relative min-h-[132px] overflow-hidden rounded-2xl border border-border/70 bg-card/70 p-4 text-left backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-white/[0.055]",
+        "group relative min-h-[164px] overflow-hidden rounded-2xl border border-border/70 bg-card/80 p-4 text-left backdrop-blur-2xl transition-all dark:border-white/10 dark:bg-white/[0.055]",
         "shadow-[0_24px_70px_-50px_rgba(0,194,255,0.65)]",
         active && "border-cyan-300/50 bg-cyan-300/10 shadow-[0_0_46px_rgba(0,194,255,0.18)]",
       )}
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
       <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full blur-3xl" style={{ backgroundColor: `${accent}24` }} />
-      <div className="relative flex items-start justify-between gap-3">
+      <div className="pointer-events-none absolute bottom-2 right-3 z-0 opacity-45 [mask-image:linear-gradient(to_left,black,transparent)]">
+        <Sparkline tone={accent} compact />
+      </div>
+      <div className="relative z-10 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-muted-foreground">{title}</p>
-          <p className="mt-2 text-[1.65rem] font-semibold leading-none text-foreground tabular-nums dark:text-white">{value}</p>
+          <p className="text-sm font-semibold leading-snug text-slate-700 dark:text-slate-200">{title}</p>
+          <p className="mt-2 text-2xl font-semibold leading-none text-slate-950 tabular-nums dark:text-white">{value}</p>
         </div>
         <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border/70 bg-muted/50 dark:border-white/10 dark:bg-black/20" style={{ color: accent }}>
           <Icon className="size-4" />
         </span>
       </div>
-      <div className="relative mt-3 pr-24">
+      <div className="relative z-10 mt-4 space-y-2">
         <div className="min-w-0">
           {trend && (
             <p
               className={cn(
-                "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs font-semibold",
-                trend.direction === "down" ? "text-red-600 dark:text-red-300" : trend.direction === "up" ? "text-emerald-600 dark:text-emerald-300" : "text-muted-foreground",
+                "flex items-start gap-1.5 text-sm font-semibold leading-5",
+                trend.direction === "down" ? "text-red-700 dark:text-red-300" : trend.direction === "up" ? "text-emerald-700 dark:text-emerald-300" : "text-slate-700 dark:text-slate-300",
               )}
             >
-              <TrendIcon className="size-3.5" />
-              {trend.value}
-              <span className="font-medium text-muted-foreground">{trend.label}</span>
+              <TrendIcon className="mt-0.5 size-4 shrink-0" />
+              <span>
+                <span className="tabular-nums">{trend.value}</span>{" "}
+                <span className="font-medium text-slate-600 dark:text-slate-400">{trend.label}</span>
+              </span>
             </p>
           )}
-          <p className="mt-1 line-clamp-2 text-xs leading-4 text-muted-foreground">{subtitle}</p>
-        </div>
-        <div className="pointer-events-none absolute bottom-0 right-0 opacity-90">
-          <Sparkline tone={accent} compact />
+          <p className="max-w-[22rem] text-sm leading-5 text-slate-600 dark:text-slate-400">{subtitle}</p>
         </div>
       </div>
     </motion.div>
@@ -420,7 +422,7 @@ function CoverageMatrix() {
 }
 
 export default function DashboardPage() {
-  const { activeTenant } = useTenant();
+  const { activeTenant, isLoading: isTenantLoading } = useTenant();
   const [period, setPeriod] = useState<"today" | "mtd" | "ytd">("today");
   const [dateType, setDateType] = useState<"booking" | "departure">("booking");
   const [financeData, setFinanceData] = useState<FinanceOverviewData | null>(null);
@@ -434,7 +436,16 @@ export default function DashboardPage() {
   const [widgetsLoading, setWidgetsLoading] = useState(true);
 
   const fetchOverview = useCallback(async () => {
-    if (!activeTenant?.api_base_url) return;
+    if (isTenantLoading) return;
+
+    if (!activeTenant?.api_base_url) {
+      setFinanceData(null);
+      setLegacyData(null);
+      setError("No active tenant API is available.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -450,7 +461,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTenant, period, dateType]);
+  }, [activeTenant, isTenantLoading, period, dateType]);
 
   useEffect(() => {
     fetchOverview();
@@ -458,7 +469,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchWidgets() {
-      if (!activeTenant?.api_base_url) return;
+      if (isTenantLoading) return;
+
+      if (!activeTenant?.api_base_url) {
+        setRecentActivity([]);
+        setTodaySchedule([]);
+        setCapacityHeatmap([]);
+        setTopAgents([]);
+        setWidgetsLoading(false);
+        return;
+      }
+
       setWidgetsLoading(true);
       try {
         const [activity, schedule, heatmap, agents] = await Promise.allSettled([
@@ -476,7 +497,7 @@ export default function DashboardPage() {
       }
     }
     fetchWidgets();
-  }, [activeTenant]);
+  }, [activeTenant, isTenantLoading]);
 
   const fd = financeData;
   const todayNet = fd?.kpi_today.net_revenue ?? 0;
@@ -539,7 +560,7 @@ export default function DashboardPage() {
         aiSummary={aiSummary.summary}
       />
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
         <MetricCard
           title="Net Revenue"
           value={isLoading ? "..." : fmtCurrency(fd?.kpi.net_revenue)}

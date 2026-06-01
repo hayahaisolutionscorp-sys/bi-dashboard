@@ -1,10 +1,10 @@
-import { API_ENDPOINTS, AYAHAY_API_URL } from "@/constants"
+import { API_ENDPOINTS, HAYAHAI_API_URL } from "@/constants"
 import { AuthResponseDto, LoginDto, User, Tenant } from "@/types/auth"
 
 export const authService = {
     login: async (credentials: LoginDto): Promise<AuthResponseDto> => {
         try {
-            const response = await fetch(`${AYAHAY_API_URL}${API_ENDPOINTS.AUTH}/login`, {
+            const response = await fetch(`${HAYAHAI_API_URL}${API_ENDPOINTS.AUTH}/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -114,7 +114,7 @@ export const authService = {
     logout: async (): Promise<void> => {
         try {
             // Attempt to call backend logout to clear http-only cookies
-            await fetch(`${AYAHAY_API_URL}${API_ENDPOINTS.AUTH}/logout`, {
+            await fetch(`${HAYAHAI_API_URL}${API_ENDPOINTS.AUTH}/logout`, {
                 method: "POST",
                 credentials: 'include'
             }).catch(() => {}); // Ignore error on logout call

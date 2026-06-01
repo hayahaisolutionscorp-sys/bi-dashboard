@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, AYAHAY_API_URL } from "@/constants";
+import { API_ENDPOINTS, HAYAHAI_API_URL } from "@/constants";
 import {
   RecentActivityItem,
   ScheduleTripItem,
