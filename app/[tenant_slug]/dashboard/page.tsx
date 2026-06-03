@@ -1042,7 +1042,7 @@ export default function DashboardPage() {
 
       <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
         <Panel className="xl:col-span-8">
-          <SectionHeader eyebrow="Row 2" title="Revenue Trend" meta={`${period.toUpperCase()} ledger movement`} />
+          <SectionHeader eyebrow="Revenue" title="Revenue Trend" meta={`${period.toUpperCase()} ledger movement`} />
           {isLoading ? (
             <div className="p-4">
               <Skeleton className="h-[220px] rounded-2xl bg-muted dark:bg-white/10" />
