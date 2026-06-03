@@ -356,32 +356,44 @@ function BusinessHealthScore({
   checks: Array<{ label: string; state: "good" | "watch" | "bad" }>;
   className?: string;
 }) {
+  const healthyCount = checks.filter((check) => check.state === "good").length;
+  const watchCount = checks.filter((check) => check.state === "watch").length;
+  const issueCount = checks.filter((check) => check.state === "bad").length;
+  const scoreState = issueCount > 0 ? "Action needed" : watchCount > 0 ? "Monitor" : "Healthy";
+
   return (
-    <Panel className={className}>
+    <Panel className={cn("flex h-full flex-col", className)}>
       <SectionHeader eyebrow="Health" title={`${score}/100`} meta="executive score" />
-      <div className="grid items-center gap-3 p-3.5 sm:grid-cols-[112px_minmax(0,1fr)]">
-        <div className="relative mx-auto grid size-28 place-items-center rounded-full border border-border/70 bg-card/70 dark:border-white/10 dark:bg-white/[0.045]">
-          <div
-            className="absolute inset-2 rounded-full"
-            style={{ background: `conic-gradient(rgb(16 185 129) ${clampPct(score)}%, rgba(148,163,184,.18) 0)` }}
-          />
-          <div className="relative grid size-20 place-items-center rounded-full bg-background dark:bg-[#071122]">
-            <span className="text-2xl font-semibold tabular-nums">{score}</span>
+      <div className="flex flex-1 flex-col justify-between gap-3 p-3.5">
+        <div className="grid items-center gap-3 sm:grid-cols-[112px_minmax(0,1fr)]">
+          <div className="relative mx-auto grid size-28 place-items-center rounded-full border border-border/70 bg-card/70 dark:border-white/10 dark:bg-white/[0.045]">
+            <div
+              className="absolute inset-2 rounded-full"
+              style={{ background: `conic-gradient(rgb(16 185 129) ${clampPct(score)}%, rgba(148,163,184,.18) 0)` }}
+            />
+            <div className="relative grid size-20 place-items-center rounded-full bg-background dark:bg-[#071122]">
+              <span className="text-2xl font-semibold tabular-nums">{score}</span>
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            {checks.map((check) => (
+              <div key={check.label} className="flex items-center justify-between rounded-xl border border-border/70 bg-card/70 px-3 py-1.5 text-xs dark:border-white/10 dark:bg-white/[0.045]">
+                <span className="font-medium text-muted-foreground">{check.label}</span>
+                {check.state === "good" ? (
+                  <CheckCircle2 className="size-4 text-emerald-500" />
+                ) : check.state === "watch" ? (
+                  <CircleAlert className="size-4 text-amber-500" />
+                ) : (
+                  <XCircle className="size-4 text-rose-500" />
+                )}
+              </div>
+            ))}
           </div>
         </div>
-        <div className="grid gap-1.5">
-          {checks.map((check) => (
-            <div key={check.label} className="flex items-center justify-between rounded-xl border border-border/70 bg-card/70 px-3 py-1.5 text-xs dark:border-white/10 dark:bg-white/[0.045]">
-              <span className="font-medium text-muted-foreground">{check.label}</span>
-              {check.state === "good" ? (
-                <CheckCircle2 className="size-4 text-emerald-500" />
-              ) : check.state === "watch" ? (
-                <CircleAlert className="size-4 text-amber-500" />
-              ) : (
-                <XCircle className="size-4 text-rose-500" />
-              )}
-            </div>
-          ))}
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <CompactMetric label="Status" value={scoreState} meta={`${healthyCount}/${checks.length} checks clear`} />
+          <CompactMetric label="Watchlist" value={fmtNumber(watchCount)} meta="signals to monitor" />
+          <CompactMetric label="Issues" value={fmtNumber(issueCount)} meta="requires action" />
         </div>
       </div>
     </Panel>
