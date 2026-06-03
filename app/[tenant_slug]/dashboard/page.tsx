@@ -6,7 +6,6 @@ import {
   Activity,
   ArrowDownRight,
   ArrowUpRight,
-  BarChart3,
   Bot,
   Boxes,
   CalendarDays,
@@ -17,10 +16,7 @@ import {
   Radio,
   RefreshCw,
   Ship,
-  Target,
-  TrendingUp,
   Users,
-  Wallet,
   Wrench,
   XCircle,
   type LucideIcon,
@@ -728,7 +724,7 @@ function BriefBar({
             </div>
           </div>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
           {commandItems.map((item) => (
             <div key={item.label} className="min-w-0 rounded-xl border border-border/70 bg-card/70 px-3 py-2 dark:border-white/10 dark:bg-white/[0.045]">
               <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{item.label}</p>
@@ -832,6 +828,10 @@ export default function DashboardPage() {
   const cancellationCount = todaySchedule.filter((trip) => /cancel/i.test(trip.status)).length;
   const delayedCount = todaySchedule.filter((trip) => /delay|late/i.test(trip.status)).length;
   const onTimePerformance = todaySchedule.length ? ((todaySchedule.length - delayedCount - cancellationCount) / todaySchedule.length) * 100 : 100;
+  const capacityUtilization = todaySchedule.length
+    ? todaySchedule.reduce((sum, trip) => sum + (trip.pax_utilization_pct ?? 0), 0) / todaySchedule.length
+    : 0;
+  const cancellationRate = activeTrips ? (cancellationCount / activeTrips) * 100 : 0;
   const netRevenue = fd?.kpi.net_revenue ?? 0;
   const grossRevenue = fd?.kpi.gross_revenue ?? legacyData?.kpi.total_revenue ?? 0;
   const refundAmount = fd?.kpi.refund_amount ?? 0;
@@ -977,6 +977,11 @@ export default function DashboardPage() {
             trend: { direction: trendDirection(revenueGrowth), value: fmtSignedPercent(revenueGrowth), label: "vs LM" },
           },
           {
+            label: "YTD Revenue",
+            value: isLoading ? "..." : fmtCurrency(ytdNet),
+            trend: { direction: trendDirection(revenueGrowth), value: fmtSignedPercent(revenueGrowth), label: "growth" },
+          },
+          {
             label: "Forecast EOM",
             value: fmtCurrency(forecastMetrics.confidenceBand.expected),
             trend: { direction: trendDirection(targetAchievement - 80), value: fmtPercent(targetAchievement), label: "target" },
@@ -996,47 +1001,47 @@ export default function DashboardPage() {
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <CriticalKpiCard
-          label="Sales Today"
-          value={isLoading ? "..." : fmtCurrency(todayNet)}
-          icon={Wallet}
+          label="Passenger Volume"
+          value={isLoading ? "..." : fmtNumber(passengerVolume)}
+          icon={Users}
           active
           tone="cyan"
-          trend={{ direction: trendDirection(pctDelta(todayNet, dailyPace)), value: fmtSignedPercent(pctDelta(todayNet, dailyPace)), label: "pace" }}
+          trend={{ direction: trendDirection(pctDelta(passengerVolume, fd?.comparisons.last_month.booking_count ?? 0)), value: fmtSignedPercent(pctDelta(passengerVolume, fd?.comparisons.last_month.booking_count ?? 0)), label: "vs LM" }}
         />
         <CriticalKpiCard
-          label="MTD Revenue"
-          value={isLoading ? "..." : fmtCurrency(mtdNet)}
-          icon={BarChart3}
+          label="Cargo Volume"
+          value={isLoading ? "..." : fmtNumber(cargoVolume)}
+          icon={Boxes}
           tone="emerald"
-          trend={{ direction: trendDirection(fd?.comparisons.last_month.delta_pct), value: fmtSignedPercent(fd?.comparisons.last_month.delta_pct), label: "MoM" }}
+          trend={{ direction: cargoVolume > 0 ? "up" : "flat", value: cargoVolume > 0 ? fmtCurrency(cargoRevenue) : "0 units", label: "cargo" }}
         />
         <CriticalKpiCard
-          label="YTD Revenue"
-          value={isLoading ? "..." : fmtCurrency(ytdNet)}
-          icon={TrendingUp}
+          label="Trips Today"
+          value={isLoading ? "..." : fmtNumber(activeTrips)}
+          icon={CalendarDays}
           tone="violet"
-          trend={{ direction: trendDirection(revenueGrowth), value: fmtSignedPercent(revenueGrowth), label: "growth" }}
+          trend={{ direction: activeTrips ? "up" : "flat", value: fmtNumber(completedTrips), label: "completed" }}
         />
         <CriticalKpiCard
-          label="Net Revenue"
-          value={isLoading ? "..." : fmtCurrency(netRevenue)}
-          icon={Target}
-          tone="cyan"
-          trend={{ direction: trendDirection(pctDelta(netRevenue, grossRevenue)), value: fmtCurrency(refundAmount), label: "refunds" }}
-        />
-        <CriticalKpiCard
-          label="Profit Margin"
-          value={isLoading ? "..." : fmtPercent(profitMargin)}
+          label="Capacity Utilization"
+          value={isLoading ? "..." : fmtPercent(capacityUtilization)}
           icon={Gauge}
-          tone={profitMargin < 10 ? "amber" : "emerald"}
-          trend={{ direction: trendDirection(profitMargin - 20), value: fmtPercent(profitMargin), label: "margin" }}
+          tone="cyan"
+          trend={{ direction: trendDirection(capacityUtilization - 70), value: fmtNumber(activeRoutes), label: "routes" }}
         />
         <CriticalKpiCard
-          label="Active Vessels"
-          value={isLoading ? "..." : fmtNumber(activeVessels)}
-          icon={Ship}
-          tone="slate"
-          trend={{ direction: activeVessels ? "up" : "flat", value: fmtNumber(activeRoutes), label: "routes" }}
+          label="On-Time Performance"
+          value={isLoading ? "..." : fmtPercent(onTimePerformance)}
+          icon={Clock}
+          tone={onTimePerformance < 85 ? "amber" : "emerald"}
+          trend={{ direction: trendDirection(onTimePerformance - 90), value: fmtNumber(delayedCount), label: "delayed" }}
+        />
+        <CriticalKpiCard
+          label="Cancellation Rate"
+          value={isLoading ? "..." : fmtPercent(cancellationRate)}
+          icon={XCircle}
+          tone={cancellationRate > 5 ? "rose" : "slate"}
+          trend={{ direction: cancellationRate > 5 ? "down" : "flat", value: fmtNumber(cancellationCount), label: "canceled" }}
         />
       </section>
 
