@@ -36,7 +36,8 @@ interface ChartRow extends FinanceTrendItem {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const fmtShort = (n: number) => {
+// Compact PHP is only for chart axes and dense chart labels.
+const fmtCompactCurrency = (n: number) => {
   if (Math.abs(n) >= 1_000_000) return `₱${(n / 1_000_000).toFixed(2)}M`;
   if (Math.abs(n) >= 1_000)     return `₱${(n / 1_000).toFixed(0)}K`;
   return `₱${n.toLocaleString()}`;
@@ -299,14 +300,14 @@ export function RevenueTrendChart({ data, period, className }: Props) {
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Net Revenue</p>
             <p className="text-lg font-semibold tabular-nums text-teal-600 dark:text-teal-400">
-              {fmtShort(totalNet)}
+              {fmtCompactCurrency(totalNet)}
             </p>
           </div>
           {/* Gross total */}
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gross</p>
             <p className="text-lg font-semibold tabular-nums text-muted-foreground">
-              {fmtShort(totalGross)}
+              {fmtCompactCurrency(totalGross)}
             </p>
           </div>
           {/* Refund total */}
@@ -314,7 +315,7 @@ export function RevenueTrendChart({ data, period, className }: Props) {
             <div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Refunds</p>
               <p className="text-sm font-medium tabular-nums text-rose-500">
-                −{fmtShort(totalRefund)}
+                −{fmtCompactCurrency(totalRefund)}
               </p>
             </div>
           )}
@@ -443,7 +444,7 @@ export function RevenueTrendChart({ data, period, className }: Props) {
               height={22}
             />
             <YAxis
-              tickFormatter={fmtShort}
+              tickFormatter={fmtCompactCurrency}
               tick={{ fontSize: 10, fill: "currentColor" }}
               className="text-muted-foreground"
               tickLine={false}
@@ -464,7 +465,7 @@ export function RevenueTrendChart({ data, period, className }: Props) {
                 strokeDasharray="2 4"
                 className="text-muted-foreground/40"
                 label={{
-                  value: `avg ${fmtShort(avgNet)}`,
+                  value: `avg ${fmtCompactCurrency(avgNet)}`,
                   position: "insideTopRight",
                   fontSize: 9,
                   fill: "currentColor",

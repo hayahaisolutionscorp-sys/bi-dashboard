@@ -40,11 +40,15 @@ import {
   useRouteInsights,
 } from "@/hooks/use-executive-intelligence";
 
-const fmtCurrency = (value?: number | null) => {
+// Exact PHP is for executive KPI cards and finance widgets; do not abbreviate.
+const fmtExactCurrency = (value?: number | null) => {
   const n = value ?? 0;
-  if (Math.abs(n) >= 1_000_000) return `P${(n / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(n) >= 1_000) return `P${(n / 1_000).toFixed(0)}K`;
-  return `P${n.toLocaleString()}`;
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
 };
 
 const fmtNumber = (value?: number | null) => (value ?? 0).toLocaleString();
@@ -334,7 +338,7 @@ function WaterfallCard({
               <span className="font-medium text-muted-foreground">{row.label}</span>
               <span className={cn("font-semibold tabular-nums", row.value < 0 && "text-rose-500")}>
                 {row.value < 0 ? "-" : ""}
-                {fmtCurrency(Math.abs(row.value))}
+                {fmtExactCurrency(Math.abs(row.value))}
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -414,8 +418,8 @@ function TargetTracker({
       <SectionHeader eyebrow="Target" title="Revenue Target Tracker" meta={`${fmtPercent(pct)} achieved`} />
       <div className="space-y-3 p-3.5">
         <div className="grid grid-cols-2 gap-2">
-          <CompactMetric label="Target" value={fmtCurrency(target)} meta="EOM goal" />
-          <CompactMetric label="Achieved" value={fmtCurrency(achieved)} meta="realized MTD" />
+          <CompactMetric label="Target" value={fmtExactCurrency(target)} meta="EOM goal" />
+          <CompactMetric label="Achieved" value={fmtExactCurrency(achieved)} meta="realized MTD" />
         </div>
         <div>
           <div className="mb-2 flex items-center justify-between text-xs">
@@ -653,7 +657,7 @@ function CashPosition({
         ].map(([label, value]) => (
           <div key={label} className="rounded-xl border border-border/70 bg-card/70 p-3 dark:border-white/10 dark:bg-white/[0.045]">
             <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums">{fmtCurrency(Number(value))}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{fmtExactCurrency(Number(value))}</p>
           </div>
         ))}
       </div>
@@ -903,7 +907,7 @@ export default function DashboardPage() {
     { route_name: "Route data syncing", net_revenue: 0, profit_margin: 0, gross_revenue: 0, refund_amount: 0, expenses: 0, profit_class: "low", booking_count: 0 },
   ]).slice(0, 5).map((route) => [
     route.route_name,
-    fmtCurrency(route.net_revenue),
+    fmtExactCurrency(route.net_revenue),
     fmtSignedPercent(route.profit_margin * 100),
   ]);
   const vesselLoadByName = new Map<string, number[]>();
@@ -917,7 +921,7 @@ export default function DashboardPage() {
   ]).slice(0, 5).map((vessel) => {
     const loads = vesselLoadByName.get(vessel.vessel_name) ?? [];
     const load = loads.length ? loads.reduce((sum, value) => sum + value, 0) / loads.length : 0;
-    return [vessel.vessel_name, fmtCurrency(vessel.total_revenue), fmtPercent(load)];
+    return [vessel.vessel_name, fmtExactCurrency(vessel.total_revenue), fmtPercent(load)];
   });
   const channelMixRows = (fd?.revenue_by_channel ?? []).map((channel) => ({
     label: channel.channel,
@@ -937,10 +941,10 @@ export default function DashboardPage() {
     })),
   ].slice(0, 5);
   const aiInsights = [
-    `Revenue is projected at ${fmtCurrency(forecastMetrics.confidenceBand.expected)} with ${fmtPercent(targetAchievement)} target achievement.`,
+    `Revenue is projected at ${fmtExactCurrency(forecastMetrics.confidenceBand.expected)} with ${fmtPercent(targetAchievement)} target achievement.`,
     `${topRoute?.route_name ?? "Top route"} contributes ${topRoute && netRevenue ? fmtPercent((topRoute.net_revenue / netRevenue) * 100) : "0.0%"} of total revenue.`,
     `${topChannel?.channel ?? "Primary channel"} bookings represent ${topChannel ? fmtPercent(topChannel.revenue_share_pct) : "0.0%"} of channel revenue.`,
-    `Cargo revenue is ${fmtCurrency(cargoRevenue)} with ${fmtNumber(cargoVolume)} cargo units tracked.`,
+    `Cargo revenue is ${fmtExactCurrency(cargoRevenue)} with ${fmtNumber(cargoVolume)} cargo units tracked.`,
     `${riskRows.filter((risk) => risk.severity !== "normal").length} route or vessel signals require executive attention.`,
   ];
 
@@ -980,27 +984,27 @@ export default function DashboardPage() {
         summaryItems={[
           {
             label: "Revenue Today",
-            value: isLoading ? "..." : fmtCurrency(todayNet),
+            value: isLoading ? "..." : fmtExactCurrency(todayNet),
             trend: { direction: trendDirection(pctDelta(todayNet, dailyPace)), value: fmtSignedPercent(pctDelta(todayNet, dailyPace)), label: "vs pace" },
           },
           {
             label: "MTD Revenue",
-            value: isLoading ? "..." : fmtCurrency(mtdNet),
+            value: isLoading ? "..." : fmtExactCurrency(mtdNet),
             trend: { direction: trendDirection(revenueGrowth), value: fmtSignedPercent(revenueGrowth), label: "vs LM" },
           },
           {
             label: "YTD Revenue",
-            value: isLoading ? "..." : fmtCurrency(ytdNet),
+            value: isLoading ? "..." : fmtExactCurrency(ytdNet),
             trend: { direction: trendDirection(revenueGrowth), value: fmtSignedPercent(revenueGrowth), label: "growth" },
           },
           {
             label: "Forecast EOM",
-            value: fmtCurrency(forecastMetrics.confidenceBand.expected),
+            value: fmtExactCurrency(forecastMetrics.confidenceBand.expected),
             trend: { direction: trendDirection(targetAchievement - 80), value: fmtPercent(targetAchievement), label: "target" },
           },
           {
             label: "Net Profit",
-            value: fmtCurrency(netProfit),
+            value: fmtExactCurrency(netProfit),
             trend: { direction: trendDirection(netProfit), value: fmtPercent(profitMargin), label: "margin" },
           },
           {
@@ -1025,7 +1029,7 @@ export default function DashboardPage() {
           value={isLoading ? "..." : fmtNumber(cargoVolume)}
           icon={Boxes}
           tone="emerald"
-          trend={{ direction: cargoVolume > 0 ? "up" : "flat", value: cargoVolume > 0 ? fmtCurrency(cargoRevenue) : "0 units", label: "cargo" }}
+          trend={{ direction: cargoVolume > 0 ? "up" : "flat", value: cargoVolume > 0 ? fmtExactCurrency(cargoRevenue) : "0 units", label: "cargo" }}
         />
         <CriticalKpiCard
           label="Trips Today"
@@ -1066,8 +1070,8 @@ export default function DashboardPage() {
             </div>
           ) : trendData.length === 0 ? (
             <div className="grid gap-3 p-3.5 sm:grid-cols-3">
-              <CompactMetric label="Net Revenue" value={fmtCurrency(netRevenue)} meta="awaiting trend buckets" />
-              <CompactMetric label="Gross Revenue" value={fmtCurrency(grossRevenue)} meta="ledger source" />
+              <CompactMetric label="Net Revenue" value={fmtExactCurrency(netRevenue)} meta="awaiting trend buckets" />
+              <CompactMetric label="Gross Revenue" value={fmtExactCurrency(grossRevenue)} meta="ledger source" />
               <CompactMetric label="Bookings" value={fmtNumber(fd?.kpi.booking_count)} meta="sync pending" />
             </div>
           ) : (
@@ -1133,9 +1137,9 @@ export default function DashboardPage() {
         <Panel className="h-full xl:col-span-7">
           <SectionHeader eyebrow="Forecast" title="Forecast & Target Achievement" meta={`Forecast risk ${forecastMetrics.risk}`} />
           <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
-            <ForecastCard label="Revenue Forecast" value={fmtCurrency(forecastMetrics.confidenceBand.expected)} meta={`${fmtCurrency(forecastMetrics.confidenceBand.low)} low | ${fmtCurrency(forecastMetrics.confidenceBand.high)} high`} progress={targetAchievement} tone="cyan" />
-            <ForecastCard label="MTD Projection" value={fmtCurrency(mtdProjection)} meta={fd?.forecast.pacing_status ?? "calibrating"} progress={targetAchievement} tone={targetAchievement >= 100 ? "emerald" : "amber"} />
-            <ForecastCard label="Target Achievement" value={fmtPercent(targetAchievement)} meta={`${fmtCurrency(mtdNet)} realized`} progress={targetAchievement} tone={targetAchievement >= 100 ? "emerald" : targetAchievement >= 75 ? "amber" : "rose"} />
+            <ForecastCard label="Revenue Forecast" value={fmtExactCurrency(forecastMetrics.confidenceBand.expected)} meta={`${fmtExactCurrency(forecastMetrics.confidenceBand.low)} low | ${fmtExactCurrency(forecastMetrics.confidenceBand.high)} high`} progress={targetAchievement} tone="cyan" />
+            <ForecastCard label="MTD Projection" value={fmtExactCurrency(mtdProjection)} meta={fd?.forecast.pacing_status ?? "calibrating"} progress={targetAchievement} tone={targetAchievement >= 100 ? "emerald" : "amber"} />
+            <ForecastCard label="Target Achievement" value={fmtPercent(targetAchievement)} meta={`${fmtExactCurrency(mtdNet)} realized`} progress={targetAchievement} tone={targetAchievement >= 100 ? "emerald" : targetAchievement >= 75 ? "amber" : "rose"} />
             <ForecastCard label="Growth Trend" value={fmtSignedPercent(revenueGrowth)} meta={`${executiveKpis.efficiencyIndex.score}/100 efficiency index`} progress={Math.max(0, Math.min(100, 50 + revenueGrowth))} tone={revenueGrowth >= 0 ? "emerald" : "rose"} />
           </div>
         </Panel>
