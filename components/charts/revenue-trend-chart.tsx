@@ -290,10 +290,10 @@ export function RevenueTrendChart({ data, period, className }: Props) {
   const avgNet = data.length > 0 ? totalNet / data.length : 0;
 
   return (
-    <div className={cn("flex flex-col gap-0", className)}>
+    <div className={cn("flex min-h-[390px] flex-col gap-0", className)}>
 
       {/* ── Summary Strip ──────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-4 flex-wrap">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3">
         <div className="flex items-center gap-4">
           {/* Net total */}
           <div>
@@ -365,7 +365,7 @@ export function RevenueTrendChart({ data, period, className }: Props) {
       </div>
 
       {/* ── Legend ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 px-5 py-3 text-[10px] text-muted-foreground flex-wrap">
+      <div className="flex flex-wrap items-center gap-4 px-5 py-2.5 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2 w-5 rounded-sm bg-rose-200 dark:bg-rose-900/50" />
           Gross (refund zone)
@@ -405,7 +405,7 @@ export function RevenueTrendChart({ data, period, className }: Props) {
       </div>
 
       {/* ── Chart ──────────────────────────────────────────────────────────── */}
-      <div className="px-2 pb-4" style={{ height: 300 }}>
+      <div className="h-[270px] px-2 pb-4 sm:h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 12, right: 20, left: 4, bottom: 4 }}>
             <defs>

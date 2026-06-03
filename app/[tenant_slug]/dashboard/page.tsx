@@ -1046,7 +1046,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-3 xl:grid-cols-12">
-        <Panel className="xl:col-span-8">
+        <Panel className="overflow-visible xl:col-span-8">
           <SectionHeader eyebrow="Revenue" title="Revenue Trend" meta={`${period.toUpperCase()} ledger movement`} />
           {isLoading ? (
             <div className="p-4">
@@ -1059,9 +1059,7 @@ export default function DashboardPage() {
               <CompactMetric label="Bookings" value={fmtNumber(fd?.kpi.booking_count)} meta="sync pending" />
             </div>
           ) : (
-            <div className="h-[240px]">
-              <RevenueTrendChart data={trendData} period={period} />
-            </div>
+            <RevenueTrendChart data={trendData} period={period} />
           )}
         </Panel>
         <BusinessHealthScore className="xl:col-span-4" score={businessHealthScore} checks={healthChecks} />
